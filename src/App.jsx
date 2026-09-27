@@ -27,6 +27,7 @@ function cuandoDbListo(cb) {
     document.head.appendChild(s);
   });
   Promise.all([
+    cargar("https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"),
       cargar("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js")
     ]).then(() => {
     try {
