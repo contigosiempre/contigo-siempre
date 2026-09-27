@@ -27,9 +27,9 @@ function cuandoDbListo(cb) {
     document.head.appendChild(s);
   });
   Promise.all([
-    cargar("https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"),
-    cargar("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js")
-  ]).then(() => {
+      cargar("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"),
+  cargar("https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js")
+    ]).then(() => {
     try {
       if (window.firebase && !window.firebase.apps.length) {
         window.firebase.initializeApp(FIREBASE_CONFIG);
@@ -938,6 +938,37 @@ function registrarDato(clave, valor = 1, detalle = null) {
     localStorage.setItem("datos_admin_global", JSON.stringify(datos));
   } catch (e) { console.error(e); }
 }
+async function pedirPermisoNotificaciones() {
+  try {
+    if (!("Notification" in window)) {
+      console.warn("Este navegador no soporta notificaciones");
+      return null;
+    }
+    if (!window.firebase || !window.firebase.messaging) {
+      console.warn("FCM no está cargado");
+      return null;
+    }
+    const messaging = window.firebase.messaging();
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+      console.log("Permiso de notificaciones denegado");
+      return null;
+    }
+    const token = await messaging.getToken({
+      vapidKey: "BFPDPH020a44BfLTPgU8Z7VbkqGL7rG3ZDLOAp9EK1kGYZWmos1FktvQtSL29HJR1gO4ESs21LBE1RTEwWMAPwz0"
+    });
+    if (token) {
+      console.log("Token FCM obtenido:", token);
+      return token;
+    } else {
+      console.warn("No se pudo obtener token");
+      return null;
+    }
+  } catch (e) {
+    console.error("Error pidiendo permiso:", e);
+    return null;
+  }
+}
 export default function App() {
   const [stage, setStage] = useState("cargando");
   const [codigo, setCodigo] = useState(null);
@@ -1049,6 +1080,12 @@ export default function App() {
       appAbiertaRef.current = true;
       registrarEvento(codigo, "abrir_app", "App abierta", { cuidador: nombreCuidadorInput || "Desconocido" });
       enviarEventosPendientes();
+      pedirPermisoNotificaciones().then((token) => {
+  if (token) {
+    actualizar((prev) => ({ ...prev, fcmToken: token, fcmTokenActualizado: Date.now() }));
+    console.log("Token FCM guardado en Firestore");
+  }
+});
     }
   }, [stage, codigo, nombreCuidadorInput]);
 
