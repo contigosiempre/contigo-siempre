@@ -1,8 +1,3 @@
-
-Jairo Ríos <jrlarrota@gmail.com>
-3:38 (hace 19 minutos)
-para mí
-
 const CACHE_NAME = 'contigo-siempre-v1';
 const URLS_TO_CACHE = [
   '/',
@@ -40,6 +35,9 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
+  
   event.respondWith(
     caches.match(event.request).then((cached) => {
       return cached || fetch(event.request).catch(() => {
