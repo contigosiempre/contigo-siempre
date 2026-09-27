@@ -44,6 +44,18 @@ function cuandoDbListo(cb) {
     } catch (e) { console.error("Firebase no disponible:", e); }
     dbCallbacks.forEach((cb) => cb(db));
     dbCallbacks = [];
+    // --- INICIO PASO 2: Cargar FCM messaging de forma segura ---
+cargar("https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js")
+  .then(() => {
+    console.log("Librería de FCM messaging cargada correctamente");
+    // Aquí no inicializamos nada todavía, solo la cargamos.
+    // En el Paso 3 pediremos los permisos.
+  })
+  .catch((err) => {
+    console.error("Error al cargar la librería de FCM:", err);
+  });
+// --- FIN PASO 2 ---
+
   });
 }
 
