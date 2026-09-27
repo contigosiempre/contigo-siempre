@@ -59,9 +59,11 @@ if (window.firebase && window.firebase.messaging) {
     }
   });
   // --- INICIO PASO 4: Obtener token y guardar en Firestore ---
-messaging.getToken({ vapidKey: ' BFPDPH02Oa44BflTPgU8Z7VbkqGL7rG3ZDLOAp9EKlkGYZWmoslFktvQtSl29HJR1gO4ESs2lBElRTEwWMAPwz0 ' }).then((currentToken) => {
-    serviceWorkerRegistration: await navigator.serviceWorker.register('/firebase-cloud-messaging-sw.js')
-}).then((currentToken) => {
+navigator.serviceWorker.register('/firebase-messaging-sw.js').then((registration) => {
+  messaging.getToken({ 
+    vapidKey: 'BFPDPH020a44Bf1TPgU8Z7VbkqGL7rG3ZDLOAp9EK1kGYZWmos1FktvQtS129HJR1gO4ESs21BE1RTEwWMAPwz0',
+    serviceWorkerRegistration: registration
+  }).then((currentToken) => {
   if (currentToken) {
     console.log("Token FCM obtenido:", currentToken);
     window.firebase.firestore().collection('tokens').add({
@@ -78,8 +80,11 @@ messaging.getToken({ vapidKey: ' BFPDPH02Oa44BflTPgU8Z7VbkqGL7rG3ZDLOAp9EKlkGYZW
 }).catch((err) => {
   console.error("Error al obtener el token:", err);
 });
+}).catch((err) => {
+  console.error("Error al registrar el Service Worker:", err);
+});
 // --- FIN PASO 4 ---
-}
+
 // --- FIN PASO 3 ---
   })
   .catch((err) => {
