@@ -58,6 +58,25 @@ if (window.firebase && window.firebase.messaging) {
       console.log("Permiso de notificaciones denegado");
     }
   });
+  // --- INICIO PASO 4: Obtener token y guardar en Firestore ---
+messaging.getToken({ vapidKey: ' BFPDPH02Oa44BflTPgU8Z7VbkqGL7rG3ZDLOAp9EKlkGYZWmoslFktvQtSl29HJR1gO4ESs2lBElRTEwWMAPwz0 ' }).then((currentToken) => {
+  if (currentToken) {
+    console.log("Token FCM obtenido:", currentToken);
+    window.firebase.firestore().collection('tokens').add({
+      token: currentToken,
+      timestamp: Date.now()
+    }).then(() => {
+      console.log("Token guardado en Firestore correctamente");
+    }).catch((err) => {
+      console.error("Error guardando token en Firestore:", err);
+    });
+  } else {
+    console.log("No se pudo obtener el token.");
+  }
+}).catch((err) => {
+  console.error("Error al obtener el token:", err);
+});
+// --- FIN PASO 4 ---
 }
 // --- FIN PASO 3 ---
   })
