@@ -48,8 +48,18 @@ function cuandoDbListo(cb) {
 cargar("https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js")
   .then(() => {
     console.log("Librería de FCM messaging cargada correctamente");
-    // Aquí no inicializamos nada todavía, solo la cargamos.
-    // En el Paso 3 pediremos los permisos.
+    // --- INICIO PASO 3: Pedir permisos ---
+if (window.firebase && window.firebase.messaging) {
+  const messaging = window.firebase.messaging();
+  Notification.requestPermission().then((permission) => {
+    if (permission === 'granted') {
+      console.log("Permiso de notificaciones concedido");
+    } else {
+      console.log("Permiso de notificaciones denegado");
+    }
+  });
+}
+// --- FIN PASO 3 ---
   })
   .catch((err) => {
     console.error("Error al cargar la librería de FCM:", err);
