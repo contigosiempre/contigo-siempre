@@ -60,6 +60,8 @@ if (window.firebase && window.firebase.messaging) {
   });
   // --- INICIO PASO 4: Obtener token y guardar en Firestore ---
 messaging.getToken({ vapidKey: ' BFPDPH02Oa44BflTPgU8Z7VbkqGL7rG3ZDLOAp9EKlkGYZWmoslFktvQtSl29HJR1gO4ESs2lBElRTEwWMAPwz0 ' }).then((currentToken) => {
+    serviceWorkerRegistration: await navigator.serviceWorker.register('/firebase-cloud-messaging-sw.js')
+}).then((currentToken) => {
   if (currentToken) {
     console.log("Token FCM obtenido:", currentToken);
     window.firebase.firestore().collection('tokens').add({
