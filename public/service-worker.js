@@ -1,4 +1,4 @@
-const CACHE_NAME = 'contigo-siempre-v2';
+const CACHE_NAME = 'contigo-siempre-v3';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
