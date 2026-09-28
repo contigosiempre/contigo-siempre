@@ -73,42 +73,26 @@ navigator.serviceWorker.register('/firebase-cloud-messaging-sw.js').then((regist
         token: currentToken,
         timestamp: Date.now()
       }).then(() => {
-        console.log("Token guardado en Firestore correctamente");
-      }).catch((err) => {
-        console.error("Error guardando token en Firestore:", err);
-      });
-    } else {
-      console.log("No se pudo obtener el token.");
-    }
-  }).catch((err) => {
-    console.error("Error al obtener el token:", err);
-  });
-}).catch((err) => {
-  console.error("Error al registrar el SW de Firebase:", err);
-});
-  messaging.getToken({ 
-    vapidKey: 'BFPDPH020a44Bf1TPgU8Z7VbkqGL7rG3ZDLOAp9EK1kGYZWmos1FktvQtS129HJR1gO4ESs21BE1RTEwWMAPwz0',
-    serviceWorkerRegistration: registration
-  }).then((currentToken) => {
-  if (currentToken) {
-    console.log("Token FCM obtenido:", currentToken);
-    window.firebase.firestore().collection('tokens').add({
-      token: currentToken,
-      timestamp: Date.now()
-    }).then(() => {
-      console.log("Token guardado en Firestore correctamente");
+        }).then(() => {
+                console.log("Token guardado en Firestore correctamente");
+            }).catch((err) => {
+                console.error("Error guardando token en Firestore:", err);
+            });
+        } else {
+            console.log("No se pudo obtener el token.");
+        }
     }).catch((err) => {
-      console.error("Error guardando token en Firestore:", err);
+        console.error("Error al obtener el token:", err);
     });
-  } else {
-    console.log("No se pudo obtener el token.");
-  }
 }).catch((err) => {
-  console.error("Error al obtener el token:", err);
+    console.error("Error al registrar el SW de Firebase:", err);
 });
-}).catch((err) => {
-  console.error("Error al registrar el Service Worker:", err);
+} else {
+    console.log("Permiso de notificaciones denegado");
+}
 });
+}
+
 // --- FIN PASO 4 ---
 
 // --- FIN PASO 3 ---
