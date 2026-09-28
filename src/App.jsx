@@ -60,7 +60,7 @@ if (window.firebase && window.firebase.messaging) {
   });
   // --- INICIO PASO 4: Obtener token y guardar en Firestore ---
 // --- SOLUCIÓN DEFINITIVA: Registrar el SW directamente sin depender de Firebase ---
-navigator.serviceWorker.register('/firebase-messaging-sw.js').then((registration) => {
+navigator.serviceWorker.register('/firebase-cloud-messaging-sw.js').then((registration) => {
   console.log("SW de Firebase registrado correctamente");
   
   messaging.getToken({ 
