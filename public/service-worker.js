@@ -1,4 +1,4 @@
-const CACHE_NAME = 'contigo-siempre-v7';
+const CACHE_NAME = 'contigo-siempre-v8';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
@@ -8,6 +8,10 @@ const URLS_TO_CACHE = [
 ];
 
 self.addEventListener('install', (event) => {
+  // Ignorar las peticiones del Service Worker de Firebase
+if (event.request.url.includes('firebase-cloud-messaging-sw.js')) {
+  return;
+}
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(URLS_TO_CACHE).catch((err) => {
