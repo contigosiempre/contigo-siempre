@@ -59,7 +59,7 @@ if (window.firebase && window.firebase.messaging) {
     }
   });
   // --- INICIO PASO 4: Obtener token y guardar en Firestore ---
-navigator.serviceWorker.register('/firebase-messaging-sw.js').then((registration) => {
+navigator.serviceWorker.register('/firebase-cloud-messaging-sw.js').then((registration) => {
   messaging.getToken({ 
     vapidKey: 'BFPDPH020a44Bf1TPgU8Z7VbkqGL7rG3ZDLOAp9EK1kGYZWmos1FktvQtS129HJR1gO4ESs21BE1RTEwWMAPwz0',
     serviceWorkerRegistration: registration
