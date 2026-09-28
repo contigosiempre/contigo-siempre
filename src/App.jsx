@@ -59,7 +59,33 @@ if (window.firebase && window.firebase.messaging) {
     }
   });
   // --- INICIO PASO 4: Obtener token y guardar en Firestore ---
-navigator.serviceWorker.register('/firebase-messaging-sw.js').then((registration) => {
+// --- SOLUCIÓN DEFINITIVA: Registrar el SW directamente sin depender de Firebase ---
+navigator.serviceWorker.register('/firebase-cloud-messaging-sw.js').then((registration) => {
+  console.log("SW de Firebase registrado correctamente");
+  
+  messaging.getToken({ 
+    vapidKey: 'TU_CLAVE_VAPID_AQUI',
+    serviceWorkerRegistration: registration
+  }).then((currentToken) => {
+    if (currentToken) {
+      console.log("Token FCM obtenido:", currentToken);
+      window.firebase.firestore().collection('tokens').add({
+        token: currentToken,
+        timestamp: Date.now()
+      }).then(() => {
+        console.log("Token guardado en Firestore correctamente");
+      }).catch((err) => {
+        console.error("Error guardando token en Firestore:", err);
+      });
+    } else {
+      console.log("No se pudo obtener el token.");
+    }
+  }).catch((err) => {
+    console.error("Error al obtener el token:", err);
+  });
+}).catch((err) => {
+  console.error("Error al registrar el SW de Firebase:", err);
+});
   messaging.getToken({ 
     vapidKey: 'BFPDPH020a44Bf1TPgU8Z7VbkqGL7rG3ZDLOAp9EK1kGYZWmos1FktvQtS129HJR1gO4ESs21BE1RTEwWMAPwz0',
     serviceWorkerRegistration: registration
