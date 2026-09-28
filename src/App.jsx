@@ -72,13 +72,10 @@ navigator.serviceWorker.register('/firebase-messaging-sw.js').then((registration
       window.firebase.firestore().collection('tokens').add({
         token: currentToken,
         timestamp: Date.now()
-      }).then(() => {
-        }).then(() => {
+         }).then(() => {
                 console.log("Token guardado en Firestore correctamente");
             }).catch((err) => {
-                console.error("Error guardando token en Firestore:", err);
-            });
-        } else {
+               } else {
             console.log("No se pudo obtener el token.");
         }
     }).catch((err) => {
@@ -90,21 +87,11 @@ navigator.serviceWorker.register('/firebase-messaging-sw.js').then((registration
 } else {
     console.log("Permiso de notificaciones denegado");
 }
-});
+ });
 }
 
-// --- FIN PASO 4 ---
 
-// --- FIN PASO 3 ---
-  })
-  .catch((err) => {
-    console.error("Error al cargar la librería de FCM:", err);
-  });
-// --- FIN PASO 2 ---
-
-  });
-}
-
+            
 const LIGHT = { INK: "#1A237E", TEAL: "#1976D2", CORAL: "#D32F2F", CREAM: "#FFFFFF", PAPER: "#FFFFFF", LINE: "#E0E4EB", MUTED: "#6B7A8F", AMBER: "#F9A825", GREEN: "#43A047", GOLD: "#F9A825", BG: "#F0F4F8", SHADOW: "0 2px 8px rgba(25,118,210,0.08)" };
 const DARK = { INK: "#F5F7FA", TEAL: "#64B5F6", CORAL: "#EF5350", CREAM: "#0F1B2E", PAPER: "#16243A", LINE: "#2A3A52", MUTED: "#90A4BE", AMBER: "#FFB74D", GREEN: "#66BB6A", GOLD: "#FFB74D", BG: "#0A1626", SHADOW: "0 2px 8px rgba(0,0,0,0.3)" };
 
