@@ -64,7 +64,7 @@ navigator.serviceWorker.register('/firebase-messaging-sw.js').then((registration
   console.log("SW de Firebase registrado correctamente");
   
   messaging.getToken({ 
-    vapidKey: 'TU_CLAVE_VAPID_AQUI',
+    vapidKey: 'BFPDPH02Oa44BflTPgU8Z7VbkqGL7rG3ZDLOAp9EKlkGYZWmoslFktvQtSl29HJR1gO4ESs2lBElRTEwWMAPwz0',
     serviceWorkerRegistration: registration
   }).then((currentToken) => {
     if (currentToken) {
