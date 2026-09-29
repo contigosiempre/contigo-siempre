@@ -83,7 +83,6 @@ export default function App() {
         allowLocalhostAsSecureOrigin: true,
       });
       console.log("OneSignal inicializado correctamente");
-      OneSignal.showSlidedownPrompt();
     });
     // --- FIN ONE SIGNAL ---
   }, []);
