@@ -1102,11 +1102,20 @@ export default function App() {
             setFirebaseEstado(d ? "conectado" : "local");
         });
         
-        OneSignal.init({
-            appId: "15b5f9cf-d380-41ae-9b43-31a8a978efd6",
-            notifyButton: { enable: false }
-        });
-    }, []);
+      // --- INICIO ONE SIGNAL ---
+if (typeof window !== 'undefined') {
+  OneSignal.init({
+    appId: "15b5f9cf-d380-41ae-9b43-31a8a978efd6",
+    notifyButton: { enable: false },
+    serviceWorkerPath: 'OneSignalSDKWorker.js',
+    allowLocalhostAsSecureOrigin: true,
+  }).then(() => {
+    console.log("OneSignal inicializado correctamente");
+  }).catch((err) => {
+    console.error("Error al inicializar OneSignal:", err);
+  });
+}
+// --- FIN ONE SIGNAL ---
     if (stage !== "app" || !codigo || !personaActualId) return;
     const enviarHeartbeat = async () => {
       if (!isOnline) return;
