@@ -73,15 +73,17 @@ navigator.serviceWorker.register('/firebase-messaging-sw.js').then((registration
       window.firebase.firestore().collection('tokens').add({
         token: currentToken,
         timestamp: Date.now()
-         }).then(() => {
-                console.log("Token guardado en Firestore correctamente");
-            }).catch((err) => {
-               } else {
-            console.log("No se pudo obtener el token.");
-        }
+        }).then(() => {
+      console.log("Token guardado en Firestore correctamente");
     }).catch((err) => {
-        console.error("Error al obtener el token:", err);
+      console.error("Error guardando token en Firestore:", err);
     });
+  } else {
+    console.log("No se pudo obtener el token.");
+  }
+}).catch((err) => {
+  console.error("Error al obtener el token:", err);
+});
 }).catch((err) => {
     console.error("Error al registrar el SW de Firebase:", err);
 });
