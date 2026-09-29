@@ -1,4 +1,4 @@
-const CACHE_NAME = 'contigo-siempre-v8';
+const CACHE_NAME = 'contigo-siempre-v9';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
@@ -7,22 +7,17 @@ const URLS_TO_CACHE = [
   '/icons/icon-512.png'
 ];
 
+// Instalar y cachear archivos básicos
 self.addEventListener('install', (event) => {
-
-  // Ignorar las peticiones del Service Worker de Firebase
-if (event.request.url.includes('firebase-cloud-messaging-sw.js')) {
-  return;
-}
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(URLS_TO_CACHE).catch((err) => {
-        console.warn('No se pudieron cachear todos los archivos:', err);
-      });
+      return cache.addAll(URLS_TO_CACHE);
     })
   );
   self.skipWaiting();
 });
 
+// Activar y limpiar cachés viejos
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -38,57 +33,19 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
+// Manejar peticiones (fetch)
 self.addEventListener('fetch', (event) => {
-  // Ignorar las peticiones de OneSignal
-if (event.request.url.includes('OneSignalSDK') || event.request.url.includes('onesignal.com')) {
-  return;
-}
-  if (event.request.method !== 'GET') return;
-  const url = new URL(event.request.url);
-  if (url.origin !== self.location.origin) return;
-  
-  event.respondWith(
-    caches.match(event.request).then((cached) => {
-      return cached || fetch(event.request).catch(() => {
-        return caches.match('/index.html');
-      });
-    })
-  );
-});
-
-self.addEventListener('push', (event) => {
-  let data = { title: 'Contigo Siempre', body: 'Tienes un recordatorio pendiente' };
-  try {
-    if (event.data) {
-      data = event.data.json();
-    }
-  } catch (e) {
-    console.warn('Error parseando push:', e);
+  // Ignorar peticiones de OneSignal
+  if (event.request.url.includes('OneSignalSDK') || event.request.url.includes('onesignal.com')) {
+    return;
   }
-  const options = {
-    body: data.body,
-    icon: '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
-    vibrate: [400, 200, 400, 200, 400],
-    data: data.data || {},
-    requireInteraction: true,
-    tag: data.tag || 'contigo-notification'
-  };
-  event.waitUntil(self.registration.showNotification(data.title, options));
-});
+  
+  // Ignorar peticiones que no sean GET
+  if (event.request.method !== 'GET') return;
 
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
-          return client.focus();
-        }
-      }
-      if (clients.openWindow) {
-        return clients.openWindow('/');
-      }
+  event.respondWith(
+    caches.match(event.request).then((response) => {
+      return response || fetch(event.request);
     })
   );
 });
