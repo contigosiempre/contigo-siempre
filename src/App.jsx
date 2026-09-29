@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Heart, User, Users, ArrowRight } from "lucide-react";
-import OneSignal from 'react-onesignal';
 
 // ==================== FIREBASE ====================
 const FIREBASE_CONFIG = {
@@ -69,20 +68,23 @@ export default function App() {
       setFirebaseEstado(d ? "conectado" : "local");
     });
 
-    // --- INICIO ONE SIGNAL ---
-    if (typeof window !== 'undefined') {
-      OneSignal.init({
+    // --- INICIO ONE SIGNAL (CDN) ---
+    const script = document.createElement('script');
+    script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
+    script.defer = true;
+    document.head.appendChild(script);
+
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    window.OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({
         appId: "15b5f9cf-d380-41ae-9b43-31a8a978efd6",
         notifyButton: { enable: false },
         serviceWorkerPath: 'OneSignalSDKWorker.js',
         allowLocalhostAsSecureOrigin: true,
-      }).then(() => {
-        console.log("OneSignal inicializado correctamente");
-        OneSignal.showSlidedownPrompt();
-      }).catch((err) => {
-        console.error("Error al inicializar OneSignal:", err);
       });
-    }
+      console.log("OneSignal inicializado correctamente");
+      OneSignal.showSlidedownPrompt();
+    });
     // --- FIN ONE SIGNAL ---
   }, []);
 
