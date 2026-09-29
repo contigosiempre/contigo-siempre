@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Clock, Check, AlertTriangle, Plus, X, ArrowRight, User, Users, Heart, PackageOpen, RotateCcw, KeyRound, Loader2, Copy, Truck, Store, ShoppingCart, ExternalLink, Sparkles, ShieldCheck, MessageSquare, Camera, Calendar, TrendingDown, Award, MapPin, Lock, Crown, Moon, Sun, Phone, FileText, Share2, StickyNote, UserPlus, ChevronDown, Info, ScrollText, BarChart3, Trash2, Menu, Pill, Bell, HelpCircle, Settings, Flame, Tag, Download, Activity, WifiOff, Wifi, Volume2, VolumeX, Vibrate, BellRing, Cake } from "lucide-react";
+importScripts('https://onesignal.com');
 
 // ================== FIREBASE ==================
 const FIREBASE_CONFIG = {
@@ -1096,12 +1097,16 @@ export default function App() {
     return () => { window.removeEventListener("online", handleOnline); window.removeEventListener("offline", handleOffline); };
   }, []);
 
-  useEffect(() => { const id = setInterval(() => setNowMin(toMinutes(nowHHMM())), 30000); return () => clearInterval(id); }, []);
-  useEffect(() => { setStage("entrada"); }, []);
-  useEffect(() => { cuandoDbListo((d) => { setFirebaseEstado(d ? "conectado" : "local"); }); }, []);
-  useEffect(() => { if (familia && !personaActualId && familia.personas && familia.personas.length > 0) setPersonaActualId(familia.personas[0].id); }, [familia, personaActualId]);
-
-  useEffect(() => {
+   useEffect(() => {
+        cuandoDbListo((d) => {
+            setFirebaseEstado(d ? "conectado" : "local");
+        });
+        
+        OneSignal.init({
+            appId: "15b5f9cf-d380-41ae-9b43-31a8a978efd6",
+            notifyButton: { enable: false }
+        });
+    }, []);
     if (stage !== "app" || !codigo || !personaActualId) return;
     const enviarHeartbeat = async () => {
       if (!isOnline) return;
