@@ -68,23 +68,15 @@ export default function App() {
       setFirebaseEstado(d ? "conectado" : "local");
     });
 
-    // --- INICIO ONE SIGNAL (CDN) ---
-    const script = document.createElement('script');
-    script.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
-    script.defer = true;
-    document.head.appendChild(script);
-
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
-    window.OneSignalDeferred.push(async function(OneSignal) {
-      await OneSignal.init({
-        appId: "15b5f9cf-d380-41ae-9b43-31a8a978efd6",
-        notifyButton: { enable: false },
-        serviceWorkerPath: 'OneSignalSDKWorker.js',
-        allowLocalhostAsSecureOrigin: true,
-      });
-      console.log("OneSignal inicializado correctamente");
-    });
-    // --- FIN ONE SIGNAL ---
+ // --- INICIO ONE SIGNAL (CÓDIGO OFICIAL) ---
+window.OneSignalDeferred = window.OneSignalDeferred || [];
+OneSignalDeferred.push(function(OneSignal) {
+  OneSignal.init({
+    appId: "15b5f9cf-d380-41ae-9b43-31a8a978efd6",
+    allowLocalhostAsSecureOrigin: true,
+  });
+});
+// --- FIN ONE SIGNAL ---
   }, []);
 
   const handleDemo = (tipo) => {
