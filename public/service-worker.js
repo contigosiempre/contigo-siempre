@@ -8,6 +8,7 @@ const URLS_TO_CACHE = [
 ];
 
 self.addEventListener('install', (event) => {
+
   // Ignorar las peticiones del Service Worker de Firebase
 if (event.request.url.includes('firebase-cloud-messaging-sw.js')) {
   return;
@@ -38,6 +39,10 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Ignorar las peticiones de OneSignal
+if (event.request.url.includes('OneSignalSDK') || event.request.url.includes('onesignal.com')) {
+  return;
+}
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
