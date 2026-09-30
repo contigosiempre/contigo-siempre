@@ -69,6 +69,11 @@ export default function App() {
     });
 
  // --- INICIO ONE SIGNAL (CÓDIGO OFICIAL) ---
+    const oneSignalScript = document.createElement('script');
+oneSignalScript.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
+oneSignalScript.defer = true;
+document.head.appendChild(oneSignalScript);
+
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 OneSignalDeferred.push(function(OneSignal) {
   OneSignal.init({
