@@ -35,11 +35,16 @@ self.addEventListener('activate', (event) => {
 
 // Manejar peticiones (fetch)
 self.addEventListener('fetch', (event) => {
-  // Ignorar peticiones de OneSignal
-  if (event.request.url.includes('OneSignalSDK') || event.request.url.includes('onesignal.com')) {
+  // Solo manejar peticiones del propio dominio
+  if (!event.request.url.startsWith(self.location.origin)) {
     return;
   }
-  
+
+  // Ignorar peticiones de OneSignal y Firebase
+  if (event.request.url.includes('onesignal') || event.request.url.includes('firebase')) {
+    return;
+  }
+
   // Ignorar peticiones que no sean GET
   if (event.request.method !== 'GET') return;
 
