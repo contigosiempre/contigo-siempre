@@ -1,5 +1,8 @@
-const CACHE_NAME = 'contigo-siempre-v9';
-const URLS_TO_CACHE = [
+// Cambiamos a v5 para obligar al teléfono a borrar el Service Worker viejo
+const CACHE_NAME = 'contigo-v5';
+
+// Archivos estáticos principales que sí queremos guardar en el caché del celular
+const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
@@ -7,50 +10,49 @@ const URLS_TO_CACHE = [
   '/icons/icon-512.png'
 ];
 
-// Instalar y cachear archivos básicos
+// 1. INSTALACIÓN: Guarda los archivos en caché
 self.addEventListener('install', (event) => {
+  self.skipWaiting(); // Fuerza al nuevo Service Worker a tomar el control de inmediato
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(URLS_TO_CACHE);
+      return cache.addAll(ASSETS_TO_CACHE);
     })
   );
-  self.skipWaiting();
 });
 
-// Activar y limpiar cachés viejos
+// 2. ACTIVACIÓN: Borra los cachés viejos (v1, v2, v3, v4)
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
+    caches.keys().then((cacheNames) => {
       return Promise.all(
-        keys.map((key) => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
+        cacheNames.map((cache) => {
+          if (cache !== CACHE_NAME) {
+            console.log('Borrando caché antiguo:', cache);
+            return caches.delete(cache);
           }
         })
       );
-    })
+    }).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-// Manejar peticiones (fetch)
+// 3. PETICIONES (FETCH): Filtra para responder SOLO sobre nuestro propio sitio
 self.addEventListener('fetch', (event) => {
-  // Solo manejar peticiones del propio dominio
-  if (!event.request.url.startsWith(self.location.origin)) {
+  const url = new URL(event.request.url);
+
+  // REGLA CLAVE: Si la petición NO es de nuestro propio dominio (ej. OneSignal, Firebase, Google Fonts),
+  // la dejamos pasar directo a internet sin interceptarla.
+  if (url.origin !== self.location.origin) {
     return;
   }
 
-  // Ignorar peticiones de OneSignal y Firebase
-  if (event.request.url.includes('onesignal') || event.request.url.includes('firebase')) {
-    return;
-  }
-
-  // Ignorar peticiones que no sean GET
-  if (event.request.method !== 'GET') return;
-
+  // Si es un archivo de nuestro sitio, intenta entregarlo desde el caché o busca en la red
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
+    caches.match(event.request).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      return fetch(event.request);
     })
   );
 });
