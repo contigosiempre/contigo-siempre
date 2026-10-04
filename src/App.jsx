@@ -149,13 +149,72 @@ export default function App() {
   }
 
   // Pantalla de la app (Demo adulto mayor o Cuidador)
+  // ==================== PANTALLA DEL ADULTO MAYOR ====================
+  if (modoDemo === "adulto" && stage === "app") {
+    return (
+      <div style={{ minHeight: "100vh", background: C.CREAM, fontFamily: "'Space Grotesk', 'Segoe UI', sans-serif", padding: "20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+        
+        {/* Botón de accesibilidad */}
+        <div style={{ position: "absolute", top: "20px", right: "20px", display: "flex", gap: "10px" }}>
+          <button onClick={() => setDarkMode(!darkMode)} style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: "50%", width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            {darkMode ? <Sun size={20} color={C.INK} /> : <Moon size={20} color={C.INK} />}
+          </button>
+          <button style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: "50%", width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
+            <Type size={20} color={C.INK} />
+          </button>
+        </div>
+
+        {/* Tarjeta principal */}
+        <div style={{ background: C.PAPER, borderRadius: "24px", padding: "30px 20px", maxWidth: "400px", width: "100%", textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.1)", border: `2px solid ${C.CORAL}` }}>
+          
+          <h1 style={{ color: C.CORAL, fontSize: "24px", margin: "0 0 20px" }}>¡ES HORA DE TOMAR!</h1>
+          
+          {/* Nombre del medicamento */}
+          <div style={{ background: C.TEAL, borderRadius: "16px", padding: "20px", marginBottom: "20px" }}>
+            <h2 style={{ color: "#FFF", fontSize: "28px", margin: 0 }}>💊 Losartán 50mg</h2>
+          </div>
+
+          {/* Notas del medicamento */}
+          <div style={{ textAlign: "left", marginBottom: "24px" }}>
+            <p style={{ color: C.INK, fontSize: "20px", margin: "8px 0" }}>📝 Tomar 1 tableta</p>
+            <p style={{ color: C.INK, fontSize: "20px", margin: "8px 0" }}>💧 Con un vaso de agua</p>
+            <p style={{ color: C.INK, fontSize: "20px", margin: "8px 0" }}>🍽️ Después del desayuno</p>
+          </div>
+
+          {/* Botón "Ya la tomé" */}
+          <button style={{ width: "100%", background: C.OK, color: "#FFF", border: "none", borderRadius: "16px", padding: "20px", fontSize: "22px", fontWeight: "bold", cursor: "pointer", marginBottom: "12px" }}>
+            ✓ YA LA TOMÉ
+          </button>
+
+          {/* Botón "Postergar" */}
+          <button style={{ width: "100%", background: "transparent", color: C.CORAL, border: `2px solid ${C.CORAL}`, borderRadius: "16px", padding: "16px", fontSize: "18px", fontWeight: "600", cursor: "pointer", marginBottom: "24px" }}>
+            ⏰ POSTERGAR 5 MIN
+          </button>
+        </div>
+
+        {/* Botones de acción rápida */}
+        <div style={{ maxWidth: "400px", width: "100%", marginTop: "20px" }}>
+          <button style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginBottom: "10px" }}>
+            📞 LLAMAR AL CUIDADOR
+          </button>
+          <button style={{ width: "100%", background: C.CORAL, color: "#FFF", border: "none", borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginBottom: "10px" }}>
+            🚨 CONTACTOS DE EMERGENCIA
+          </button>
+          <button onClick={handleVolver} style={{ width: "100%", background: "transparent", color: C.MUTED, border: "none", padding: "12px", fontSize: "14px", cursor: "pointer" }}>
+            Volver al inicio
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ==================== PANTALLA DEL CUIDADOR (Próximamente) ====================
   return (
-    <div style={{ minHeight: "100vh", background: C.CREAM, fontFamily: "'Space Grotesk', 'Segoe UI', sans-serif", padding: "20px" }}>
-      <h2 style={{ color: C.INK }}>App cargada correctamente ✅</h2>
-      <p style={{ color: C.MUTED }}>Demo: {modoDemo}</p>
+    <div style={{ minHeight: "100vh", background: C.CREAM, fontFamily: "'Space Grotesk', 'Segoe UI', sans-serif", padding: "20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+      <h2 style={{ color: C.INK }}>Demo del Cuidador</h2>
+      <p style={{ color: C.MUTED }}>Próximamente: Canasta, Historial, Ajustes</p>
       <button onClick={handleVolver} style={{ background: C.TEAL, color: "#FFF", border: "none", borderRadius: "12px", padding: "12px 24px", fontSize: "16px", cursor: "pointer" }}>
         Volver al inicio
       </button>
     </div>
   );
-}
