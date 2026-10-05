@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Heart, User, Users, ArrowRight, Moon, Sun, Type, X, CheckCircle, XCircle, Clock, HelpCircle } from "lucide-react";
+import { Heart, User, Users, ArrowRight, Moon, Sun, Type, X, CheckCircle, XCircle, Menu, ShoppingCart, Camera, Phone, Clock, Settings, Home, List, HelpCircle, LogOut } from "lucide-react";
 
 // ==================== FIREBASE ====================
 const FIREBASE_CONFIG = {
@@ -53,6 +53,19 @@ function cuandoDbListo(cb) {
 const LIGHT = { INK: "#1A237E", TEAL: "#1976D2", CORAL: "#D32F2F", CREAM: "#FFFFFF", PAPER: "#FFFFFF", LINE: "#E0E4EB", MUTED: "#5F6B7A", OK: "#2E7D32" };
 const DARK = { INK: "#F5F7FA", TEAL: "#64B5F6", CORAL: "#EF5350", CREAM: "#0F182E", PAPER: "#16243A", LINE: "#2A3A52", MUTED: "#9FB0C3", OK: "#66BB6A" };
 
+// ==================== LISTA DE MEDICAMENTOS CRÍTICOS ====================
+const MEDICAMENTOS_CRITICOS = [
+  "insulina", "warfarina", "anticoagulante", "heparina", "clopidogrel",
+  "metformina", "glibenclamida", "levotiroxina", "digoxina", "fenitoina",
+  "carbamazepina", "valproato", "litio", "tacrolimus", "ciclosporina",
+  "prednisona", "dexametasona", "morfina", "fentanilo", "oxicodona"
+];
+
+const esCritico = (nombre) => {
+  const nombreLower = nombre.toLowerCase();
+  return MEDICAMENTOS_CRITICOS.some(med => nombreLower.includes(med));
+};
+
 // ==================== COMPONENTE PRINCIPAL ====================
 export default function App() {
   const [stage, setStage] = useState("welcome");
@@ -60,9 +73,9 @@ export default function App() {
   const [modoDemo, setModoDemo] = useState(null);
   const [darkMode, setDarkMode] = useState(false);
   const [fontSize, setFontSize] = useState(1);
-
-  // Pestaña activa del cuidador
+  const [daltonismo, setDaltonismo] = useState("ninguno");
   const [tabActiva, setTabActiva] = useState("Inicio");
+  const [menuAbierto, setMenuAbierto] = useState(false);
 
   // Tutorial
   const [showTutorial, setShowTutorial] = useState(false);
@@ -70,14 +83,14 @@ export default function App() {
 
   // Medicamentos
   const [medicamentos, setMedicamentos] = useState([
-    { id: "1", nombre: "Losartán 50mg", dosis: "1 tableta", tipo: "tableta", ml: "", gotas: "", notas: "Tomar con agua, después del desayuno", horarios: "08:00, 20:00", color: "teal" },
-    { id: "2", nombre: "Metformina 850mg", dosis: "5 ml", tipo: "ml", ml: "5", gotas: "", notas: "Tomar con la cena", horarios: "21:00", color: "coral" }
+    { id: "1", nombre: "Losartán 50mg", dosis: "1 tableta", tipo: "tableta", ml: "", gotas: "", notas: "Tomar con agua, después del desayuno", horarios: "08:00, 20:00", color: "teal", stock: 30, stockInicial: 30, critico: false, verificado: true },
+    { id: "2", nombre: "Insulina", dosis: "10 unidades", tipo: "otra", ml: "", gotas: "", notas: "Aplicar en el abdomen", horarios: "08:00", color: "coral", stock: 5, stockInicial: 10, critico: true, verificado: false }
   ]);
 
-  // Historial (ejemplo)
-  const [historial] = useState([
+  // Historial
+  const [historial, setHistorial] = useState([
     { id: "h1", medicamento: "Losartán 50mg", fecha: "2026-10-04", hora: "08:00", estado: "tomado" },
-    { id: "h2", medicamento: "Metformina 850mg", fecha: "2026-10-03", hora: "21:00", estado: "tomado" },
+    { id: "h2", medicamento: "Insulina", fecha: "2026-10-03", hora: "08:00", estado: "tomado" },
     { id: "h3", medicamento: "Losartán 50mg", fecha: "2026-10-03", hora: "20:00", estado: "no_tomado" },
     { id: "h4", medicamento: "Losartán 50mg", fecha: "2026-10-02", hora: "08:00", estado: "tomado" }
   ]);
@@ -92,22 +105,32 @@ export default function App() {
     gotas: "",
     notas: "",
     horarios: "",
-    color: "teal"
+    color: "teal",
+    stock: "30"
   });
+
+  // Modal de verificación por foto
+  const [showFotoModal, setShowFotoModal] = useState(false);
+  const [fotoVerificacion, setFotoVerificacion] = useState(null);
+
+  // Modal de vinculación
+  const [showVinculacion, setShowVinculacion] = useState(false);
+  const [codigoVinculacion, setCodigoVinculacion] = useState("");
+  const [codigoIngresado, setCodigoIngresado] = useState("");
 
   const C = darkMode ? DARK : LIGHT;
 
   // Pasos del tutorial
   const tutorialPasos = [
-    { titulo: "Bienvenido a Contigo Siempre", texto: "Te enseñaré a usar la app en 9 pasos. Empecemos por lo básico.", target: null },
-    { titulo: "Crea tu familia", texto: "Haz clic en 'Soy nueva familia' para crear un nuevo grupo familiar. O ingresa un código si ya tienes uno.", target: "welcome" },
-    { titulo: "Agrega un adulto mayor", texto: "En Ajustes, agrega a la persona a la que le recordarás sus medicamentos.", target: "ajustes" },
-    { titulo: "Agrega un medicamento", texto: "En la pestaña Canasta, haz clic en '+ Agregar medicamento' para crear un nuevo recordatorio.", target: "canasta" },
-    { titulo: "Configura los horarios", texto: "En el formulario, define los horarios en que el adulto mayor debe tomar cada medicamento.", target: "canasta" },
-    { titulo: "Pantalla del adulto mayor", texto: "Esta es la pantalla que verá el adulto mayor. Es simple, con letra grande y botones claros.", target: "adulto" },
-    { titulo: "Confirma una toma", texto: "Cuando el adulto mayor tome su medicamento, debe presionar el botón verde '✓ YA LA TOMÉ'.", target: "adulto" },
-    { titulo: "Revisa el historial", texto: "En la pestaña Historial verás todas las tomas confirmadas y no confirmadas.", target: "historial" },
-    { titulo: "Invita a otro cuidador", texto: "En Ajustes, comparte el código de familia para que otro familiar también pueda ayudar.", target: "ajustes" }
+    { titulo: "Bienvenido a Contigo Siempre", texto: "Te enseñaré a usar la app en 9 pasos. Empecemos por lo básico." },
+    { titulo: "Crea tu familia", texto: "Haz clic en 'Soy nueva familia' para crear un nuevo grupo familiar. O ingresa un código si ya tienes uno." },
+    { titulo: "Agrega un adulto mayor", texto: "En Ajustes, agrega a la persona a la que le recordarás sus medicamentos." },
+    { titulo: "Agrega un medicamento", texto: "En la pestaña Canasta, haz clic en '+ Agregar medicamento' para crear un nuevo recordatorio." },
+    { titulo: "Configura los horarios", texto: "En el formulario, define los horarios en que el adulto mayor debe tomar cada medicamento." },
+    { titulo: "Pantalla del adulto mayor", texto: "Esta es la pantalla que verá el adulto mayor. Es simple, con letra grande y botones claros." },
+    { titulo: "Confirma una toma", texto: "Cuando el adulto mayor tome su medicamento, debe presionar el botón verde '✓ YA LA TOMÉ'." },
+    { titulo: "Revisa el historial", texto: "En la pestaña Historial verás todas las tomas confirmadas y no confirmadas." },
+    { titulo: "Invita a otro cuidador", texto: "En Ajustes, comparte el código de familia para que otro familiar también pueda ayudar." }
   ];
 
   useEffect(() => {
@@ -141,6 +164,7 @@ export default function App() {
     setStage("welcome");
     setModoDemo(null);
     setShowTutorial(false);
+    setMenuAbierto(false);
   };
 
   const handleIniciarTutorial = () => {
@@ -181,16 +205,38 @@ export default function App() {
       gotas: nuevoMed.gotas,
       notas: nuevoMed.notas,
       horarios: nuevoMed.horarios,
-      color: nuevoMed.color
+      color: esCritico(nuevoMed.nombre) ? "coral" : nuevoMed.color,
+      stock: parseInt(nuevoMed.stock) || 30,
+      stockInicial: parseInt(nuevoMed.stock) || 30,
+      critico: esCritico(nuevoMed.nombre),
+      verificado: false
     };
 
     setMedicamentos([...medicamentos, med]);
-    setNuevoMed({ nombre: "", tipo: "tableta", dosis: "", ml: "", gotas: "", notas: "", horarios: "", color: "teal" });
+    setNuevoMed({ nombre: "", tipo: "tableta", dosis: "", ml: "", gotas: "", notas: "", horarios: "", color: "teal", stock: "30" });
     setShowModal(false);
   };
 
   const handleEliminarMedicamento = (id) => {
     setMedicamentos(medicamentos.filter(m => m.id !== id));
+  };
+
+  const handleConfirmarToma = (id) => {
+    setMedicamentos(medicamentos.map(m => {
+      if (m.id === id && m.stock > 0) {
+        return { ...m, stock: m.stock - 1 };
+      }
+      return m;
+    }));
+  };
+
+  const handleAjustarStock = (id, nuevoStock) => {
+    setMedicamentos(medicamentos.map(m => {
+      if (m.id === id) {
+        return { ...m, stock: parseInt(nuevoStock) || 0 };
+      }
+      return m;
+    }));
   };
 
   // ==================== PANTALLA DE INICIO ====================
@@ -213,7 +259,7 @@ export default function App() {
           <button style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginBottom: "12px" }}>
             Soy nueva familia
           </button>
-          <button style={{ width: "100%", background: "transparent", color: C.INK, border: `2px solid ${C.LINE}`, borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginBottom: "24px" }}>
+          <button onClick={() => setShowVinculacion(true)} style={{ width: "100%", background: "transparent", color: C.INK, border: `2px solid ${C.LINE}`, borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginBottom: "24px" }}>
             Ya tengo un código
           </button>
 
@@ -238,22 +284,26 @@ export default function App() {
           </button>
         </div>
 
-        {/* Tutorial modal */}
-        {showTutorial && (
+        {/* MODAL DE VINCULACIÓN */}
+        {showVinculacion && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", zIndex: 2000 }}>
-            <div style={{ background: C.PAPER, borderRadius: "20px", padding: "24px", maxWidth: "350px", width: "100%", textAlign: "center" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "16px" }}>
-                <HelpCircle size={20} color={C.TEAL} />
-                <span style={{ color: C.MUTED, fontSize: "12px" }}>Paso {tutorialPaso + 1} de {tutorialPasos.length}</span>
-              </div>
-              <h3 style={{ color: C.INK, fontSize: "18px", margin: "0 0 12px" }}>{tutorialPasos[tutorialPaso].titulo}</h3>
-              <p style={{ color: C.MUTED, fontSize: "14px", margin: "0 0 20px" }}>{tutorialPasos[tutorialPaso].texto}</p>
+            <div style={{ background: C.PAPER, borderRadius: "20px", padding: "30px 24px", maxWidth: "350px", width: "100%", textAlign: "center" }}>
+              <h3 style={{ color: C.INK, fontSize: "18px", margin: "0 0 8px" }}>Vincular con tu cuidador</h3>
+              <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 20px" }}>Ingresa el código de 6 dígitos que te dio tu cuidador.</p>
+              <input
+                type="text"
+                maxLength="6"
+                value={codigoIngresado}
+                onChange={(e) => setCodigoIngresado(e.target.value.replace(/\D/g, ""))}
+                placeholder="000000"
+                style={{ width: "100%", padding: "14px", borderRadius: "12px", border: `2px solid ${C.TEAL}`, fontSize: "24px", textAlign: "center", letterSpacing: "8px", marginBottom: "20px", boxSizing: "border-box" }}
+              />
               <div style={{ display: "flex", gap: "10px" }}>
-                <button onClick={handleAnteriorPaso} disabled={tutorialPaso === 0} style={{ flex: 1, background: "transparent", color: tutorialPaso === 0 ? C.LINE : C.MUTED, border: `1px solid ${C.LINE}`, borderRadius: "10px", padding: "10px", fontSize: "13px", cursor: tutorialPaso === 0 ? "not-allowed" : "pointer" }}>
-                  Anterior
+                <button onClick={() => setShowVinculacion(false)} style={{ flex: 1, background: "transparent", color: C.MUTED, border: `1px solid ${C.LINE}`, borderRadius: "10px", padding: "12px", fontSize: "14px", cursor: "pointer" }}>
+                  Cancelar
                 </button>
-                <button onClick={handleSiguientePaso} style={{ flex: 1, background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "10px", fontSize: "13px", fontWeight: "600", cursor: "pointer" }}>
-                  {tutorialPaso === tutorialPasos.length - 1 ? "Finalizar" : "Siguiente"}
+                <button onClick={() => { setShowVinculacion(false); handleDemo("adulto"); }} style={{ flex: 1, background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "12px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>
+                  Vincular
                 </button>
               </div>
             </div>
@@ -263,54 +313,54 @@ export default function App() {
     );
   }
 
-  // ==================== PANTALLA DEL ADULTO MAYOR ====================
+  // ==================== PANTALLA DEL ADULTO MAYOR (SIMPLIFICADA) ====================
   if (modoDemo === "adulto" && stage === "app") {
+    // Obtener el primer medicamento pendiente (el que toca ahora)
+    const medicamentoActual = medicamentos[0]; // En producción, se calcularía según la hora
+
     return (
-      <div style={{ minHeight: "100vh", background: C.CREAM, fontFamily: "'Space Grotesk', 'Segoe UI', sans-serif", padding: "20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative" }}>
+      <div style={{ minHeight: "100vh", background: C.CREAM, fontFamily: "'Space Grotesk', 'Segoe UI', sans-serif", padding: "20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
         
-        <div style={{ position: "absolute", top: "20px", right: "20px", display: "flex", gap: "10px" }}>
-          <button onClick={() => setDarkMode(!darkMode)} style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: "50%", width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-            {darkMode ? <Sun size={20} color={C.INK} /> : <Moon size={20} color={C.INK} />}
-          </button>
-          <button style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: "50%", width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-            <Type size={20} color={C.INK} />
-          </button>
-        </div>
-
-        <div style={{ background: C.PAPER, borderRadius: "24px", padding: "30px 20px", maxWidth: "400px", width: "100%", textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.1)", border: `2px solid ${C.CORAL}` }}>
+        {/* Tarjeta principal - SÚPER SIMPLE */}
+        <div style={{ background: C.PAPER, borderRadius: "24px", padding: "30px 20px", maxWidth: "400px", width: "100%", textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.1)", border: `3px solid ${medicamentoActual?.critico ? C.CORAL : C.TEAL}` }}>
           
-          <h1 style={{ color: C.CORAL, fontSize: "24px", margin: "0 0 20px" }}>¡ES HORA DE TOMAR!</h1>
+          <h1 style={{ color: medicamentoActual?.critico ? C.CORAL : C.TEAL, fontSize: "28px", margin: "0 0 24px", fontWeight: "bold" }}>
+            {medicamentoActual?.critico ? "¡URGENTE!" : "¡ES HORA DE TOMAR!"}
+          </h1>
           
-          <div style={{ background: C.TEAL, borderRadius: "16px", padding: "20px", marginBottom: "20px" }}>
-            <h2 style={{ color: "#FFF", fontSize: "28px", margin: 0 }}>💊 Losartán 50mg</h2>
+          <div style={{ background: medicamentoActual?.critico ? C.CORAL : C.TEAL, borderRadius: "20px", padding: "24px", marginBottom: "24px" }}>
+            <h2 style={{ color: "#FFF", fontSize: "32px", margin: 0 }}>💊 {medicamentoActual?.nombre || "Medicamento"}</h2>
           </div>
 
-          <div style={{ textAlign: "left", marginBottom: "24px" }}>
-            <p style={{ color: C.INK, fontSize: "20px", margin: "8px 0" }}>📝 Tomar 1 tableta</p>
-            <p style={{ color: C.INK, fontSize: "20px", margin: "8px 0" }}>💧 Con un vaso de agua</p>
-            <p style={{ color: C.INK, fontSize: "20px", margin: "8px 0" }}>🍽️ Después del desayuno</p>
+          <div style={{ marginBottom: "24px" }}>
+            <p style={{ color: C.INK, fontSize: "24px", margin: "8px 0", fontWeight: "600" }}>{medicamentoActual?.dosis || "1 tableta"}</p>
+            {medicamentoActual?.notas && (
+              <p style={{ color: C.MUTED, fontSize: "20px", margin: "8px 0" }}>{medicamentoActual.notas}</p>
+            )}
           </div>
 
-          <button style={{ width: "100%", background: C.OK, color: "#FFF", border: "none", borderRadius: "16px", padding: "20px", fontSize: "22px", fontWeight: "bold", cursor: "pointer", marginBottom: "12px" }}>
+          {/* Botón GIGANTE de "Ya la tomé" */}
+          <button 
+            onClick={() => handleConfirmarToma(medicamentoActual?.id)}
+            style={{ width: "100%", background: C.OK, color: "#FFF", border: "none", borderRadius: "20px", padding: "28px", fontSize: "28px", fontWeight: "bold", cursor: "pointer", marginBottom: "16px", boxShadow: "0 4px 12px rgba(46,125,50,0.4)" }}>
             ✓ YA LA TOMÉ
           </button>
 
-          <button style={{ width: "100%", background: "transparent", color: C.CORAL, border: `2px solid ${C.CORAL}`, borderRadius: "16px", padding: "16px", fontSize: "18px", fontWeight: "600", cursor: "pointer", marginBottom: "24px" }}>
-            ⏰ POSTERGAR 5 MIN
+          {/* Botón de llamar al cuidador */}
+          <button style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "16px", padding: "20px", fontSize: "20px", fontWeight: "600", cursor: "pointer", marginBottom: "12px" }}>
+            📞 LLAMAR A JAIRO
+          </button>
+
+          {/* Botón de postergar */}
+          <button style={{ width: "100%", background: "transparent", color: C.CORAL, border: `2px solid ${C.CORAL}`, borderRadius: "16px", padding: "16px", fontSize: "18px", fontWeight: "600", cursor: "pointer" }}>
+            ⏰ RECORDAR EN 5 MIN
           </button>
         </div>
 
-        <div style={{ maxWidth: "400px", width: "100%", marginTop: "20px" }}>
-          <button style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginBottom: "10px" }}>
-            📞 LLAMAR AL CUIDADOR
-          </button>
-          <button style={{ width: "100%", background: C.CORAL, color: "#FFF", border: "none", borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginBottom: "10px" }}>
-            🚨 CONTACTOS DE EMERGENCIA
-          </button>
-          <button onClick={handleVolver} style={{ width: "100%", background: "transparent", color: C.MUTED, border: "none", padding: "12px", fontSize: "14px", cursor: "pointer" }}>
-            Volver al inicio
-          </button>
-        </div>
+        {/* Botón pequeño para volver (solo para demo) */}
+        <button onClick={handleVolver} style={{ marginTop: "20px", background: "transparent", color: C.MUTED, border: "none", padding: "12px", fontSize: "12px", cursor: "pointer", opacity: 0.5 }}>
+          (Salir de demo)
+        </button>
       </div>
     );
   }
@@ -318,47 +368,116 @@ export default function App() {
   // ==================== PANTALLA DEL CUIDADOR ====================
   if (modoDemo === "cuidador" && stage === "app") {
     return (
-      <div style={{ minHeight: "100vh", background: C.CREAM, fontFamily: "'Space Grotesk', 'Segoe UI', sans-serif" }}>
+      <div style={{ minHeight: "100vh", background: C.CREAM, fontFamily: "'Space Grotesk', 'Segoe UI', sans-serif", position: "relative" }}>
         
-        {/* Barra superior */}
+        {/* Barra superior con menú hamburguesa */}
         <div style={{ background: C.TEAL, padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <h1 style={{ color: "#FFF", fontSize: "20px", margin: 0 }}>Contigo Siempre</h1>
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button onClick={handleIniciarTutorial} style={{ background: "transparent", border: "1px solid #FFF", color: "#FFF", borderRadius: "8px", padding: "6px 12px", fontSize: "12px", cursor: "pointer" }}>
-              ❓ Ayuda
+          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+            <button onClick={() => setMenuAbierto(true)} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
+              <Menu size={28} color="#FFF" />
             </button>
-            <button onClick={handleVolver} style={{ background: "transparent", border: "1px solid #FFF", color: "#FFF", borderRadius: "8px", padding: "6px 12px", fontSize: "12px", cursor: "pointer" }}>
-              Salir
-            </button>
+            <h1 style={{ color: "#FFF", fontSize: "20px", margin: 0 }}>Contigo Siempre</h1>
           </div>
+          <button onClick={handleVolver} style={{ background: "transparent", border: "1px solid #FFF", color: "#FFF", borderRadius: "8px", padding: "6px 12px", fontSize: "12px", cursor: "pointer" }}>
+            Salir
+          </button>
         </div>
 
-        {/* Pestañas */}
-        <div style={{ display: "flex", background: C.PAPER, borderBottom: `1px solid ${C.LINE}` }}>
-          {["Inicio", "Canasta", "Historial", "Ajustes"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setTabActiva(tab)}
-              style={{
-                flex: 1,
-                padding: "14px 8px",
-                background: "transparent",
-                border: "none",
-                borderBottom: tab === tabActiva ? `3px solid ${C.TEAL}` : "3px solid transparent",
-                color: tab === tabActiva ? C.TEAL : C.MUTED,
-                fontSize: "14px",
-                fontWeight: tab === tabActiva ? "600" : "400",
-                cursor: "pointer"
-              }}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
+        {/* MENÚ LATERAL (DRAWER) */}
+        {menuAbierto && (
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000 }}>
+            {/* Overlay oscuro */}
+            <div onClick={() => setMenuAbierto(false)} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)" }} />
+            
+            {/* Menú */}
+            <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "280px", background: C.PAPER, boxShadow: "4px 0 20px rgba(0,0,0,0.3)", overflowY: "auto" }}>
+              
+              {/* Encabezado del menú */}
+              <div style={{ background: C.TEAL, padding: "24px 20px", display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ width: "50px", height: "50px", borderRadius: "50%", background: "#FFF", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Heart size={28} color={C.TEAL} />
+                </div>
+                <div>
+                  <h2 style={{ color: "#FFF", fontSize: "16px", margin: 0 }}>Contigo Siempre</h2>
+                  <p style={{ color: "rgba(255,255,255,0.8)", fontSize: "12px", margin: 0 }}>Familia Larrota</p>
+                </div>
+              </div>
 
-        {/* Contenido de la pestaña activa */}
+              {/* Opciones del menú */}
+              <div style={{ padding: "12px 0" }}>
+                {[
+                  { id: "Inicio", icono: <Home size={20} />, label: "Inicio" },
+                  { id: "Canasta", icono: <ShoppingCart size={20} />, label: "Canasta" },
+                  { id: "Carro", icono: <ShoppingCart size={20} />, label: "Carro de compras" },
+                  { id: "Historial", icono: <List size={20} />, label: "Historial" },
+                  { id: "Ajustes", icono: <Settings size={20} />, label: "Ajustes" },
+                  { id: "Ayuda", icono: <HelpCircle size={20} />, label: "Ayuda" }
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => { setTabActiva(item.id); setMenuAbierto(false); if (item.id === "Ayuda") handleIniciarTutorial(); }}
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "14px",
+                      padding: "14px 20px",
+                      background: tabActiva === item.id ? "rgba(25,118,210,0.1)" : "transparent",
+                      border: "none",
+                      borderLeft: tabActiva === item.id ? `4px solid ${C.TEAL}` : "4px solid transparent",
+                      color: tabActiva === item.id ? C.TEAL : C.INK,
+                      fontSize: "15px",
+                      fontWeight: tabActiva === item.id ? "600" : "400",
+                      cursor: "pointer",
+                      textAlign: "left"
+                    }}
+                  >
+                    <span style={{ color: tabActiva === item.id ? C.TEAL : C.MUTED }}>{item.icono}</span>
+                    {item.label}
+                  </button>
+                ))}
+
+                <div style={{ borderTop: `1px solid ${C.LINE}`, margin: "12px 0" }} />
+
+                <button
+                  onClick={handleVolver}
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "14px",
+                    padding: "14px 20px",
+                    background: "transparent",
+                    border: "none",
+                    color: C.CORAL,
+                    fontSize: "15px",
+                    cursor: "pointer",
+                    textAlign: "left"
+                  }}
+                >
+                  <LogOut size={20} />
+                  Salir
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* CONTENIDO DE LA PESTAÑA ACTIVA */}
         <div style={{ padding: "20px" }}>
           
+          {/* PESTAÑA INICIO */}
+          {tabActiva === "Inicio" && (
+            <>
+              <h2 style={{ color: C.INK, fontSize: "22px", marginBottom: "16px" }}>🏠 Resumen del día</h2>
+              <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Aquí verás el resumen de las tomas de tu ser querido.</p>
+              <div style={{ background: C.PAPER, borderRadius: "16px", padding: "20px", textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                <h3 style={{ color: C.TEAL, fontSize: "36px", margin: "0 0 8px" }}>3 / 4</h3>
+                <p style={{ color: C.MUTED, fontSize: "14px", margin: 0 }}>Tomas confirmadas hoy</p>
+              </div>
+            </>
+          )}
+
           {/* PESTAÑA CANASTA */}
           {tabActiva === "Canasta" && (
             <>
@@ -366,14 +485,25 @@ export default function App() {
               <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Aquí puedes ver y agregar los medicamentos de tu ser querido.</p>
 
               {medicamentos.map((med) => (
-                <div key={med.id} style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", borderLeft: `4px solid ${med.color === "teal" ? C.TEAL : C.CORAL}`, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div>
-                      <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 4px" }}>💊 {med.nombre}</h3>
+                <div key={med.id} style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", borderLeft: `4px solid ${med.critico ? C.CORAL : C.TEAL}`, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                        <h3 style={{ color: C.INK, fontSize: "16px", margin: 0 }}>💊 {med.nombre}</h3>
+                        {med.critico && <span style={{ background: C.CORAL, color: "#FFF", fontSize: "10px", padding: "2px 6px", borderRadius: "4px", fontWeight: "600" }}>CRÍTICO</span>}
+                      </div>
                       <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 4px" }}>Dosis: {med.dosis} | Horarios: {med.horarios}</p>
-                      {med.notas && <p style={{ color: C.MUTED, fontSize: "12px", margin: 0 }}>📝 {med.notas}</p>}
+                      {med.notas && <p style={{ color: C.MUTED, fontSize: "12px", margin: "0 0 8px" }}>📝 {med.notas}</p>}
+                      
+                      {/* Stock */}
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>
+                        <span style={{ color: med.stock < 5 ? C.CORAL : C.MUTED, fontSize: "12px", fontWeight: med.stock < 5 ? "600" : "400" }}>
+                          📦 Stock: {med.stock} unidades
+                        </span>
+                        {med.stock < 5 && <span style={{ color: C.CORAL, fontSize: "11px" }}>¡Poco stock!</span>}
+                      </div>
                     </div>
-                    <div style={{ display: "flex", gap: "8px" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                       <button style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}>✏️</button>
                       <button onClick={() => handleEliminarMedicamento(med.id)} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}>🗑️</button>
                     </div>
@@ -384,6 +514,48 @@ export default function App() {
               <button onClick={() => setShowModal(true)} style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginTop: "12px" }}>
                 + Agregar medicamento
               </button>
+            </>
+          )}
+
+          {/* PESTAÑA CARRO DE COMPRAS */}
+          {tabActiva === "Carro" && (
+            <>
+              <h2 style={{ color: C.INK, fontSize: "22px", marginBottom: "16px" }}>🛒 Carro de compras</h2>
+              <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Productos recomendados según el stock y los medicamentos de tu ser querido.</p>
+
+              {/* Productos recomendados (ejemplo) */}
+              {medicamentos.filter(m => m.stock < 5).length > 0 ? (
+                medicamentos.filter(m => m.stock < 5).map((med) => (
+                  <div key={med.id} style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div style={{ flex: 1 }}>
+                        <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 4px" }}>💊 {med.nombre}</h3>
+                        <p style={{ color: C.CORAL, fontSize: "13px", margin: "0 0 4px", fontWeight: "600" }}>⚠️ Quedan solo {med.stock} unidades</p>
+                        <p style={{ color: C.MUTED, fontSize: "12px", margin: 0 }}>
+                          {med.critico ? "🔒 Requiere receta médica. Se recomienda farmacia." : "🛍️ Producto de venta libre. Disponible en Mercado Libre."}
+                        </p>
+                      </div>
+                    </div>
+                    <button style={{ width: "100%", background: C.OK, color: "#FFF", border: "none", borderRadius: "10px", padding: "12px", fontSize: "14px", fontWeight: "600", cursor: "pointer", marginTop: "12px" }}>
+                      {med.critico ? "🏥 Comprar en farmacia" : "🛒 Comprar en Mercado Libre"}
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <div style={{ background: C.PAPER, borderRadius: "16px", padding: "30px", textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                  <ShoppingCart size={40} color={C.MUTED} style={{ marginBottom: "12px" }} />
+                  <p style={{ color: C.MUTED, fontSize: "14px", margin: 0 }}>No hay productos recomendados por ahora. ¡Todo el stock está bien!</p>
+                </div>
+              )}
+
+              {/* Verificación por foto */}
+              <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginTop: "20px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 8px" }}>📸 Verificación por foto</h3>
+                <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 12px" }}>Cada 7 días, toma una foto de los sachets para verificar el stock.</p>
+                <button onClick={() => setShowFotoModal(true)} style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "12px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>
+                  📷 Tomar foto de verificación
+                </button>
+              </div>
             </>
           )}
 
@@ -420,14 +592,17 @@ export default function App() {
               <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
                 <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 8px" }}>👨‍👩‍👧‍👦 Familia</h3>
                 <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 4px" }}>Nombre: Familia Larrota</p>
-                <p style={{ color: C.MUTED, fontSize: "13px", margin: 0 }}>Código: <strong style={{ color: C.TEAL }}>CONTIGO2026</strong></p>
+                <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 8px" }}>Código: <strong style={{ color: C.TEAL }}>CONTIGO2026</strong></p>
+                <button style={{ background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "8px 16px", fontSize: "13px", cursor: "pointer" }}>
+                  📋 Copiar código
+                </button>
               </div>
 
               <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
                 <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 8px" }}>👴 Adultos mayores</h3>
                 <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 4px" }}>• Rosa (08:00, 20:00)</p>
-                <p style={{ color: C.MUTED, fontSize: "13px", margin: 0 }}>• Luis (21:00)</p>
-                <button style={{ marginTop: "10px", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "8px 16px", fontSize: "13px", cursor: "pointer" }}>
+                <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 8px" }}>• Luis (21:00)</p>
+                <button style={{ background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "8px 16px", fontSize: "13px", cursor: "pointer" }}>
                   + Agregar adulto mayor
                 </button>
               </div>
@@ -435,39 +610,53 @@ export default function App() {
               <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
                 <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 8px" }}>👥 Cuidadores</h3>
                 <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 4px" }}>• Jairo (tú)</p>
-                <p style={{ color: C.MUTED, fontSize: "13px", margin: 0 }}>• María</p>
-                <button style={{ marginTop: "10px", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "8px 16px", fontSize: "13px", cursor: "pointer" }}>
+                <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 8px" }}>• María</p>
+                <button style={{ background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "8px 16px", fontSize: "13px", cursor: "pointer" }}>
                   + Invitar cuidador
                 </button>
               </div>
 
               <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
                 <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 8px" }}>🌙 Preferencias</h3>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                   <span style={{ color: C.MUTED, fontSize: "14px" }}>Modo nocturno</span>
                   <button onClick={() => setDarkMode(!darkMode)} style={{ background: darkMode ? C.TEAL : C.LINE, border: "none", borderRadius: "20px", width: "50px", height: "26px", cursor: "pointer", position: "relative" }}>
                     <div style={{ width: "22px", height: "22px", borderRadius: "50%", background: "#FFF", position: "absolute", top: "2px", left: darkMode ? "26px" : "2px", transition: "0.3s" }} />
                   </button>
                 </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ color: C.MUTED, fontSize: "14px" }}>Tamaño de letra</span>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button onClick={() => setFontSize(Math.max(0.8, fontSize - 0.1))} style={{ background: C.LINE, border: "none", borderRadius: "8px", width: "36px", height: "36px", cursor: "pointer", fontSize: "16px" }}>A-</button>
+                    <button onClick={() => setFontSize(Math.min(1.5, fontSize + 0.1))} style={{ background: C.TEAL, border: "none", borderRadius: "8px", width: "36px", height: "36px", cursor: "pointer", fontSize: "16px", color: "#FFF" }}>A+</button>
+                  </div>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "12px" }}>
+                  <span style={{ color: C.MUTED, fontSize: "14px" }}>Modo daltonismo</span>
+                  <select value={daltonismo} onChange={(e) => setDaltonismo(e.target.value)} style={{ padding: "6px 10px", borderRadius: "8px", border: `1px solid ${C.LINE}`, fontSize: "13px" }}>
+                    <option value="ninguno">Ninguno</option>
+                    <option value="protanopia">Protanopia</option>
+                    <option value="deuteranopia">Deuteranopia</option>
+                    <option value="tritanopia">Tritanopia</option>
+                  </select>
+                </div>
               </div>
-            </>
-          )}
 
-          {/* PESTAÑA INICIO */}
-          {tabActiva === "Inicio" && (
-            <>
-              <h2 style={{ color: C.INK, fontSize: "22px", marginBottom: "16px" }}>🏠 Resumen del día</h2>
-              <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Aquí verás el resumen de las tomas de tu ser querido.</p>
-              <div style={{ background: C.PAPER, borderRadius: "16px", padding: "20px", textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-                <h3 style={{ color: C.TEAL, fontSize: "32px", margin: "0 0 8px" }}>3 / 4</h3>
-                <p style={{ color: C.MUTED, fontSize: "14px", margin: 0 }}>Tomas confirmadas hoy</p>
+              <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 8px" }}>⚖️ Legal</h3>
+                <p style={{ color: C.MUTED, fontSize: "12px", margin: "0 0 12px" }}>
+                  Esta app cumple con la Ley N° 21.719 de Protección de Datos Personales de Chile. Tus datos de salud son tratados con confidencialidad y solo para la gestión de recordatorios.
+                </p>
+                <button style={{ background: "transparent", color: C.TEAL, border: "none", cursor: "pointer", fontSize: "13px", textDecoration: "underline", padding: 0 }}>
+                  Ver términos y condiciones completos
+                </button>
               </div>
             </>
           )}
 
         </div>
-
-        {/* MODAL DE AGREGAR MEDICAMENTO */}
+}
+                {/* MODAL DE AGREGAR MEDICAMENTO */}
         {showModal && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", zIndex: 1000 }}>
             <div style={{ background: C.PAPER, borderRadius: "20px", padding: "24px", maxWidth: "400px", width: "100%", maxHeight: "90vh", overflowY: "auto" }}>
@@ -568,6 +757,15 @@ export default function App() {
                 style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }}
               />
 
+              <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Stock inicial (cantidad recetada)</label>
+              <input
+                type="number"
+                value={nuevoMed.stock}
+                onChange={(e) => setNuevoMed({ ...nuevoMed, stock: e.target.value })}
+                placeholder="Ej: 30"
+                style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }}
+              />
+
               <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Color</label>
               <div style={{ display: "flex", gap: "12px", marginBottom: "24px" }}>
                 <button
@@ -579,6 +777,14 @@ export default function App() {
                   style={{ width: "40px", height: "40px", borderRadius: "50%", background: C.CORAL, border: nuevoMed.color === "coral" ? `3px solid ${C.INK}` : "none", cursor: "pointer" }}
                 />
               </div>
+
+              {esCritico(nuevoMed.nombre) && (
+                <div style={{ background: "rgba(211,47,47,0.1)", border: `1px solid ${C.CORAL}`, borderRadius: "10px", padding: "12px", marginBottom: "16px" }}>
+                  <p style={{ color: C.CORAL, fontSize: "13px", margin: 0, fontWeight: "600" }}>
+                    ⚠️ Este medicamento ha sido identificado como CRÍTICO. Si no se confirma la toma, se notificará al cuidador de inmediato.
+                  </p>
+                </div>
+              )}
 
               <div style={{ display: "flex", gap: "12px" }}>
                 <button onClick={() => setShowModal(false)} style={{ flex: 1, background: "transparent", color: C.MUTED, border: `1px solid ${C.LINE}`, borderRadius: "12px", padding: "14px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>
@@ -593,7 +799,63 @@ export default function App() {
           </div>
         )}
 
-        {/* TUTORIAL MODAL */}
+        {/* MODAL DE VERIFICACIÓN POR FOTO */}
+        {showFotoModal && (
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", zIndex: 1000 }}>
+            <div style={{ background: C.PAPER, borderRadius: "20px", padding: "24px", maxWidth: "400px", width: "100%", textAlign: "center" }}>
+              
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                <h2 style={{ color: C.INK, fontSize: "20px", margin: 0 }}>📸 Verificación por foto</h2>
+                <button onClick={() => setShowFotoModal(false)} style={{ background: "transparent", border: "none", cursor: "pointer" }}>
+                  <X size={24} color={C.MUTED} />
+                </button>
+              </div>
+
+              <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>
+                Toma una foto de los sachets de los medicamentos para verificar que el stock coincide con lo que la app tiene registrado.
+              </p>
+
+              <div style={{ background: C.CREAM, borderRadius: "12px", padding: "30px", marginBottom: "20px", border: `2px dashed ${C.LINE}` }}>
+                {fotoVerificacion ? (
+                  <img src={fotoVerificacion} alt="Verificación" style={{ maxWidth: "100%", borderRadius: "8px" }} />
+                ) : (
+                  <div>
+                    <Camera size={48} color={C.MUTED} style={{ marginBottom: "12px" }} />
+                    <p style={{ color: C.MUTED, fontSize: "13px", margin: 0 }}>Aquí aparecerá la foto</p>
+                  </div>
+                )}
+              </div>
+
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => setFotoVerificacion(event.target.result);
+                    reader.readAsDataURL(file);
+                  }
+                }}
+                style={{ display: "none" }}
+                id="inputFoto"
+              />
+              <label htmlFor="inputFoto" style={{ display: "block", width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "12px", padding: "14px", fontSize: "14px", fontWeight: "600", cursor: "pointer", marginBottom: "12px" }}>
+                📷 {fotoVerificacion ? "Tomar otra foto" : "Tomar foto"}
+              </label>
+
+              {fotoVerificacion && (
+                <button style={{ width: "100%", background: C.OK, color: "#FFF", border: "none", borderRadius: "12px", padding: "14px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }} onClick={() => { alert("Foto guardada. El stock ha sido verificado."); setShowFotoModal(false); setFotoVerificacion(null); }}>
+                  ✓ Confirmar verificación
+                </button>
+              )}
+
+            </div>
+          </div>
+        )}
+
+        {/* TUTORIAL MODAL (para el cuidador) */}
         {showTutorial && (
           <div style={{ position: "fixed", bottom: "20px", right: "20px", background: C.PAPER, borderRadius: "16px", padding: "20px", maxWidth: "300px", width: "100%", boxShadow: "0 8px 32px rgba(0,0,0,0.3)", zIndex: 2000 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
@@ -614,6 +876,7 @@ export default function App() {
             </div>
           </div>
         )}
+
       </div>
     );
   }
