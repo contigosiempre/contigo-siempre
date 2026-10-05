@@ -11,6 +11,8 @@ const FIREBASE_CONFIG = {
   appId: "1:373374322978:web:05fc428462d73d4f197d7b"
 };
 
+const VAPID_KEY = "BFPDPH02Oa44BflTPgU8Z7VbkqGL7rG3ZDLOAp9EKlkGYZWmoslFktvQtSl29HJR1gO4ESs2lBElRTEwWMAPwz0";
+
 let db = null;
 let dbIniciando = false;
 let dbCallbacks = [];
@@ -53,7 +55,7 @@ function cuandoDbListo(cb) {
 const LIGHT = { INK: "#1A237E", TEAL: "#1976D2", CORAL: "#D32F2F", CREAM: "#FFFFFF", PAPER: "#FFFFFF", LINE: "#E0E4EB", MUTED: "#5F6B7A", OK: "#2E7D32", WARN: "#F57C00" };
 const DARK = { INK: "#F5F7FA", TEAL: "#64B5F6", CORAL: "#EF5350", CREAM: "#0F182E", PAPER: "#16243A", LINE: "#2A3A52", MUTED: "#9FB0C3", OK: "#66BB6A", WARN: "#FFB74D" };
 
-// ==================== LISTA DE MEDICAMENTOS CRÍTICOS ====================
+// ==================== MEDICAMENTOS CRÍTICOS ====================
 const MEDICAMENTOS_CRITICOS = [
   "insulina", "warfarina", "anticoagulante", "heparina", "clopidogrel",
   "metformina", "glibenclamida", "levotiroxina", "digoxina", "fenitoina",
@@ -81,6 +83,9 @@ export default function App() {
   const [codigoFamilia, setCodigoFamilia] = useState("");
   const [familiaActual, setFamiliaActual] = useState(null);
 
+  // Token de notificaciones
+  const [tokenNotificaciones, setTokenNotificaciones] = useState("");
+
   // Tutorial
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialPaso, setTutorialPaso] = useState(0);
@@ -104,7 +109,10 @@ export default function App() {
     horarios: "",
     color: "teal",
     stock: "30",
-    rescate: false
+    rescate: false,
+    criticidad: "auto",
+    alertaCuidador: "15min",
+    postergacionesMaximas: "3"
   });
 
   // Modal de verificación por foto
@@ -128,37 +136,77 @@ export default function App() {
 
   // Pasos del tutorial
   const tutorialPasos = [
-    { titulo: "Bienvenido a Contigo Siempre", texto: "Te enseñaré a usar la app en 9 pasos. Empecemos por lo básico." },
-    { titulo: "Crea tu familia", texto: "Haz clic en 'Soy nueva familia' para crear un nuevo grupo familiar. O ingresa un código si ya tienes uno." },
+    { titulo: "Bienvenido a Contigo Siempre", texto: "Te enseñaré a usar la app en 9 pasos." },
+    { titulo: "Crea tu familia", texto: "Haz clic en 'Soy nueva familia' para crear un nuevo grupo familiar." },
     { titulo: "Agrega un adulto mayor", texto: "En Ajustes, agrega a la persona a la que le recordarás sus medicamentos." },
-    { titulo: "Agrega un medicamento", texto: "En la pestaña Medicamentos, haz clic en '+ Agregar medicamento' para crear un nuevo recordatorio." },
-    { titulo: "Configura los horarios", texto: "En el formulario, define los horarios en que el adulto mayor debe tomar cada medicamento." },
-    { titulo: "Pantalla del adulto mayor", texto: "Esta es la pantalla que verá el adulto mayor. Es simple, con letra grande y botones claros." },
-    { titulo: "Confirma una toma", texto: "Cuando el adulto mayor tome su medicamento, debe presionar el botón verde '✓ YA LA TOMÉ'." },
-    { titulo: "Revisa el historial", texto: "En la pestaña Historial verás todas las tomas confirmadas y no confirmadas." },
-    { titulo: "Invita a otro cuidador", texto: "En Ajustes, comparte el código de familia para que otro familiar también pueda ayudar." }
+    { titulo: "Agrega un medicamento", texto: "En la pestaña Medicamentos, haz clic en '+ Agregar medicamento'." },
+    { titulo: "Configura los horarios", texto: "Define los horarios en que el adulto mayor debe tomar cada medicamento." },
+    { titulo: "Pantalla del adulto mayor", texto: "Esta es la pantalla que verá el adulto mayor. Es simple y con letra grande." },
+    { titulo: "Confirma una toma", texto: "El adulto mayor debe presionar '✓ YA LA TOMÉ'." },
+    { titulo: "Revisa el historial", texto: "En la pestaña Historial verás todas las tomas." },
+    { titulo: "Invita a otro cuidador", texto: "Comparte el código de familia para que otro familiar ayude." }
   ];
 
+  // ==================== INICIALIZAR FIREBASE Y NOTIFICACIONES ====================
   useEffect(() => {
     cuandoDbListo((d) => {
       setFirebaseEstado(d ? "conectado" : "local");
-    });
-
-    const oneSignalScript = document.createElement('script');
-    oneSignalScript.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
-    oneSignalScript.defer = true;
-    document.head.appendChild(oneSignalScript);
-
-    window.OneSignalDeferred = window.OneSignalDeferred || [];
-    OneSignalDeferred.push(function(OneSignal) {
-      OneSignal.init({
-        appId: "15b5f9cf-d380-41ae-9b43-31a8a978efd6",
-        allowLocalhostAsSecureOrigin: true,
-      });
+      if (d) {
+        // Cargar messaging después de que Firebase esté listo
+        cargar("https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js")
+          .then(() => {
+            console.log("Librería de messaging cargada");
+            if (window.firebase && window.firebase.messaging) {
+              const messaging = window.firebase.messaging();
+              Notification.requestPermission().then((permission) => {
+                if (permission === "granted") {
+                  console.log("Permiso de notificaciones concedido");
+                  navigator.serviceWorker.register("/firebase-messaging-sw.js")
+                    .then((registration) => {
+                      messaging.getToken({
+                        vapidKey: VAPID_KEY,
+                        serviceWorkerRegistration: registration
+                      }).then((currentToken) => {
+                        if (currentToken) {
+                          console.log("Token FCM obtenido:", currentToken);
+                          setTokenNotificaciones(currentToken);
+                        } else {
+                          console.log("No se pudo obtener el token.");
+                        }
+                      }).catch((err) => {
+                        console.error("Error al obtener el token:", err);
+                      });
+                    })
+                    .catch((err) => {
+                      console.error("Error al registrar el Service Worker:", err);
+                    });
+                } else {
+                  console.log("Permiso de notificaciones denegado");
+                }
+              });
+            }
+          })
+          .catch((err) => {
+            console.error("Error al cargar la librería de messaging:", err);
+          });
+      }
     });
   }, []);
 
-  // ==================== CARGAR FAMILIA DESDE FIRESTORE ====================
+  // ==================== GUARDAR TOKEN EN FIRESTORE ====================
+  const guardarTokenEnFirestore = async (codigo) => {
+    if (!tokenNotificaciones || !codigo) return;
+    try {
+      await db.collection("familias").doc(codigo).update({
+        tokenNotificaciones: tokenNotificaciones
+      });
+      console.log("Token guardado en Firestore para la familia:", codigo);
+    } catch (error) {
+      console.error("Error al guardar el token:", error);
+    }
+  };
+
+  // ==================== CARGAR FAMILIA ====================
   const cargarFamilia = async (codigo) => {
     try {
       const doc = await db.collection("familias").doc(codigo).get();
@@ -167,6 +215,7 @@ export default function App() {
         setFamiliaActual(data);
         setMedicamentos(data.medicamentos || []);
         setHistorial(data.historial || []);
+        setTokenNotificaciones(data.tokenNotificaciones || "");
         console.log("Familia cargada:", data.nombre);
         return true;
       }
@@ -188,7 +237,8 @@ export default function App() {
       adultos: [],
       cuidadores: ["Jairo"],
       medicamentos: [],
-      historial: []
+      historial: [],
+      tokenNotificaciones: tokenNotificaciones || ""
     };
 
     try {
@@ -221,6 +271,7 @@ export default function App() {
       setModoDemo("adulto");
       setStage("app");
       setTabActiva("Inicio");
+      await guardarTokenEnFirestore(codigoIngresado);
     } else {
       alert("Código no válido. Verifica e intenta de nuevo.");
     }
@@ -257,7 +308,7 @@ export default function App() {
     }
   };
 
-  // ==================== GUARDAR MEDICAMENTOS EN FIRESTORE ====================
+  // ==================== GUARDAR EN FIRESTORE ====================
   const guardarMedicamentos = async (nuevosMedicamentos) => {
     if (!codigoFamilia) return;
     try {
@@ -292,6 +343,8 @@ export default function App() {
     if (nuevoMed.tipo === "gotas") dosisFinal = `${nuevoMed.gotas || "0"} gotas`;
     if (nuevoMed.tipo === "puff") dosisFinal = `${nuevoMed.puff || "0"} puff`;
 
+    const esMedCritico = esCritico(nuevoMed.nombre);
+
     const med = {
       id: Date.now().toString(),
       nombre: nuevoMed.nombre,
@@ -302,17 +355,20 @@ export default function App() {
       puff: nuevoMed.puff,
       notas: nuevoMed.notas,
       horarios: nuevoMed.rescate ? "A demanda" : nuevoMed.horarios,
-      color: esCritico(nuevoMed.nombre) ? "coral" : nuevoMed.color,
+      color: esMedCritico ? "coral" : nuevoMed.color,
       stock: parseInt(nuevoMed.stock) || 30,
       stockInicial: parseInt(nuevoMed.stock) || 30,
-      critico: esCritico(nuevoMed.nombre),
-      rescate: nuevoMed.rescate
+      critico: esMedCritico,
+      rescate: nuevoMed.rescate,
+      criticidad: esMedCritico ? "critico" : "auto",
+      alertaCuidador: esMedCritico ? "5min" : nuevoMed.alertaCuidador,
+      postergacionesMaximas: parseInt(nuevoMed.postergacionesMaximas) || 3
     };
 
     const nuevosMedicamentos = [...medicamentos, med];
     setMedicamentos(nuevosMedicamentos);
     await guardarMedicamentos(nuevosMedicamentos);
-    setNuevoMed({ nombre: "", tipo: "tableta", dosis: "", ml: "", gotas: "", puff: "", notas: "", horarios: "", color: "teal", stock: "30", rescate: false });
+    setNuevoMed({ nombre: "", tipo: "tableta", dosis: "", ml: "", gotas: "", puff: "", notas: "", horarios: "", color: "teal", stock: "30", rescate: false, criticidad: "auto", alertaCuidador: "15min", postergacionesMaximas: "3" });
     setShowModal(false);
   };
 
@@ -347,7 +403,7 @@ export default function App() {
     await guardarHistorial(nuevoHistorial);
   };
 
-  // ==================== DETALLE DEL DÍA (CALENDARIO) ====================
+  // ==================== DETALLE DEL DÍA ====================
   const handleClickDia = (dia) => {
     const fecha = `2026-10-${dia.toString().padStart(2, "0")}`;
     const detalles = historial.filter(h => h.fecha === fecha);
@@ -356,22 +412,19 @@ export default function App() {
     setShowDiaModal(true);
   };
 
-  // ==================== BÚSQUEDA EN EL CARRO ====================
+  // ==================== BÚSQUEDA ====================
   const handleBuscar = () => {
     if (!busqueda.trim()) return;
 
     const productosEjemplo = [
       { nombre: "Crema Utopía", precio: "$5.990", categoria: "Cremas" },
       { nombre: "Crema Hidratante", precio: "$4.500", categoria: "Cremas" },
-      { nombre: "Crema Antiinflamatoria", precio: "$6.200", categoria: "Cremas" },
       { nombre: "Vitamina C", precio: "$3.990", categoria: "Vitaminas" },
-      { nombre: "Vitamina D", precio: "$4.500", categoria: "Vitaminas" },
-      { nombre: "Paracetamol", precio: "$2.990", categoria: "Analgésicos" },
-      { nombre: "Ibuprofeno", precio: "$3.500", categoria: "Analgésicos" }
+      { nombre: "Paracetamol", precio: "$2.990", categoria: "Analgésicos" }
     ];
 
-    const filtrados = productosEjemplo.filter(p => 
-      p.nombre.toLowerCase().includes(busqueda.toLowerCase()) || 
+    const filtrados = productosEjemplo.filter(p =>
+      p.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
       p.categoria.toLowerCase().includes(busqueda.toLowerCase())
     );
 
@@ -394,6 +447,12 @@ export default function App() {
             <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: firebaseEstado === "conectado" ? C.OK : C.CORAL }}></span>
             <span style={{ color: C.MUTED, fontSize: "12px" }}>{firebaseEstado === "conectado" ? "Nube conectada" : "Modo local"}</span>
           </div>
+
+          {tokenNotificaciones && (
+            <div style={{ background: "rgba(46,125,50,0.1)", borderRadius: "10px", padding: "10px", marginBottom: "16px" }}>
+              <p style={{ color: C.OK, fontSize: "11px", margin: 0 }}>✓ Notificaciones activadas</p>
+            </div>
+          )}
 
           <button onClick={handleCrearFamilia} style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginBottom: "12px" }}>
             Soy nueva familia
@@ -423,12 +482,11 @@ export default function App() {
           </button>
         </div>
 
-        {/* MODAL DE VINCULACIÓN */}
         {showVinculacion && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", zIndex: 2000 }}>
             <div style={{ background: C.PAPER, borderRadius: "20px", padding: "30px 24px", maxWidth: "350px", width: "100%", textAlign: "center" }}>
               <h3 style={{ color: C.INK, fontSize: "18px", margin: "0 0 8px" }}>Vincular con tu cuidador</h3>
-              <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 20px" }}>Ingresa el código de 6 dígitos que te dio tu cuidador.</p>
+              <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 20px" }}>Ingresa el código de 6 dígitos.</p>
               <input type="text" maxLength="6" value={codigoIngresado} onChange={(e) => setCodigoIngresado(e.target.value.replace(/\D/g, ""))} placeholder="000000" style={{ width: "100%", padding: "14px", borderRadius: "12px", border: `2px solid ${C.TEAL}`, fontSize: "24px", textAlign: "center", letterSpacing: "8px", marginBottom: "20px", boxSizing: "border-box" }} />
               <div style={{ display: "flex", gap: "10px" }}>
                 <button onClick={() => setShowVinculacion(false)} style={{ flex: 1, background: "transparent", color: C.MUTED, border: `1px solid ${C.LINE}`, borderRadius: "10px", padding: "12px", fontSize: "14px", cursor: "pointer" }}>Cancelar</button>
@@ -441,7 +499,7 @@ export default function App() {
     );
   }
 
-  // ==================== PANTALLA DEL ADULTO MAYOR (REAL) ====================
+  // ==================== PANTALLA DEL ADULTO MAYOR ====================
   if (modoDemo === "adulto" && stage === "app") {
     const medicamentoActual = medicamentos[0];
 
@@ -488,7 +546,6 @@ export default function App() {
     return (
       <div style={{ minHeight: "100vh", background: C.CREAM, fontFamily: "'Space Grotesk', 'Segoe UI', sans-serif", position: "relative" }}>
         
-        {/* Barra superior */}
         <div style={{ background: C.TEAL, padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <button onClick={() => setMenuAbierto(true)} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
@@ -501,7 +558,6 @@ export default function App() {
           </button>
         </div>
 
-        {/* MENÚ LATERAL */}
         {menuAbierto && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000 }}>
             <div onClick={() => setMenuAbierto(false)} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)" }} />
@@ -539,16 +595,12 @@ export default function App() {
           </div>
         )}
 
-        {/* CONTENIDO */}
         <div style={{ padding: "20px" }}>
           
-          {/* PESTAÑA INICIO (CALENDARIO COMPACTO) */}
           {tabActiva === "Inicio" && (
             <>
               <h2 style={{ color: C.INK, fontSize: "22px", marginBottom: "16px" }}>📅 Calendario de adherencia</h2>
-              <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Toca una fecha para ver el detalle del día.</p>
-              
-              {/* Calendario compacto */}
+              <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Toca una fecha para ver el detalle.</p>
               <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "6px", marginBottom: "12px" }}>
                   {["L", "M", "M", "J", "V", "S", "D"].map((dia, i) => (
@@ -588,11 +640,10 @@ export default function App() {
             </>
           )}
 
-          {/* PESTAÑA MEDICAMENTOS */}
           {tabActiva === "Canasta" && (
             <>
               <h2 style={{ color: C.INK, fontSize: "22px", marginBottom: "16px" }}>💊 Medicamentos</h2>
-              <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Aquí puedes ver y agregar los medicamentos de tu ser querido.</p>
+              <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Aquí puedes ver y agregar los medicamentos.</p>
 
               {medicamentos.length === 0 ? (
                 <div style={{ background: C.PAPER, borderRadius: "16px", padding: "30px", textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
@@ -625,17 +676,16 @@ export default function App() {
                 ))
               )}
 
-              <button onClick={() => { setNuevoMed({ nombre: "", tipo: "tableta", dosis: "", ml: "", gotas: "", puff: "", notas: "", horarios: "", color: "teal", stock: "30", rescate: false }); setShowModal(true); }} style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginTop: "12px" }}>
+              <button onClick={() => { setNuevoMed({ nombre: "", tipo: "tableta", dosis: "", ml: "", gotas: "", puff: "", notas: "", horarios: "", color: "teal", stock: "30", rescate: false, criticidad: "auto", alertaCuidador: "15min", postergacionesMaximas: "3" }); setShowModal(true); }} style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginTop: "12px" }}>
                 + Agregar medicamento
               </button>
             </>
           )}
 
-          {/* PESTAÑA CARRO DE COMPRAS */}
           {tabActiva === "Carro" && (
             <>
               <h2 style={{ color: C.INK, fontSize: "22px", marginBottom: "16px" }}>🛒 Carro de compras</h2>
-              <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Productos recomendados según el stock y los medicamentos de tu ser querido.</p>
+              <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Productos recomendados según el stock.</p>
 
               <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
                 <div style={{ flex: 1, display: "flex", alignItems: "center", background: C.PAPER, borderRadius: "12px", border: `1px solid ${C.LINE}`, padding: "0 12px" }}>
@@ -678,16 +728,15 @@ export default function App() {
             </>
           )}
 
-          {/* PESTAÑA HISTORIAL */}
           {tabActiva === "Historial" && (
             <>
               <h2 style={{ color: C.INK, fontSize: "22px", marginBottom: "16px" }}>📊 Historial de tomas</h2>
-              <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Registro de las tomas confirmadas y no confirmadas.</p>
+              <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Registro de las tomas.</p>
 
               {historial.length === 0 ? (
                 <div style={{ background: C.PAPER, borderRadius: "16px", padding: "30px", textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
                   <List size={40} color={C.MUTED} style={{ marginBottom: "12px" }} />
-                  <p style={{ color: C.MUTED, fontSize: "14px", margin: 0 }}>No hay registros de tomas todavía.</p>
+                  <p style={{ color: C.MUTED, fontSize: "14px", margin: 0 }}>No hay registros todavía.</p>
                 </div>
               ) : (
                 historial.map((item) => (
@@ -704,13 +753,12 @@ export default function App() {
 
               <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginTop: "20px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
                 <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 8px" }}>📸 Verificación por foto</h3>
-                <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 12px" }}>Cada 7 días, toma una foto de los sachets para verificar el stock.</p>
+                <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 12px" }}>Cada 7 días, toma una foto de los sachets.</p>
                 <button onClick={() => setShowFotoModal(true)} style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "12px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>📷 Tomar foto de verificación</button>
               </div>
             </>
           )}
 
-          {/* PESTAÑA AJUSTES */}
           {tabActiva === "Ajustes" && (
             <>
               <h2 style={{ color: C.INK, fontSize: "22px", marginBottom: "16px" }}>⚙️ Ajustes</h2>
@@ -719,8 +767,18 @@ export default function App() {
                 <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 8px" }}>👨‍👩‍👧‍👦 Familia</h3>
                 <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 4px" }}>Código de familia:</p>
                 <p style={{ color: C.TEAL, fontSize: "28px", fontWeight: "bold", margin: "0 0 12px", letterSpacing: "4px" }}>{codigoFamilia || "------"}</p>
-                <p style={{ color: C.MUTED, fontSize: "12px", margin: "0 0 12px" }}>Comparte este código con el adulto mayor para vincular su celular.</p>
+                <p style={{ color: C.MUTED, fontSize: "12px", margin: "0 0 12px" }}>Comparte este código con el adulto mayor.</p>
                 <button style={{ background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "8px 16px", fontSize: "13px", cursor: "pointer" }}>📋 Copiar código</button>
+              </div>
+
+              <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 8px" }}>🔔 Notificaciones</h3>
+                <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 8px" }}>
+                  {tokenNotificaciones ? "✅ Notificaciones activadas" : "⚠️ Notificaciones no activadas"}
+                </p>
+                {!tokenNotificaciones && (
+                  <button onClick={() => { Notification.requestPermission().then((perm) => { if (perm === "granted") window.location.reload(); }); }} style={{ background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "8px 16px", fontSize: "13px", cursor: "pointer" }}>🔔 Activar notificaciones</button>
+                )}
               </div>
 
               <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
@@ -752,7 +810,6 @@ export default function App() {
 
         </div>
 
-        {/* MODAL DE AGREGAR MEDICAMENTO */}
         {showModal && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", zIndex: 1000 }}>
             <div style={{ background: C.PAPER, borderRadius: "20px", padding: "24px", maxWidth: "400px", width: "100%", maxHeight: "90vh", overflowY: "auto" }}>
@@ -806,14 +863,26 @@ export default function App() {
               <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Stock inicial</label>
               <input type="number" value={nuevoMed.stock} onChange={(e) => setNuevoMed({ ...nuevoMed, stock: e.target.value })} placeholder="Ej: 30" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }} />
 
-              <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Color</label>
-              <div style={{ display: "flex", gap: "12px", marginBottom: "24px" }}>
-                <button onClick={() => setNuevoMed({ ...nuevoMed, color: "teal" })} style={{ width: "50px", height: "50px", borderRadius: "12px", background: C.TEAL, border: nuevoMed.color === "teal" ? `3px solid ${C.INK}` : `2px solid ${C.LINE}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {nuevoMed.color === "teal" && <CheckCircle size={24} color="#FFF" />}
-                </button>
-                <button onClick={() => setNuevoMed({ ...nuevoMed, color: "coral" })} style={{ width: "50px", height: "50px", borderRadius: "12px", background: C.CORAL, border: nuevoMed.color === "coral" ? `3px solid ${C.INK}` : `2px solid ${C.LINE}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {nuevoMed.color === "coral" && <CheckCircle size={24} color="#FFF" />}
-                </button>
+              <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Configuración de alertas</label>
+              <div style={{ background: C.CREAM, padding: "12px", borderRadius: "10px", marginBottom: "16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+                  <input type="radio" id="alerta15" name="alerta" value="15min" checked={nuevoMed.alertaCuidador === "15min"} onChange={(e) => setNuevoMed({ ...nuevoMed, alertaCuidador: e.target.value })} />
+                  <label htmlFor="alerta15" style={{ color: C.INK, fontSize: "13px", cursor: "pointer" }}>Alertar al cuidador a los 15 minutos si no confirma</label>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "12px" }}>
+                  <input type="radio" id="alertaResumen" name="alerta" value="resumen" checked={nuevoMed.alertaCuidador === "resumen"} onChange={(e) => setNuevoMed({ ...nuevoMed, alertaCuidador: e.target.value })} />
+                  <label htmlFor="alertaResumen" style={{ color: C.INK, fontSize: "13px", cursor: "pointer" }}>Solo enviar resumen al final del día</label>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <label style={{ color: C.INK, fontSize: "13px" }}>Máximo de postergaciones:</label>
+                  <select value={nuevoMed.postergacionesMaximas} onChange={(e) => setNuevoMed({ ...nuevoMed, postergacionesMaximas: e.target.value })} style={{ padding: "4px 8px", borderRadius: "6px", border: `1px solid ${C.LINE}`, fontSize: "13px" }}>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                  </select>
+                </div>
               </div>
 
               {esCritico(nuevoMed.nombre) && (
@@ -822,7 +891,7 @@ export default function App() {
                     <AlertCircle size={20} color={C.CORAL} />
                     <h4 style={{ color: C.CORAL, fontSize: "14px", margin: 0, fontWeight: "700" }}>MEDICAMENTO CRÍTICO</h4>
                   </div>
-                  <p style={{ color: C.CORAL, fontSize: "13px", margin: 0 }}>Si el adulto mayor no confirma la toma, se notificará al cuidador de inmediato.</p>
+                  <p style={{ color: C.CORAL, fontSize: "13px", margin: 0, lineHeight: "1.4" }}>Este medicamento es crítico. Se alertará al cuidador a los 5 minutos si no se confirma la toma.</p>
                 </div>
               )}
 
@@ -834,7 +903,6 @@ export default function App() {
           </div>
         )}
 
-        {/* MODAL DE VERIFICACIÓN POR FOTO */}
         {showFotoModal && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", zIndex: 1000 }}>
             <div style={{ background: C.PAPER, borderRadius: "20px", padding: "24px", maxWidth: "400px", width: "100%", textAlign: "center" }}>
@@ -842,7 +910,7 @@ export default function App() {
                 <h2 style={{ color: C.INK, fontSize: "20px", margin: 0 }}>📸 Verificación</h2>
                 <button onClick={() => setShowFotoModal(false)} style={{ background: "transparent", border: "none", cursor: "pointer" }}><X size={24} color={C.MUTED} /></button>
               </div>
-              <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Toma una foto de los sachets para verificar el stock.</p>
+              <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Toma una foto de los sachets.</p>
               <div style={{ background: C.CREAM, borderRadius: "12px", padding: "30px", marginBottom: "20px", border: `2px dashed ${C.LINE}` }}>
                 {fotoVerificacion ? <img src={fotoVerificacion} alt="Verificación" style={{ maxWidth: "100%", borderRadius: "8px" }} /> : <div><Camera size={48} color={C.MUTED} style={{ marginBottom: "12px" }} /><p style={{ color: C.MUTED, fontSize: "13px", margin: 0 }}>Aquí aparecerá la foto</p></div>}
               </div>
@@ -853,17 +921,15 @@ export default function App() {
           </div>
         )}
 
-        {/* MODAL DE DETALLE DEL DÍA (CALENDARIO) */}
         {showDiaModal && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", zIndex: 1000 }}>
             <div style={{ background: C.PAPER, borderRadius: "20px", padding: "24px", maxWidth: "400px", width: "100%", maxHeight: "80vh", overflowY: "auto" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-                <h2 style={{ color: C.INK, fontSize: "20px", margin: 0 }}>📅 Detalle del día {diaSeleccionado}</h2>
+                <h2 style={{ color: C.INK, fontSize: "20px", margin: 0 }}>📅 Día {diaSeleccionado}</h2>
                 <button onClick={() => setShowDiaModal(false)} style={{ background: "transparent", border: "none", cursor: "pointer" }}><X size={24} color={C.MUTED} /></button>
               </div>
-              
               {detalleDia.length === 0 ? (
-                <p style={{ color: C.MUTED, fontSize: "14px", textAlign: "center", margin: "20px 0" }}>No hay registros de tomas para este día.</p>
+                <p style={{ color: C.MUTED, fontSize: "14px", textAlign: "center", margin: "20px 0" }}>No hay registros para este día.</p>
               ) : (
                 detalleDia.map((item) => (
                   <div key={item.id} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "12px", background: C.CREAM, borderRadius: "10px", marginBottom: "8px" }}>
@@ -880,7 +946,6 @@ export default function App() {
           </div>
         )}
 
-        {/* TUTORIAL MODAL */}
         {showTutorial && (
           <div style={{ position: "fixed", bottom: "20px", right: "20px", background: C.PAPER, borderRadius: "16px", padding: "20px", maxWidth: "300px", width: "100%", boxShadow: "0 8px 32px rgba(0,0,0,0.3)", zIndex: 2000 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
