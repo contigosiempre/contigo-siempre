@@ -198,7 +198,6 @@ export default function App() {
     );
   }
 
-  // ==================== PANTALLA DEL CUIDADOR (Demo) ====================
   // ==================== PANTALLA DEL CUIDADOR ====================
   if (modoDemo === "cuidador" && stage === "app") {
     return (
