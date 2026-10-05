@@ -73,7 +73,7 @@ self.addEventListener('notificationclick', (event) => {
             ]
           });
           resolve();
-        }, 5 * 60 * 1000); // 5 minutos
+        }, 5 * 60 * 1000);
       })
     );
   } else {
@@ -127,17 +127,8 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Solo manejar peticiones del propio dominio
-  if (!event.request.url.startsWith(self.location.origin)) {
-    return;
-  }
-
-  // Ignorar peticiones de OneSignal y Firebase
-  if (event.request.url.includes('onesignal') || event.request.url.includes('firebase')) {
-    return;
-  }
-
-  // Ignorar peticiones que no sean GET
+  if (!event.request.url.startsWith(self.location.origin)) return;
+  if (event.request.url.includes('firebase')) return;
   if (event.request.method !== 'GET') return;
 
   event.respondWith(
