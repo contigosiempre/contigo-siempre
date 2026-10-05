@@ -1,8 +1,98 @@
-// Cambiamos a v5 para obligar al teléfono a borrar el Service Worker viejo
-const CACHE_NAME = 'contigo-v5';
+// firebase-messaging-sw.js
+importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 
-// Archivos estáticos principales que sí queremos guardar en el caché del celular
-const ASSETS_TO_CACHE = [
+firebase.initializeApp({
+  apiKey: "AIzaSyAGxIGYqifeb5qGlVTQaVVpmKjZ9E1__TU",
+  authDomain: "contigo-siempre-79017.firebaseapp.com",
+  projectId: "contigo-siempre-79017",
+  storageBucket: "contigo-siempre-79017.firebasestorage.app",
+  messagingSenderId: "373374322978",
+  appId: "1:373374322978:web:05fc428462d73d4f197d7b"
+});
+
+const messaging = firebase.messaging();
+
+// Manejar notificaciones en segundo plano (celular bloqueado o app cerrada)
+messaging.onBackgroundMessage((payload) => {
+  console.log('[firebase-messaging-sw.js] Mensaje recibido en segundo plano:', payload);
+  
+  const notificationTitle = payload.notification?.title || "Contigo Siempre";
+  const notificationOptions = {
+    body: payload.notification?.body || "Es hora de tomar tu medicamento",
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    vibrate: [200, 100, 200, 100, 200],
+    sound: 'default',
+    requireInteraction: true,
+    actions: [
+      { action: 'tomar', title: '✓ Ya la tomé' },
+      { action: 'postergar', title: '⏰ Postergar 5 min' }
+    ]
+  };
+  
+  self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// Manejar clics en la notificación y en los botones de acción
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  
+  if (event.action === 'tomar') {
+    console.log('El adulto mayor confirmó la toma');
+    // Abrir la app para confirmar la toma
+    event.waitUntil(
+      clients.matchAll({ type: 'window' }).then((clientList) => {
+        for (const client of clientList) {
+          if (client.url.includes('contigo-siempre') && 'focus' in client) {
+            client.postMessage({ tipo: 'confirmar_toma' });
+            return client.focus();
+          }
+        }
+        if (clients.openWindow) {
+          return clients.openWindow('/?accion=confirmar');
+        }
+      })
+    );
+  } else if (event.action === 'postergar') {
+    console.log('El adulto mayor postergó 5 minutos');
+    // Reprogramar la notificación en 5 minutos
+    event.waitUntil(
+      new Promise((resolve) => {
+        setTimeout(() => {
+          self.registration.showNotification("⏰ Recordatorio postergado", {
+            body: "Es hora de tomar tu medicamento",
+            icon: '/icons/icon-192.png',
+            vibrate: [200, 100, 200],
+            sound: 'default',
+            actions: [
+              { action: 'tomar', title: '✓ Ya la tomé' },
+              { action: 'postergar', title: '⏰ Postergar 5 min' }
+            ]
+          });
+          resolve();
+        }, 5 * 60 * 1000); // 5 minutos
+      })
+    );
+  } else {
+    // Si toca la notificación sin botón, abre la app
+    event.waitUntil(
+      clients.matchAll({ type: 'window' }).then((clientList) => {
+        for (const client of clientList) {
+          if (client.url.includes('contigo-siempre') && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        if (clients.openWindow) {
+          return clients.openWindow('/');
+        }
+      })
+    );
+  }
+});
+// ==================== CACHÉ DE LA PWA ====================
+const CACHE_NAME = 'contigo-siempre-v10';
+const URLS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
@@ -10,49 +100,26 @@ const ASSETS_TO_CACHE = [
   '/icons/icon-512.png'
 ];
 
-// 1. INSTALACIÓN: Guarda los archivos en caché
 self.addEventListener('install', (event) => {
-  self.skipWaiting(); // Fuerza al nuevo Service Worker a tomar el control de inmediato
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
+      return cache.addAll(URLS_TO_CACHE);
     })
   );
+  self.skipWaiting();
 });
 
-// 2. ACTIVACIÓN: Borra los cachés viejos (v1, v2, v3, v4)
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
+    caches.keys().then((keys) => {
       return Promise.all(
-        cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) {
-            console.log('Borrando caché antiguo:', cache);
-            return caches.delete(cache);
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
           }
         })
       );
-    }).then(() => self.clients.claim())
-  );
-});
-
-// 3. PETICIONES (FETCH): Filtra para responder SOLO sobre nuestro propio sitio
-self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
-
-  // REGLA CLAVE: Si la petición NO es de nuestro propio dominio (ej. OneSignal, Firebase, Google Fonts),
-  // la dejamos pasar directo a internet sin interceptarla.
-  if (url.origin !== self.location.origin) {
-    return;
-  }
-
-  // Si es un archivo de nuestro sitio, intenta entregarlo desde el caché o busca en la red
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request);
     })
   );
+  self.clients.claim();
 });
