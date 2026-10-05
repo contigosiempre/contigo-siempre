@@ -199,6 +199,85 @@ export default function App() {
   }
 
   // ==================== PANTALLA DEL CUIDADOR (Demo) ====================
+  // ==================== PANTALLA DEL CUIDADOR ====================
+  if (modoDemo === "cuidador" && stage === "app") {
+    return (
+      <div style={{ minHeight: "100vh", background: C.CREAM, fontFamily: "'Space Grotesk', 'Segoe UI', sans-serif" }}>
+        
+        {/* Barra superior */}
+        <div style={{ background: C.TEAL, padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <h1 style={{ color: "#FFF", fontSize: "20px", margin: 0 }}>Contigo Siempre</h1>
+          <button onClick={handleVolver} style={{ background: "transparent", border: "1px solid #FFF", color: "#FFF", borderRadius: "8px", padding: "6px 12px", fontSize: "12px", cursor: "pointer" }}>
+            Salir
+          </button>
+        </div>
+
+        {/* Pestañas */}
+        <div style={{ display: "flex", background: C.PAPER, borderBottom: `1px solid ${C.LINE}` }}>
+          {["Inicio", "Canasta", "Historial", "Ajustes"].map((tab) => (
+            <button
+              key={tab}
+              style={{
+                flex: 1,
+                padding: "14px 8px",
+                background: "transparent",
+                border: "none",
+                borderBottom: tab === "Canasta" ? `3px solid ${C.TEAL}` : "3px solid transparent",
+                color: tab === "Canasta" ? C.TEAL : C.MUTED,
+                fontSize: "14px",
+                fontWeight: tab === "Canasta" ? "600" : "400",
+                cursor: "pointer"
+              }}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* Contenido de la Canasta */}
+        <div style={{ padding: "20px" }}>
+          <h2 style={{ color: C.INK, fontSize: "22px", marginBottom: "16px" }}>🧺 Canasta de medicamentos</h2>
+          <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Aquí puedes ver y agregar los medicamentos de tu ser querido.</p>
+
+          {/* Lista de medicamentos (ejemplo) */}
+          <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", borderLeft: `4px solid ${C.TEAL}`, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 4px" }}>💊 Losartán 50mg</h3>
+                <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 4px" }}>Dosis: 1 tableta | Horarios: 08:00, 20:00</p>
+                <p style={{ color: C.MUTED, fontSize: "12px", margin: 0 }}>📝 Tomar con agua, después del desayuno</p>
+              </div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}>✏️</button>
+                <button style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}>🗑️</button>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", borderLeft: `4px solid ${C.CORAL}`, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 4px" }}>💧 Metformina 850mg</h3>
+                <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 4px" }}>Dosis: 5 ml | Horarios: 21:00</p>
+                <p style={{ color: C.MUTED, fontSize: "12px", margin: 0 }}>📝 Tomar con la cena</p>
+              </div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}>✏️</button>
+                <button style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}>🗑️</button>
+              </div>
+            </div>
+          </div>
+
+          {/* Botón para agregar medicamento */}
+          <button style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginTop: "12px" }}>
+            + Agregar medicamento
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ==================== PANTALLA POR DEFECTO ====================
   return (
     <div style={{ minHeight: "100vh", background: C.CREAM, fontFamily: "'Space Grotesk', 'Segoe UI', sans-serif", padding: "20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
       <h2 style={{ color: C.INK }}>Demo del Cuidador</h2>
@@ -208,4 +287,3 @@ export default function App() {
       </button>
     </div>
   );
-}
