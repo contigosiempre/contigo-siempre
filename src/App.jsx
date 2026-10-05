@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Heart, User, Users, ArrowRight, Moon, Sun, Type, X } from "lucide-react";
+import { Heart, User, Users, ArrowRight, Moon, Sun, Type, X, CheckCircle, XCircle, Clock } from "lucide-react";
 
 // ==================== FIREBASE ====================
 const FIREBASE_CONFIG = {
@@ -61,13 +61,24 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [fontSize, setFontSize] = useState(1);
 
-  // Estado para los medicamentos
+  // Pestaña activa del cuidador
+  const [tabActiva, setTabActiva] = useState("Canasta");
+
+  // Medicamentos
   const [medicamentos, setMedicamentos] = useState([
     { id: "1", nombre: "Losartán 50mg", dosis: "1 tableta", tipo: "tableta", ml: "", gotas: "", notas: "Tomar con agua, después del desayuno", horarios: "08:00, 20:00", color: "teal" },
     { id: "2", nombre: "Metformina 850mg", dosis: "5 ml", tipo: "ml", ml: "5", gotas: "", notas: "Tomar con la cena", horarios: "21:00", color: "coral" }
   ]);
 
-  // Estado para el modal de agregar medicamento
+  // Historial (ejemplo)
+  const [historial] = useState([
+    { id: "h1", medicamento: "Losartán 50mg", fecha: "2026-10-04", hora: "08:00", estado: "tomado" },
+    { id: "h2", medicamento: "Metformina 850mg", fecha: "2026-10-03", hora: "21:00", estado: "tomado" },
+    { id: "h3", medicamento: "Losartán 50mg", fecha: "2026-10-03", hora: "20:00", estado: "no_tomado" },
+    { id: "h4", medicamento: "Losartán 50mg", fecha: "2026-10-02", hora: "08:00", estado: "tomado" }
+  ]);
+
+  // Modal de agregar medicamento
   const [showModal, setShowModal] = useState(false);
   const [nuevoMed, setNuevoMed] = useState({
     nombre: "",
@@ -246,6 +257,7 @@ export default function App() {
     return (
       <div style={{ minHeight: "100vh", background: C.CREAM, fontFamily: "'Space Grotesk', 'Segoe UI', sans-serif" }}>
         
+        {/* Barra superior */}
         <div style={{ background: C.TEAL, padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h1 style={{ color: "#FFF", fontSize: "20px", margin: 0 }}>Contigo Siempre</h1>
           <button onClick={handleVolver} style={{ background: "transparent", border: "1px solid #FFF", color: "#FFF", borderRadius: "8px", padding: "6px 12px", fontSize: "12px", cursor: "pointer" }}>
@@ -253,19 +265,21 @@ export default function App() {
           </button>
         </div>
 
+        {/* Pestañas */}
         <div style={{ display: "flex", background: C.PAPER, borderBottom: `1px solid ${C.LINE}` }}>
           {["Inicio", "Canasta", "Historial", "Ajustes"].map((tab) => (
             <button
               key={tab}
+              onClick={() => setTabActiva(tab)}
               style={{
                 flex: 1,
                 padding: "14px 8px",
                 background: "transparent",
                 border: "none",
-                borderBottom: tab === "Canasta" ? `3px solid ${C.TEAL}` : "3px solid transparent",
-                color: tab === "Canasta" ? C.TEAL : C.MUTED,
+                borderBottom: tab === tabActiva ? `3px solid ${C.TEAL}` : "3px solid transparent",
+                color: tab === tabActiva ? C.TEAL : C.MUTED,
                 fontSize: "14px",
-                fontWeight: tab === "Canasta" ? "600" : "400",
+                fontWeight: tab === tabActiva ? "600" : "400",
                 cursor: "pointer"
               }}
             >
@@ -274,29 +288,126 @@ export default function App() {
           ))}
         </div>
 
+        {/* Contenido de la pestaña activa */}
         <div style={{ padding: "20px" }}>
-          <h2 style={{ color: C.INK, fontSize: "22px", marginBottom: "16px" }}>🧺 Canasta de medicamentos</h2>
-          <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Aquí puedes ver y agregar los medicamentos de tu ser querido.</p>
+          
+          {/* PESTAÑA CANASTA */}
+          {tabActiva === "Canasta" && (
+            <>
+              <h2 style={{ color: C.INK, fontSize: "22px", marginBottom: "16px" }}>🧺 Canasta de medicamentos</h2>
+              <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Aquí puedes ver y agregar los medicamentos de tu ser querido.</p>
 
-          {medicamentos.map((med) => (
-            <div key={med.id} style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", borderLeft: `4px solid ${med.color === "teal" ? C.TEAL : C.CORAL}`, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 4px" }}>💊 {med.nombre}</h3>
-                  <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 4px" }}>Dosis: {med.dosis} | Horarios: {med.horarios}</p>
-                  {med.notas && <p style={{ color: C.MUTED, fontSize: "12px", margin: 0 }}>📝 {med.notas}</p>}
+              {medicamentos.map((med) => (
+                <div key={med.id} style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", borderLeft: `4px solid ${med.color === "teal" ? C.TEAL : C.CORAL}`, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 4px" }}>💊 {med.nombre}</h3>
+                      <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 4px" }}>Dosis: {med.dosis} | Horarios: {med.horarios}</p>
+                      {med.notas && <p style={{ color: C.MUTED, fontSize: "12px", margin: 0 }}>📝 {med.notas}</p>}
+                    </div>
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}>✏️</button>
+                      <button onClick={() => handleEliminarMedicamento(med.id)} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}>🗑️</button>
+                    </div>
+                  </div>
                 </div>
-                <div style={{ display: "flex", gap: "8px" }}>
-                  <button style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}>✏️</button>
-                  <button onClick={() => handleEliminarMedicamento(med.id)} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}>🗑️</button>
+              ))}
+
+              <button onClick={() => setShowModal(true)} style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginTop: "12px" }}>
+                + Agregar medicamento
+              </button>
+            </>
+          )}
+
+          {/* PESTAÑA HISTORIAL */}
+          {tabActiva === "Historial" && (
+            <>
+              <h2 style={{ color: C.INK, fontSize: "22px", marginBottom: "16px" }}>📊 Historial de tomas</h2>
+              <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Registro de las tomas confirmadas y no confirmadas.</p>
+
+              {historial.map((item) => (
+                <div key={item.id} style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", display: "flex", alignItems: "center", gap: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                  {item.estado === "tomado" ? (
+                    <CheckCircle size={24} color={C.OK} />
+                  ) : (
+                    <XCircle size={24} color={C.CORAL} />
+                  )}
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ color: C.INK, fontSize: "15px", margin: "0 0 4px" }}>{item.medicamento}</h3>
+                    <p style={{ color: C.MUTED, fontSize: "13px", margin: 0 }}>{item.fecha} - {item.hora}</p>
+                  </div>
+                  <span style={{ color: item.estado === "tomado" ? C.OK : C.CORAL, fontSize: "12px", fontWeight: "600" }}>
+                    {item.estado === "tomado" ? "Tomado" : "No tomado"}
+                  </span>
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* PESTAÑA AJUSTES */}
+          {tabActiva === "Ajustes" && (
+            <>
+              <h2 style={{ color: C.INK, fontSize: "22px", marginBottom: "16px" }}>⚙️ Ajustes</h2>
+              
+              {/* Familia */}
+              <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 8px" }}>👨‍👩‍👧‍👦 Familia</h3>
+                <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 4px" }}>Nombre: Familia Larrota</p>
+                <p style={{ color: C.MUTED, fontSize: "13px", margin: 0 }}>Código: <strong style={{ color: C.TEAL }}>CONTIGO2026</strong></p>
+              </div>
+
+              {/* Adultos mayores */}
+              <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 8px" }}>👴 Adultos mayores</h3>
+                <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 4px" }}>• Rosa (08:00, 20:00)</p>
+                <p style={{ color: C.MUTED, fontSize: "13px", margin: 0 }}>• Luis (21:00)</p>
+                <button style={{ marginTop: "10px", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "8px 16px", fontSize: "13px", cursor: "pointer" }}>
+                  + Agregar adulto mayor
+                </button>
+              </div>
+
+              {/* Cuidadores */}
+              <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 8px" }}>👥 Cuidadores</h3>
+                <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 4px" }}>• Jairo (tú)</p>
+                <p style={{ color: C.MUTED, fontSize: "13px", margin: 0 }}>• María</p>
+                <button style={{ marginTop: "10px", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "8px 16px", fontSize: "13px", cursor: "pointer" }}>
+                  + Invitar cuidador
+                </button>
+              </div>
+
+              {/* Preferencias */}
+              <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 8px" }}>🌙 Preferencias</h3>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
+                  <span style={{ color: C.MUTED, fontSize: "14px" }}>Modo nocturno</span>
+                  <button onClick={() => setDarkMode(!darkMode)} style={{ background: darkMode ? C.TEAL : C.LINE, border: "none", borderRadius: "20px", width: "50px", height: "26px", cursor: "pointer", position: "relative" }}>
+                    <div style={{ width: "22px", height: "22px", borderRadius: "50%", background: "#FFF", position: "absolute", top: "2px", left: darkMode ? "26px" : "2px", transition: "0.3s" }} />
+                  </button>
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ color: C.MUTED, fontSize: "14px" }}>Tamaño de letra</span>
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button style={{ background: C.LINE, border: "none", borderRadius: "8px", width: "32px", height: "32px", cursor: "pointer", fontSize: "14px" }}>A-</button>
+                    <button style={{ background: C.TEAL, border: "none", borderRadius: "8px", width: "32px", height: "32px", cursor: "pointer", fontSize: "14px", color: "#FFF" }}>A+</button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            </>
+          )}
 
-          <button onClick={() => setShowModal(true)} style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginTop: "12px" }}>
-            + Agregar medicamento
-          </button>
+          {/* PESTAÑA INICIO */}
+          {tabActiva === "Inicio" && (
+            <>
+              <h2 style={{ color: C.INK, fontSize: "22px", marginBottom: "16px" }}>🏠 Resumen del día</h2>
+              <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Aquí verás el resumen de las tomas de tu ser querido.</p>
+              <div style={{ background: C.PAPER, borderRadius: "16px", padding: "20px", textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                <h3 style={{ color: C.TEAL, fontSize: "32px", margin: "0 0 8px" }}>3 / 4</h3>
+                <p style={{ color: C.MUTED, fontSize: "14px", margin: 0 }}>Tomas confirmadas hoy</p>
+              </div>
+            </>
+          )}
+
         </div>
 
         {/* MODAL DE AGREGAR MEDICAMENTO */}
@@ -311,7 +422,6 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Nombre */}
               <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Nombre del medicamento</label>
               <input
                 type="text"
@@ -321,7 +431,6 @@ export default function App() {
                 style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }}
               />
 
-              {/* Tipo de dosis */}
               <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Tipo de dosis</label>
               <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
                 {["tableta", "ml", "gotas", "otra"].map((tipo) => (
@@ -344,7 +453,6 @@ export default function App() {
                 ))}
               </div>
 
-              {/* Campos según el tipo */}
               {nuevoMed.tipo === "tableta" && (
                 <input
                   type="text"
@@ -379,61 +487,4 @@ export default function App() {
                 <input
                   type="text"
                   value={nuevoMed.dosis}
-                  onChange={(e) => setNuevoMed({ ...nuevoMed, dosis: e.target.value })}
-                  placeholder="Ej: 1 cucharada"
-                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }}
-                />
-              )}
-
-              {/* Notas */}
-              <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Notas (opcional)</label>
-              <textarea
-                value={nuevoMed.notas}
-                onChange={(e) => setNuevoMed({ ...nuevoMed, notas: e.target.value })}
-                placeholder="Ej: Tomar con agua, después del desayuno"
-                rows="3"
-                style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box", resize: "vertical" }}
-              />
-
-              {/* Horarios */}
-              <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Horarios</label>
-              <input
-                type="text"
-                value={nuevoMed.horarios}
-                onChange={(e) => setNuevoMed({ ...nuevoMed, horarios: e.target.value })}
-                placeholder="Ej: 08:00, 20:00"
-                style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }}
-              />
-
-              {/* Color */}
-              <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Color</label>
-              <div style={{ display: "flex", gap: "12px", marginBottom: "24px" }}>
-                <button
-                  onClick={() => setNuevoMed({ ...nuevoMed, color: "teal" })}
-                  style={{ width: "40px", height: "40px", borderRadius: "50%", background: C.TEAL, border: nuevoMed.color === "teal" ? `3px solid ${C.INK}` : "none", cursor: "pointer" }}
-                />
-                <button
-                  onClick={() => setNuevoMed({ ...nuevoMed, color: "coral" })}
-                  style={{ width: "40px", height: "40px", borderRadius: "50%", background: C.CORAL, border: nuevoMed.color === "coral" ? `3px solid ${C.INK}` : "none", cursor: "pointer" }}
-                />
-              </div>
-
-              {/* Botones */}
-              <div style={{ display: "flex", gap: "12px" }}>
-                <button onClick={() => setShowModal(false)} style={{ flex: 1, background: "transparent", color: C.MUTED, border: `1px solid ${C.LINE}`, borderRadius: "12px", padding: "14px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>
-                  Cancelar
-                </button>
-                <button onClick={handleAgregarMedicamento} style={{ flex: 1, background: C.TEAL, color: "#FFF", border: "none", borderRadius: "12px", padding: "14px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>
-                  Guardar
-                </button>
-              </div>
-
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  return null;
-}
+                  onChange={(e) => setN
