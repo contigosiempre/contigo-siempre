@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Heart, User, Users, ArrowRight, Settings, Moon, Sun, Type } from "lucide-react";
+import { Heart, User, Users, ArrowRight, Moon, Sun, Type } from "lucide-react";
 
 // ==================== FIREBASE ====================
 const FIREBASE_CONFIG = {
@@ -95,13 +95,11 @@ export default function App() {
     setModoDemo(null);
   };
 
-  // ==================== RENDERIZADO ====================
+  // ==================== PANTALLA DE INICIO ====================
   if (stage === "welcome") {
     return (
       <div style={{ minHeight: "100vh", background: darkMode ? "#0F182E" : "#1976D2", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "20px", fontFamily: "'Space Grotesk', 'Segoe UI', sans-serif" }}>
         <div style={{ background: C.PAPER, borderRadius: "24px", padding: "40px 24px", maxWidth: "400px", width: "100%", textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.2)" }}>
-          
-          {/* Logo */}
           <div style={{ width: "80px", height: "80px", borderRadius: "50%", background: C.TEAL, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
             <Heart size={40} color="#FFF" />
           </div>
@@ -109,13 +107,11 @@ export default function App() {
           <h1 style={{ color: C.INK, fontSize: "28px", margin: "0 0 8px" }}>Contigo Siempre</h1>
           <p style={{ color: C.MUTED, fontSize: "14px", margin: "0 0 24px" }}>Recordatorios de medicamentos para tu ser querido</p>
 
-          {/* Indicador de conexión */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginBottom: "24px" }}>
             <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: firebaseEstado === "conectado" ? C.OK : C.CORAL }}></span>
             <span style={{ color: C.MUTED, fontSize: "12px" }}>{firebaseEstado === "conectado" ? "Nube conectada" : "Modo local"}</span>
           </div>
 
-          {/* Botones principales */}
           <button style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginBottom: "12px" }}>
             Soy nueva familia
           </button>
@@ -123,7 +119,6 @@ export default function App() {
             Ya tengo un código
           </button>
 
-          {/* Demos */}
           <p style={{ color: C.MUTED, fontSize: "12px", margin: "0 0 12px" }}>PROBAR CON DATOS DE EJEMPLO</p>
 
           <button onClick={() => handleDemo("adulto")} style={{ width: "100%", background: "transparent", border: `1px solid ${C.LINE}`, borderRadius: "14px", padding: "14px", display: "flex", alignItems: "center", gap: "12px", cursor: "pointer", marginBottom: "8px" }}>
@@ -148,13 +143,12 @@ export default function App() {
     );
   }
 
-  // Pantalla de la app (Demo adulto mayor o Cuidador)
   // ==================== PANTALLA DEL ADULTO MAYOR ====================
   if (modoDemo === "adulto" && stage === "app") {
     return (
-      <div style={{ minHeight: "100vh", background: C.CREAM, fontFamily: "'Space Grotesk', 'Segoe UI', sans-serif", padding: "20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ minHeight: "100vh", background: C.CREAM, fontFamily: "'Space Grotesk', 'Segoe UI', sans-serif", padding: "20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative" }}>
         
-        {/* Botón de accesibilidad */}
+        {/* Botones de accesibilidad */}
         <div style={{ position: "absolute", top: "20px", right: "20px", display: "flex", gap: "10px" }}>
           <button onClick={() => setDarkMode(!darkMode)} style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: "50%", width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
             {darkMode ? <Sun size={20} color={C.INK} /> : <Moon size={20} color={C.INK} />}
@@ -169,24 +163,20 @@ export default function App() {
           
           <h1 style={{ color: C.CORAL, fontSize: "24px", margin: "0 0 20px" }}>¡ES HORA DE TOMAR!</h1>
           
-          {/* Nombre del medicamento */}
           <div style={{ background: C.TEAL, borderRadius: "16px", padding: "20px", marginBottom: "20px" }}>
             <h2 style={{ color: "#FFF", fontSize: "28px", margin: 0 }}>💊 Losartán 50mg</h2>
           </div>
 
-          {/* Notas del medicamento */}
           <div style={{ textAlign: "left", marginBottom: "24px" }}>
             <p style={{ color: C.INK, fontSize: "20px", margin: "8px 0" }}>📝 Tomar 1 tableta</p>
             <p style={{ color: C.INK, fontSize: "20px", margin: "8px 0" }}>💧 Con un vaso de agua</p>
             <p style={{ color: C.INK, fontSize: "20px", margin: "8px 0" }}>🍽️ Después del desayuno</p>
           </div>
 
-          {/* Botón "Ya la tomé" */}
           <button style={{ width: "100%", background: C.OK, color: "#FFF", border: "none", borderRadius: "16px", padding: "20px", fontSize: "22px", fontWeight: "bold", cursor: "pointer", marginBottom: "12px" }}>
             ✓ YA LA TOMÉ
           </button>
 
-          {/* Botón "Postergar" */}
           <button style={{ width: "100%", background: "transparent", color: C.CORAL, border: `2px solid ${C.CORAL}`, borderRadius: "16px", padding: "16px", fontSize: "18px", fontWeight: "600", cursor: "pointer", marginBottom: "24px" }}>
             ⏰ POSTERGAR 5 MIN
           </button>
@@ -208,7 +198,7 @@ export default function App() {
     );
   }
 
-  // ==================== PANTALLA DEL CUIDADOR (Próximamente) ====================
+  // ==================== PANTALLA DEL CUIDADOR (Demo) ====================
   return (
     <div style={{ minHeight: "100vh", background: C.CREAM, fontFamily: "'Space Grotesk', 'Segoe UI', sans-serif", padding: "20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
       <h2 style={{ color: C.INK }}>Demo del Cuidador</h2>
@@ -218,3 +208,4 @@ export default function App() {
       </button>
     </div>
   );
+}
