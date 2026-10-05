@@ -63,19 +63,16 @@ export default function App() {
 
   const C = darkMode ? DARK : LIGHT;
 
-  // Inicializar Firebase y OneSignal
   useEffect(() => {
     cuandoDbListo((d) => {
       setFirebaseEstado(d ? "conectado" : "local");
     });
 
-    // --- CARGA DEL SCRIPT DE ONESIGNAL (CDN) ---
     const oneSignalScript = document.createElement('script');
     oneSignalScript.src = 'https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js';
     oneSignalScript.defer = true;
     document.head.appendChild(oneSignalScript);
 
-    // --- INICIALIZACIÓN DE ONESIGNAL ---
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(function(OneSignal) {
       OneSignal.init({
@@ -148,7 +145,6 @@ export default function App() {
     return (
       <div style={{ minHeight: "100vh", background: C.CREAM, fontFamily: "'Space Grotesk', 'Segoe UI', sans-serif", padding: "20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", position: "relative" }}>
         
-        {/* Botones de accesibilidad */}
         <div style={{ position: "absolute", top: "20px", right: "20px", display: "flex", gap: "10px" }}>
           <button onClick={() => setDarkMode(!darkMode)} style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: "50%", width: "40px", height: "40px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
             {darkMode ? <Sun size={20} color={C.INK} /> : <Moon size={20} color={C.INK} />}
@@ -158,7 +154,6 @@ export default function App() {
           </button>
         </div>
 
-        {/* Tarjeta principal */}
         <div style={{ background: C.PAPER, borderRadius: "24px", padding: "30px 20px", maxWidth: "400px", width: "100%", textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.1)", border: `2px solid ${C.CORAL}` }}>
           
           <h1 style={{ color: C.CORAL, fontSize: "24px", margin: "0 0 20px" }}>¡ES HORA DE TOMAR!</h1>
@@ -182,7 +177,6 @@ export default function App() {
           </button>
         </div>
 
-        {/* Botones de acción rápida */}
         <div style={{ maxWidth: "400px", width: "100%", marginTop: "20px" }}>
           <button style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginBottom: "10px" }}>
             📞 LLAMAR AL CUIDADOR
@@ -203,7 +197,6 @@ export default function App() {
     return (
       <div style={{ minHeight: "100vh", background: C.CREAM, fontFamily: "'Space Grotesk', 'Segoe UI', sans-serif" }}>
         
-        {/* Barra superior */}
         <div style={{ background: C.TEAL, padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <h1 style={{ color: "#FFF", fontSize: "20px", margin: 0 }}>Contigo Siempre</h1>
           <button onClick={handleVolver} style={{ background: "transparent", border: "1px solid #FFF", color: "#FFF", borderRadius: "8px", padding: "6px 12px", fontSize: "12px", cursor: "pointer" }}>
@@ -211,7 +204,6 @@ export default function App() {
           </button>
         </div>
 
-        {/* Pestañas */}
         <div style={{ display: "flex", background: C.PAPER, borderBottom: `1px solid ${C.LINE}` }}>
           {["Inicio", "Canasta", "Historial", "Ajustes"].map((tab) => (
             <button
@@ -233,12 +225,10 @@ export default function App() {
           ))}
         </div>
 
-        {/* Contenido de la Canasta */}
         <div style={{ padding: "20px" }}>
           <h2 style={{ color: C.INK, fontSize: "22px", marginBottom: "16px" }}>🧺 Canasta de medicamentos</h2>
           <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Aquí puedes ver y agregar los medicamentos de tu ser querido.</p>
 
-          {/* Lista de medicamentos (ejemplo) */}
           <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", borderLeft: `4px solid ${C.TEAL}`, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
@@ -267,7 +257,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Botón para agregar medicamento */}
           <button style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginTop: "12px" }}>
             + Agregar medicamento
           </button>
@@ -276,13 +265,5 @@ export default function App() {
     );
   }
 
-  // ==================== PANTALLA POR DEFECTO ====================
-  return (
-    <div style={{ minHeight: "100vh", background: C.CREAM, fontFamily: "'Space Grotesk', 'Segoe UI', sans-serif", padding: "20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-      <h2 style={{ color: C.INK }}>Demo del Cuidador</h2>
-      <p style={{ color: C.MUTED }}>Próximamente: Canasta, Historial, Ajustes</p>
-      <button onClick={handleVolver} style={{ background: C.TEAL, color: "#FFF", border: "none", borderRadius: "12px", padding: "12px 24px", fontSize: "16px", cursor: "pointer" }}>
-        Volver al inicio
-      </button>
-    </div>
-  );
+  return null;
+}
