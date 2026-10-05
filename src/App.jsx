@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Heart, User, Users, ArrowRight, Moon, Sun, Type } from "lucide-react";
+import { Heart, User, Users, ArrowRight, Moon, Sun, Type, X } from "lucide-react";
 
 // ==================== FIREBASE ====================
 const FIREBASE_CONFIG = {
@@ -61,6 +61,25 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [fontSize, setFontSize] = useState(1);
 
+  // Estado para los medicamentos
+  const [medicamentos, setMedicamentos] = useState([
+    { id: "1", nombre: "Losartán 50mg", dosis: "1 tableta", tipo: "tableta", ml: "", gotas: "", notas: "Tomar con agua, después del desayuno", horarios: "08:00, 20:00", color: "teal" },
+    { id: "2", nombre: "Metformina 850mg", dosis: "5 ml", tipo: "ml", ml: "5", gotas: "", notas: "Tomar con la cena", horarios: "21:00", color: "coral" }
+  ]);
+
+  // Estado para el modal de agregar medicamento
+  const [showModal, setShowModal] = useState(false);
+  const [nuevoMed, setNuevoMed] = useState({
+    nombre: "",
+    tipo: "tableta",
+    dosis: "",
+    ml: "",
+    gotas: "",
+    notas: "",
+    horarios: "",
+    color: "teal"
+  });
+
   const C = darkMode ? DARK : LIGHT;
 
   useEffect(() => {
@@ -90,6 +109,36 @@ export default function App() {
   const handleVolver = () => {
     setStage("welcome");
     setModoDemo(null);
+  };
+
+  // ==================== FUNCIONES DE MEDICAMENTOS ====================
+  const handleAgregarMedicamento = () => {
+    if (!nuevoMed.nombre) return;
+    
+    let dosisFinal = nuevoMed.dosis;
+    if (nuevoMed.tipo === "tableta") dosisFinal = nuevoMed.dosis || "1 tableta";
+    if (nuevoMed.tipo === "ml") dosisFinal = `${nuevoMed.ml || "0"} ml`;
+    if (nuevoMed.tipo === "gotas") dosisFinal = `${nuevoMed.gotas || "0"} gotas`;
+
+    const med = {
+      id: Date.now().toString(),
+      nombre: nuevoMed.nombre,
+      tipo: nuevoMed.tipo,
+      dosis: dosisFinal,
+      ml: nuevoMed.ml,
+      gotas: nuevoMed.gotas,
+      notas: nuevoMed.notas,
+      horarios: nuevoMed.horarios,
+      color: nuevoMed.color
+    };
+
+    setMedicamentos([...medicamentos, med]);
+    setNuevoMed({ nombre: "", tipo: "tableta", dosis: "", ml: "", gotas: "", notas: "", horarios: "", color: "teal" });
+    setShowModal(false);
+  };
+
+  const handleEliminarMedicamento = (id) => {
+    setMedicamentos(medicamentos.filter(m => m.id !== id));
   };
 
   // ==================== PANTALLA DE INICIO ====================
@@ -229,38 +278,159 @@ export default function App() {
           <h2 style={{ color: C.INK, fontSize: "22px", marginBottom: "16px" }}>🧺 Canasta de medicamentos</h2>
           <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Aquí puedes ver y agregar los medicamentos de tu ser querido.</p>
 
-          <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", borderLeft: `4px solid ${C.TEAL}`, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 4px" }}>💊 Losartán 50mg</h3>
-                <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 4px" }}>Dosis: 1 tableta | Horarios: 08:00, 20:00</p>
-                <p style={{ color: C.MUTED, fontSize: "12px", margin: 0 }}>📝 Tomar con agua, después del desayuno</p>
-              </div>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <button style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}>✏️</button>
-                <button style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}>🗑️</button>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", borderLeft: `4px solid ${C.CORAL}`, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 4px" }}>💧 Metformina 850mg</h3>
-                <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 4px" }}>Dosis: 5 ml | Horarios: 21:00</p>
-                <p style={{ color: C.MUTED, fontSize: "12px", margin: 0 }}>📝 Tomar con la cena</p>
-              </div>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <button style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}>✏️</button>
-                <button style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}>🗑️</button>
+          {medicamentos.map((med) => (
+            <div key={med.id} style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", borderLeft: `4px solid ${med.color === "teal" ? C.TEAL : C.CORAL}`, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div>
+                  <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 4px" }}>💊 {med.nombre}</h3>
+                  <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 4px" }}>Dosis: {med.dosis} | Horarios: {med.horarios}</p>
+                  {med.notas && <p style={{ color: C.MUTED, fontSize: "12px", margin: 0 }}>📝 {med.notas}</p>}
+                </div>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}>✏️</button>
+                  <button onClick={() => handleEliminarMedicamento(med.id)} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}>🗑️</button>
+                </div>
               </div>
             </div>
-          </div>
+          ))}
 
-          <button style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginTop: "12px" }}>
+          <button onClick={() => setShowModal(true)} style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginTop: "12px" }}>
             + Agregar medicamento
           </button>
         </div>
+
+        {/* MODAL DE AGREGAR MEDICAMENTO */}
+        {showModal && (
+          <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", zIndex: 1000 }}>
+            <div style={{ background: C.PAPER, borderRadius: "20px", padding: "24px", maxWidth: "400px", width: "100%", maxHeight: "90vh", overflowY: "auto" }}>
+              
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                <h2 style={{ color: C.INK, fontSize: "20px", margin: 0 }}>Nuevo medicamento</h2>
+                <button onClick={() => setShowModal(false)} style={{ background: "transparent", border: "none", cursor: "pointer" }}>
+                  <X size={24} color={C.MUTED} />
+                </button>
+              </div>
+
+              {/* Nombre */}
+              <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Nombre del medicamento</label>
+              <input
+                type="text"
+                value={nuevoMed.nombre}
+                onChange={(e) => setNuevoMed({ ...nuevoMed, nombre: e.target.value })}
+                placeholder="Ej: Losartán 50mg"
+                style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }}
+              />
+
+              {/* Tipo de dosis */}
+              <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Tipo de dosis</label>
+              <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
+                {["tableta", "ml", "gotas", "otra"].map((tipo) => (
+                  <button
+                    key={tipo}
+                    onClick={() => setNuevoMed({ ...nuevoMed, tipo })}
+                    style={{
+                      padding: "8px 16px",
+                      borderRadius: "10px",
+                      border: `1px solid ${nuevoMed.tipo === tipo ? C.TEAL : C.LINE}`,
+                      background: nuevoMed.tipo === tipo ? C.TEAL : "transparent",
+                      color: nuevoMed.tipo === tipo ? "#FFF" : C.INK,
+                      fontSize: "13px",
+                      cursor: "pointer",
+                      textTransform: "capitalize"
+                    }}
+                  >
+                    {tipo}
+                  </button>
+                ))}
+              </div>
+
+              {/* Campos según el tipo */}
+              {nuevoMed.tipo === "tableta" && (
+                <input
+                  type="text"
+                  value={nuevoMed.dosis}
+                  onChange={(e) => setNuevoMed({ ...nuevoMed, dosis: e.target.value })}
+                  placeholder="Ej: 1 tableta"
+                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }}
+                />
+              )}
+
+              {nuevoMed.tipo === "ml" && (
+                <input
+                  type="text"
+                  value={nuevoMed.ml}
+                  onChange={(e) => setNuevoMed({ ...nuevoMed, ml: e.target.value })}
+                  placeholder="Ej: 5"
+                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }}
+                />
+              )}
+
+              {nuevoMed.tipo === "gotas" && (
+                <input
+                  type="text"
+                  value={nuevoMed.gotas}
+                  onChange={(e) => setNuevoMed({ ...nuevoMed, gotas: e.target.value })}
+                  placeholder="Ej: 10"
+                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }}
+                />
+              )}
+
+              {nuevoMed.tipo === "otra" && (
+                <input
+                  type="text"
+                  value={nuevoMed.dosis}
+                  onChange={(e) => setNuevoMed({ ...nuevoMed, dosis: e.target.value })}
+                  placeholder="Ej: 1 cucharada"
+                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }}
+                />
+              )}
+
+              {/* Notas */}
+              <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Notas (opcional)</label>
+              <textarea
+                value={nuevoMed.notas}
+                onChange={(e) => setNuevoMed({ ...nuevoMed, notas: e.target.value })}
+                placeholder="Ej: Tomar con agua, después del desayuno"
+                rows="3"
+                style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box", resize: "vertical" }}
+              />
+
+              {/* Horarios */}
+              <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Horarios</label>
+              <input
+                type="text"
+                value={nuevoMed.horarios}
+                onChange={(e) => setNuevoMed({ ...nuevoMed, horarios: e.target.value })}
+                placeholder="Ej: 08:00, 20:00"
+                style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }}
+              />
+
+              {/* Color */}
+              <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Color</label>
+              <div style={{ display: "flex", gap: "12px", marginBottom: "24px" }}>
+                <button
+                  onClick={() => setNuevoMed({ ...nuevoMed, color: "teal" })}
+                  style={{ width: "40px", height: "40px", borderRadius: "50%", background: C.TEAL, border: nuevoMed.color === "teal" ? `3px solid ${C.INK}` : "none", cursor: "pointer" }}
+                />
+                <button
+                  onClick={() => setNuevoMed({ ...nuevoMed, color: "coral" })}
+                  style={{ width: "40px", height: "40px", borderRadius: "50%", background: C.CORAL, border: nuevoMed.color === "coral" ? `3px solid ${C.INK}` : "none", cursor: "pointer" }}
+                />
+              </div>
+
+              {/* Botones */}
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button onClick={() => setShowModal(false)} style={{ flex: 1, background: "transparent", color: C.MUTED, border: `1px solid ${C.LINE}`, borderRadius: "12px", padding: "14px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>
+                  Cancelar
+                </button>
+                <button onClick={handleAgregarMedicamento} style={{ flex: 1, background: C.TEAL, color: "#FFF", border: "none", borderRadius: "12px", padding: "14px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>
+                  Guardar
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
       </div>
     );
   }
