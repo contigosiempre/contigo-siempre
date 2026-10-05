@@ -77,6 +77,9 @@ export default function App() {
   const [tabActiva, setTabActiva] = useState("Inicio");
   const [menuAbierto, setMenuAbierto] = useState(false);
 
+  // Familia
+  const [codigoFamilia, setCodigoFamilia] = useState("");
+
   // Tutorial
   const [showTutorial, setShowTutorial] = useState(false);
   const [tutorialPaso, setTutorialPaso] = useState(0);
@@ -84,8 +87,7 @@ export default function App() {
   // Medicamentos
   const [medicamentos, setMedicamentos] = useState([
     { id: "1", nombre: "Losartán 50mg", dosis: "1 tableta", tipo: "tableta", ml: "", gotas: "", puff: "", notas: "Tomar con agua, después del desayuno", horarios: "08:00, 20:00", color: "teal", stock: 30, stockInicial: 30, critico: false, rescate: false },
-    { id: "2", nombre: "Insulina", dosis: "10 unidades", tipo: "otra", ml: "", gotas: "", puff: "", notas: "Aplicar en el abdomen", horarios: "08:00", color: "coral", stock: 5, stockInicial: 10, critico: true, rescate: false },
-    { id: "3", nombre: "Salbutamol Inhalador", dosis: "2 puff", tipo: "puff", ml: "", gotas: "", puff: "2", notas: "Usar en caso de crisis", horarios: "A demanda", color: "coral", stock: 10, stockInicial: 10, critico: true, rescate: true }
+    { id: "2", nombre: "Insulina", dosis: "10 unidades", tipo: "otra", ml: "", gotas: "", puff: "", notas: "Aplicar en el abdomen", horarios: "08:00", color: "coral", stock: 5, stockInicial: 10, critico: true, rescate: false }
   ]);
 
   // Historial
@@ -166,6 +168,33 @@ export default function App() {
     }
   };
 
+  // ==================== CREAR FAMILIA ====================
+  const handleCrearFamilia = async () => {
+    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    const nuevaFamilia = {
+      codigo: codigo,
+      nombre: "Familia " + codigo,
+      fechaCreacion: new Date().toISOString(),
+      adultos: [],
+      cuidadores: ["Jairo"],
+      medicamentos: [],
+      historial: []
+    };
+
+    try {
+      await db.collection("familias").doc(codigo).set(nuevaFamilia);
+      console.log("Familia creada con código:", codigo);
+      setCodigoFamilia(codigo);
+      setModoDemo("cuidador");
+      setStage("app");
+      setTabActiva("Inicio");
+    } catch (error) {
+      console.error("Error al crear familia:", error);
+      alert("Hubo un error al crear la familia. Inténtalo de nuevo.");
+    }
+  };
+
   const handleVolver = () => {
     setStage("welcome");
     setModoDemo(null);
@@ -241,8 +270,7 @@ export default function App() {
   // ==================== BÚSQUEDA EN EL CARRO ====================
   const handleBuscar = () => {
     if (!busqueda.trim()) return;
-    
-    // Simulación de resultados basados en la búsqueda
+
     const productosEjemplo = [
       { nombre: "Crema Utopía", precio: "$5.990", categoria: "Cremas" },
       { nombre: "Crema Hidratante", precio: "$4.500", categoria: "Cremas" },
@@ -278,7 +306,7 @@ export default function App() {
             <span style={{ color: C.MUTED, fontSize: "12px" }}>{firebaseEstado === "conectado" ? "Nube conectada" : "Modo local"}</span>
           </div>
 
-          <button style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginBottom: "12px" }}>
+          <button onClick={handleCrearFamilia} style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginBottom: "12px" }}>
             Soy nueva familia
           </button>
           <button onClick={() => setShowVinculacion(true)} style={{ width: "100%", background: "transparent", color: C.INK, border: `2px solid ${C.LINE}`, borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginBottom: "24px" }}>
@@ -312,21 +340,10 @@ export default function App() {
             <div style={{ background: C.PAPER, borderRadius: "20px", padding: "30px 24px", maxWidth: "350px", width: "100%", textAlign: "center" }}>
               <h3 style={{ color: C.INK, fontSize: "18px", margin: "0 0 8px" }}>Vincular con tu cuidador</h3>
               <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 20px" }}>Ingresa el código de 6 dígitos que te dio tu cuidador.</p>
-              <input
-                type="text"
-                maxLength="6"
-                value={codigoIngresado}
-                onChange={(e) => setCodigoIngresado(e.target.value.replace(/\D/g, ""))}
-                placeholder="000000"
-                style={{ width: "100%", padding: "14px", borderRadius: "12px", border: `2px solid ${C.TEAL}`, fontSize: "24px", textAlign: "center", letterSpacing: "8px", marginBottom: "20px", boxSizing: "border-box" }}
-              />
+              <input type="text" maxLength="6" value={codigoIngresado} onChange={(e) => setCodigoIngresado(e.target.value.replace(/\D/g, ""))} placeholder="000000" style={{ width: "100%", padding: "14px", borderRadius: "12px", border: `2px solid ${C.TEAL}`, fontSize: "24px", textAlign: "center", letterSpacing: "8px", marginBottom: "20px", boxSizing: "border-box" }} />
               <div style={{ display: "flex", gap: "10px" }}>
-                <button onClick={() => setShowVinculacion(false)} style={{ flex: 1, background: "transparent", color: C.MUTED, border: `1px solid ${C.LINE}`, borderRadius: "10px", padding: "12px", fontSize: "14px", cursor: "pointer" }}>
-                  Cancelar
-                </button>
-                <button onClick={() => { setShowVinculacion(false); handleDemo("adulto"); }} style={{ flex: 1, background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "12px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>
-                  Vincular
-                </button>
+                <button onClick={() => setShowVinculacion(false)} style={{ flex: 1, background: "transparent", color: C.MUTED, border: `1px solid ${C.LINE}`, borderRadius: "10px", padding: "12px", fontSize: "14px", cursor: "pointer" }}>Cancelar</button>
+                <button onClick={() => { setShowVinculacion(false); handleDemo("adulto"); }} style={{ flex: 1, background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "12px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>Vincular</button>
               </div>
             </div>
           </div>
@@ -335,45 +352,33 @@ export default function App() {
     );
   }
 
-  // ==================== PANTALLA DEL ADULTO MAYOR (SIMPLIFICADA) ====================
+  // ==================== PANTALLA DEL ADULTO MAYOR ====================
   if (modoDemo === "adulto" && stage === "app") {
     const medicamentoActual = medicamentos[0];
 
     return (
       <div style={{ minHeight: "100vh", background: C.CREAM, fontFamily: "'Space Grotesk', 'Segoe UI', sans-serif", padding: "20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-        
         <div style={{ background: C.PAPER, borderRadius: "24px", padding: "30px 20px", maxWidth: "400px", width: "100%", textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.1)", border: `3px solid ${medicamentoActual?.critico ? C.CORAL : C.TEAL}` }}>
-          
           <h1 style={{ color: medicamentoActual?.critico ? C.CORAL : C.TEAL, fontSize: "28px", margin: "0 0 24px", fontWeight: "bold" }}>
             {medicamentoActual?.critico ? "¡URGENTE!" : "¡ES HORA DE TOMAR!"}
           </h1>
-          
           <div style={{ background: medicamentoActual?.critico ? C.CORAL : C.TEAL, borderRadius: "20px", padding: "24px", marginBottom: "24px" }}>
             <h2 style={{ color: "#FFF", fontSize: "32px", margin: 0 }}>💊 {medicamentoActual?.nombre || "Medicamento"}</h2>
           </div>
-
           <div style={{ marginBottom: "24px" }}>
             <p style={{ color: C.INK, fontSize: "24px", margin: "8px 0", fontWeight: "600" }}>{medicamentoActual?.dosis || "1 tableta"}</p>
-            {medicamentoActual?.notas && (
-              <p style={{ color: C.MUTED, fontSize: "20px", margin: "8px 0" }}>{medicamentoActual.notas}</p>
-            )}
+            {medicamentoActual?.notas && <p style={{ color: C.MUTED, fontSize: "20px", margin: "8px 0" }}>{medicamentoActual.notas}</p>}
           </div>
-
-          <button 
-            onClick={() => handleConfirmarToma(medicamentoActual?.id)}
-            style={{ width: "100%", background: C.OK, color: "#FFF", border: "none", borderRadius: "20px", padding: "28px", fontSize: "28px", fontWeight: "bold", cursor: "pointer", marginBottom: "16px", boxShadow: "0 4px 12px rgba(46,125,50,0.4)" }}>
+          <button onClick={() => handleConfirmarToma(medicamentoActual?.id)} style={{ width: "100%", background: C.OK, color: "#FFF", border: "none", borderRadius: "20px", padding: "28px", fontSize: "28px", fontWeight: "bold", cursor: "pointer", marginBottom: "16px", boxShadow: "0 4px 12px rgba(46,125,50,0.4)" }}>
             ✓ YA LA TOMÉ
           </button>
-
           <button style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "16px", padding: "20px", fontSize: "20px", fontWeight: "600", cursor: "pointer", marginBottom: "12px" }}>
             📞 LLAMAR A JAIRO
           </button>
-
           <button style={{ width: "100%", background: "transparent", color: C.CORAL, border: `2px solid ${C.CORAL}`, borderRadius: "16px", padding: "16px", fontSize: "18px", fontWeight: "600", cursor: "pointer" }}>
             ⏰ RECORDAR EN 5 MIN
           </button>
         </div>
-
         <button onClick={handleVolver} style={{ marginTop: "20px", background: "transparent", color: C.MUTED, border: "none", padding: "12px", fontSize: "12px", cursor: "pointer", opacity: 0.5 }}>
           (Salir de demo)
         </button>
@@ -410,7 +415,7 @@ export default function App() {
                 </div>
                 <div>
                   <h2 style={{ color: "#FFF", fontSize: "16px", margin: 0 }}>Contigo Siempre</h2>
-                  <p style={{ color: "rgba(255,255,255,0.8)", fontSize: "12px", margin: 0 }}>Familia Larrota</p>
+                  <p style={{ color: "rgba(255,255,255,0.8)", fontSize: "12px", margin: 0 }}>{codigoFamilia ? `Familia ${codigoFamilia}` : "Familia Larrota"}</p>
                 </div>
               </div>
               <div style={{ padding: "12px 0" }}>
@@ -422,25 +427,7 @@ export default function App() {
                   { id: "Ajustes", icono: <Settings size={20} />, label: "Ajustes" },
                   { id: "Ayuda", icono: <HelpCircle size={20} />, label: "Ayuda" }
                 ].map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => { setTabActiva(item.id); setMenuAbierto(false); if (item.id === "Ayuda") handleIniciarTutorial(); }}
-                    style={{
-                      width: "100%",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "14px",
-                      padding: "14px 20px",
-                      background: tabActiva === item.id ? "rgba(25,118,210,0.1)" : "transparent",
-                      border: "none",
-                      borderLeft: tabActiva === item.id ? `4px solid ${C.TEAL}` : "4px solid transparent",
-                      color: tabActiva === item.id ? C.TEAL : C.INK,
-                      fontSize: "15px",
-                      fontWeight: tabActiva === item.id ? "600" : "400",
-                      cursor: "pointer",
-                      textAlign: "left"
-                    }}
-                  >
+                  <button key={item.id} onClick={() => { setTabActiva(item.id); setMenuAbierto(false); if (item.id === "Ayuda") handleIniciarTutorial(); }} style={{ width: "100%", display: "flex", alignItems: "center", gap: "14px", padding: "14px 20px", background: tabActiva === item.id ? "rgba(25,118,210,0.1)" : "transparent", border: "none", borderLeft: tabActiva === item.id ? `4px solid ${C.TEAL}` : "4px solid transparent", color: tabActiva === item.id ? C.TEAL : C.INK, fontSize: "15px", fontWeight: tabActiva === item.id ? "600" : "400", cursor: "pointer", textAlign: "left" }}>
                     <span style={{ color: tabActiva === item.id ? C.TEAL : C.MUTED }}>{item.icono}</span>
                     {item.label}
                   </button>
@@ -544,25 +531,14 @@ export default function App() {
               <h2 style={{ color: C.INK, fontSize: "22px", marginBottom: "16px" }}>🛒 Carro de compras</h2>
               <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Productos recomendados según el stock y los medicamentos de tu ser querido.</p>
 
-              {/* Buscador */}
               <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
                 <div style={{ flex: 1, display: "flex", alignItems: "center", background: C.PAPER, borderRadius: "12px", border: `1px solid ${C.LINE}`, padding: "0 12px" }}>
                   <Search size={18} color={C.MUTED} />
-                  <input
-                    type="text"
-                    value={busqueda}
-                    onChange={(e) => setBusqueda(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && handleBuscar()}
-                    placeholder="Buscar productos (ej: crema, vitamina, paracetamol)"
-                    style={{ flex: 1, padding: "14px 12px", border: "none", background: "transparent", fontSize: "14px", outline: "none", color: C.INK }}
-                  />
+                  <input type="text" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} onKeyPress={(e) => e.key === "Enter" && handleBuscar()} placeholder="Buscar productos (ej: crema, vitamina, paracetamol)" style={{ flex: 1, padding: "14px 12px", border: "none", background: "transparent", fontSize: "14px", outline: "none", color: C.INK }} />
                 </div>
-                <button onClick={handleBuscar} style={{ background: C.TEAL, color: "#FFF", border: "none", borderRadius: "12px", padding: "14px 20px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>
-                  Buscar
-                </button>
+                <button onClick={handleBuscar} style={{ background: C.TEAL, color: "#FFF", border: "none", borderRadius: "12px", padding: "14px 20px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>Buscar</button>
               </div>
 
-              {/* Resultados de búsqueda */}
               {resultadosBusqueda.length > 0 && (
                 <div style={{ marginBottom: "20px" }}>
                   <h3 style={{ color: C.INK, fontSize: "16px", marginBottom: "12px" }}>Resultados de búsqueda</h3>
@@ -572,15 +548,12 @@ export default function App() {
                         <h4 style={{ color: C.INK, fontSize: "14px", margin: "0 0 4px" }}>{prod.nombre}</h4>
                         <p style={{ color: C.MUTED, fontSize: "12px", margin: 0 }}>{prod.categoria} - {prod.precio}</p>
                       </div>
-                      <button style={{ background: C.OK, color: "#FFF", border: "none", borderRadius: "8px", padding: "8px 12px", fontSize: "12px", fontWeight: "600", cursor: "pointer" }}>
-                        🛒 Agregar
-                      </button>
+                      <button style={{ background: C.OK, color: "#FFF", border: "none", borderRadius: "8px", padding: "8px 12px", fontSize: "12px", fontWeight: "600", cursor: "pointer" }}>🛒 Agregar</button>
                     </div>
                   ))}
                 </div>
               )}
 
-              {/* Productos recomendados por stock bajo */}
               {medicamentos.filter(m => m.stock < 5).length > 0 ? (
                 medicamentos.filter(m => m.stock < 5).map((med) => (
                   <div key={med.id} style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
@@ -615,27 +588,19 @@ export default function App() {
 
               {historial.map((item) => (
                 <div key={item.id} style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", display: "flex", alignItems: "center", gap: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-                  {item.estado === "tomado" ? (
-                    <CheckCircle size={24} color={C.OK} />
-                  ) : (
-                    <XCircle size={24} color={C.CORAL} />
-                  )}
+                  {item.estado === "tomado" ? <CheckCircle size={24} color={C.OK} /> : <XCircle size={24} color={C.CORAL} />}
                   <div style={{ flex: 1 }}>
                     <h3 style={{ color: C.INK, fontSize: "15px", margin: "0 0 4px" }}>{item.medicamento}</h3>
                     <p style={{ color: C.MUTED, fontSize: "13px", margin: 0 }}>{item.fecha} - {item.hora}</p>
                   </div>
-                  <span style={{ color: item.estado === "tomado" ? C.OK : C.CORAL, fontSize: "12px", fontWeight: "600" }}>
-                    {item.estado === "tomado" ? "Tomado" : "No tomado"}
-                  </span>
+                  <span style={{ color: item.estado === "tomado" ? C.OK : C.CORAL, fontSize: "12px", fontWeight: "600" }}>{item.estado === "tomado" ? "Tomado" : "No tomado"}</span>
                 </div>
               ))}
 
               <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginTop: "20px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
                 <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 8px" }}>📸 Verificación por foto</h3>
                 <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 12px" }}>Cada 7 días, toma una foto de los sachets para verificar el stock.</p>
-                <button onClick={() => setShowFotoModal(true)} style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "12px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>
-                  📷 Tomar foto de verificación
-                </button>
+                <button onClick={() => setShowFotoModal(true)} style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "12px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>📷 Tomar foto de verificación</button>
               </div>
             </>
           )}
@@ -647,29 +612,24 @@ export default function App() {
               
               <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
                 <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 8px" }}>👨‍👩‍👧‍👦 Familia</h3>
-                <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 4px" }}>Nombre: Familia Larrota</p>
-                <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 8px" }}>Código: <strong style={{ color: C.TEAL }}>CONTIGO2026</strong></p>
-                <button style={{ background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "8px 16px", fontSize: "13px", cursor: "pointer" }}>
-                  📋 Copiar código
-                </button>
+                <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 4px" }}>Código de familia:</p>
+                <p style={{ color: C.TEAL, fontSize: "28px", fontWeight: "bold", margin: "0 0 12px", letterSpacing: "4px" }}>{codigoFamilia || "------"}</p>
+                <p style={{ color: C.MUTED, fontSize: "12px", margin: "0 0 12px" }}>Comparte este código con el adulto mayor para vincular su celular.</p>
+                <button style={{ background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "8px 16px", fontSize: "13px", cursor: "pointer" }}>📋 Copiar código</button>
               </div>
 
               <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
                 <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 8px" }}>👴 Adultos mayores</h3>
                 <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 4px" }}>• Rosa (08:00, 20:00)</p>
                 <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 8px" }}>• Luis (21:00)</p>
-                <button style={{ background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "8px 16px", fontSize: "13px", cursor: "pointer" }}>
-                  + Agregar adulto mayor
-                </button>
+                <button style={{ background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "8px 16px", fontSize: "13px", cursor: "pointer" }}>+ Agregar adulto mayor</button>
               </div>
 
               <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
                 <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 8px" }}>👥 Cuidadores</h3>
                 <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 4px" }}>• Jairo (tú)</p>
                 <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 8px" }}>• María</p>
-                <button style={{ background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "8px 16px", fontSize: "13px", cursor: "pointer" }}>
-                  + Invitar cuidador
-                </button>
+                <button style={{ background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "8px 16px", fontSize: "13px", cursor: "pointer" }}>+ Invitar cuidador</button>
               </div>
 
               <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
@@ -700,12 +660,8 @@ export default function App() {
 
               <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
                 <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 8px" }}>⚖️ Legal</h3>
-                <p style={{ color: C.MUTED, fontSize: "12px", margin: "0 0 12px" }}>
-                  Esta app cumple con la Ley N° 21.719 de Protección de Datos Personales de Chile. Tus datos de salud son tratados con confidencialidad y solo para la gestión de recordatorios.
-                </p>
-                <button style={{ background: "transparent", color: C.TEAL, border: "none", cursor: "pointer", fontSize: "13px", textDecoration: "underline", padding: 0 }}>
-                  Ver términos y condiciones completos
-                </button>
+                <p style={{ color: C.MUTED, fontSize: "12px", margin: "0 0 12px" }}>Esta app cumple con la Ley N° 21.719 de Protección de Datos Personales de Chile. Tus datos de salud son tratados con confidencialidad y solo para la gestión de recordatorios.</p>
+                <button style={{ background: "transparent", color: C.TEAL, border: "none", cursor: "pointer", fontSize: "13px", textDecoration: "underline", padding: 0 }}>Ver términos y condiciones completos</button>
               </div>
             </>
           )}
@@ -716,12 +672,9 @@ export default function App() {
         {showModal && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", zIndex: 1000 }}>
             <div style={{ background: C.PAPER, borderRadius: "20px", padding: "24px", maxWidth: "400px", width: "100%", maxHeight: "90vh", overflowY: "auto" }}>
-              
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
                 <h2 style={{ color: C.INK, fontSize: "20px", margin: 0 }}>Nuevo medicamento</h2>
-                <button onClick={() => setShowModal(false)} style={{ background: "transparent", border: "none", cursor: "pointer" }}>
-                  <X size={24} color={C.MUTED} />
-                </button>
+                <button onClick={() => setShowModal(false)} style={{ background: "transparent", border: "none", cursor: "pointer" }}><X size={24} color={C.MUTED} /></button>
               </div>
 
               <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Nombre del medicamento</label>
@@ -730,9 +683,7 @@ export default function App() {
               <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Tipo de dosis</label>
               <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
                 {["tableta", "ml", "gotas", "puff", "otra"].map((tipo) => (
-                  <button key={tipo} onClick={() => setNuevoMed({ ...nuevoMed, tipo })} style={{ padding: "8px 16px", borderRadius: "10px", border: `1px solid ${nuevoMed.tipo === tipo ? C.TEAL : C.LINE}`, background: nuevoMed.tipo === tipo ? C.TEAL : "transparent", color: nuevoMed.tipo === tipo ? "#FFF" : C.INK, fontSize: "13px", cursor: "pointer", textTransform: "capitalize" }}>
-                    {tipo}
-                  </button>
+                  <button key={tipo} onClick={() => setNuevoMed({ ...nuevoMed, tipo })} style={{ padding: "8px 16px", borderRadius: "10px", border: `1px solid ${nuevoMed.tipo === tipo ? C.TEAL : C.LINE}`, background: nuevoMed.tipo === tipo ? C.TEAL : "transparent", color: nuevoMed.tipo === tipo ? "#FFF" : C.INK, fontSize: "13px", cursor: "pointer", textTransform: "capitalize" }}>{tipo}</button>
                 ))}
               </div>
 
@@ -745,15 +696,11 @@ export default function App() {
               <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Notas (opcional)</label>
               <textarea value={nuevoMed.notas} onChange={(e) => setNuevoMed({ ...nuevoMed, notas: e.target.value })} placeholder="Ej: Tomar con agua, después del desayuno" rows="3" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box", resize: "vertical" }} />
 
-              {/* Modo rescate */}
               <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px", background: C.CREAM, padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}` }}>
                 <input type="checkbox" id="rescate" checked={nuevoMed.rescate} onChange={(e) => setNuevoMed({ ...nuevoMed, rescate: e.target.checked })} style={{ width: "20px", height: "20px", cursor: "pointer" }} />
-                <label htmlFor="rescate" style={{ color: C.INK, fontSize: "14px", cursor: "pointer", flex: 1 }}>
-                  <strong>Modo rescate</strong> (medicamento de uso a demanda, sin horario fijo)
-                </label>
+                <label htmlFor="rescate" style={{ color: C.INK, fontSize: "14px", cursor: "pointer", flex: 1 }}><strong>Modo rescate</strong> (medicamento de uso a demanda, sin horario fijo)</label>
               </div>
 
-              {/* Horarios */}
               {!nuevoMed.rescate && (
                 <>
                   <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Horarios</label>
@@ -791,9 +738,7 @@ export default function App() {
                     <AlertCircle size={20} color={C.CORAL} />
                     <h4 style={{ color: C.CORAL, fontSize: "14px", margin: 0, fontWeight: "700" }}>MEDICAMENTO CRÍTICO</h4>
                   </div>
-                  <p style={{ color: C.CORAL, fontSize: "13px", margin: 0, lineHeight: "1.4" }}>
-                    Este medicamento ha sido identificado como crítico. Si el adulto mayor no confirma la toma en el horario indicado, se enviará una notificación inmediata al cuidador.
-                  </p>
+                  <p style={{ color: C.CORAL, fontSize: "13px", margin: 0, lineHeight: "1.4" }}>Este medicamento ha sido identificado como crítico. Si el adulto mayor no confirma la toma en el horario indicado, se enviará una notificación inmediata al cuidador.</p>
                 </div>
               )}
 
@@ -801,7 +746,6 @@ export default function App() {
                 <button onClick={() => setShowModal(false)} style={{ flex: 1, background: "transparent", color: C.MUTED, border: `1px solid ${C.LINE}`, borderRadius: "12px", padding: "14px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>Cancelar</button>
                 <button onClick={handleAgregarMedicamento} style={{ flex: 1, background: C.TEAL, color: "#FFF", border: "none", borderRadius: "12px", padding: "14px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>Guardar</button>
               </div>
-
             </div>
           </div>
         )}
@@ -825,7 +769,7 @@ export default function App() {
           </div>
         )}
 
-        {/* TUTORIAL MODAL (tooltip pequeño) */}
+        {/* TUTORIAL MODAL */}
         {showTutorial && (
           <div style={{ position: "fixed", bottom: "20px", right: "20px", background: C.PAPER, borderRadius: "16px", padding: "20px", maxWidth: "300px", width: "100%", boxShadow: "0 8px 32px rgba(0,0,0,0.3)", zIndex: 2000 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
