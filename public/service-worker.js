@@ -1,4 +1,4 @@
-// firebase-messaging-sw.js
+// ==================== FIREBASE MESSAGING ====================
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 
@@ -15,16 +15,18 @@ const messaging = firebase.messaging();
 
 // Manejar notificaciones en segundo plano (celular bloqueado o app cerrada)
 messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw.js] Mensaje recibido en segundo plano:', payload);
+  console.log('[service-worker.js] Mensaje recibido en segundo plano:', payload);
   
   const notificationTitle = payload.notification?.title || "Contigo Siempre";
   const notificationOptions = {
     body: payload.notification?.body || "Es hora de tomar tu medicamento",
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
-    vibrate: [200, 100, 200, 100, 200],
+    vibrate: [500, 200, 500, 200, 500],
     sound: 'default',
     requireInteraction: true,
+    priority: 'high',
+    importance: 'high',
     actions: [
       { action: 'tomar', title: '✓ Ya la tomé' },
       { action: 'postergar', title: '⏰ Postergar 5 min' }
@@ -40,7 +42,6 @@ self.addEventListener('notificationclick', (event) => {
   
   if (event.action === 'tomar') {
     console.log('El adulto mayor confirmó la toma');
-    // Abrir la app para confirmar la toma
     event.waitUntil(
       clients.matchAll({ type: 'window' }).then((clientList) => {
         for (const client of clientList) {
@@ -56,15 +57,16 @@ self.addEventListener('notificationclick', (event) => {
     );
   } else if (event.action === 'postergar') {
     console.log('El adulto mayor postergó 5 minutos');
-    // Reprogramar la notificación en 5 minutos
     event.waitUntil(
       new Promise((resolve) => {
         setTimeout(() => {
           self.registration.showNotification("⏰ Recordatorio postergado", {
             body: "Es hora de tomar tu medicamento",
             icon: '/icons/icon-192.png',
-            vibrate: [200, 100, 200],
+            vibrate: [500, 200, 500],
             sound: 'default',
+            requireInteraction: true,
+            priority: 'high',
             actions: [
               { action: 'tomar', title: '✓ Ya la tomé' },
               { action: 'postergar', title: '⏰ Postergar 5 min' }
@@ -75,7 +77,6 @@ self.addEventListener('notificationclick', (event) => {
       })
     );
   } else {
-    // Si toca la notificación sin botón, abre la app
     event.waitUntil(
       clients.matchAll({ type: 'window' }).then((clientList) => {
         for (const client of clientList) {
@@ -90,8 +91,9 @@ self.addEventListener('notificationclick', (event) => {
     );
   }
 });
+
 // ==================== CACHÉ DE LA PWA ====================
-const CACHE_NAME = 'contigo-siempre-v10';
+const CACHE_NAME = 'contigo-siempre-v11';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
@@ -122,4 +124,25 @@ self.addEventListener('activate', (event) => {
     })
   );
   self.clients.claim();
+});
+
+self.addEventListener('fetch', (event) => {
+  // Solo manejar peticiones del propio dominio
+  if (!event.request.url.startsWith(self.location.origin)) {
+    return;
+  }
+
+  // Ignorar peticiones de OneSignal y Firebase
+  if (event.request.url.includes('onesignal') || event.request.url.includes('firebase')) {
+    return;
+  }
+
+  // Ignorar peticiones que no sean GET
+  if (event.request.method !== 'GET') return;
+
+  event.respondWith(
+    caches.match(event.request).then((response) => {
+      return response || fetch(event.request);
+    })
+  );
 });
