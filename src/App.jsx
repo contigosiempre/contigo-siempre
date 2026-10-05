@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Heart, User, Users, ArrowRight, Moon, Sun, Type, X, CheckCircle, XCircle, Menu, ShoppingCart, Camera, Phone, Clock, Settings, Home, List, HelpCircle, LogOut } from "lucide-react";
+import { Heart, User, Users, ArrowRight, Moon, Sun, Type, X, CheckCircle, XCircle, Menu, ShoppingCart, Camera, Phone, Clock, Settings, Home, List, HelpCircle, LogOut, Search, Star, AlertCircle } from "lucide-react";
 
 // ==================== FIREBASE ====================
 const FIREBASE_CONFIG = {
@@ -50,8 +50,8 @@ function cuandoDbListo(cb) {
 }
 
 // ==================== COLORES ====================
-const LIGHT = { INK: "#1A237E", TEAL: "#1976D2", CORAL: "#D32F2F", CREAM: "#FFFFFF", PAPER: "#FFFFFF", LINE: "#E0E4EB", MUTED: "#5F6B7A", OK: "#2E7D32" };
-const DARK = { INK: "#F5F7FA", TEAL: "#64B5F6", CORAL: "#EF5350", CREAM: "#0F182E", PAPER: "#16243A", LINE: "#2A3A52", MUTED: "#9FB0C3", OK: "#66BB6A" };
+const LIGHT = { INK: "#1A237E", TEAL: "#1976D2", CORAL: "#D32F2F", CREAM: "#FFFFFF", PAPER: "#FFFFFF", LINE: "#E0E4EB", MUTED: "#5F6B7A", OK: "#2E7D32", WARN: "#F57C00" };
+const DARK = { INK: "#F5F7FA", TEAL: "#64B5F6", CORAL: "#EF5350", CREAM: "#0F182E", PAPER: "#16243A", LINE: "#2A3A52", MUTED: "#9FB0C3", OK: "#66BB6A", WARN: "#FFB74D" };
 
 // ==================== LISTA DE MEDICAMENTOS CRÍTICOS ====================
 const MEDICAMENTOS_CRITICOS = [
@@ -83,8 +83,9 @@ export default function App() {
 
   // Medicamentos
   const [medicamentos, setMedicamentos] = useState([
-    { id: "1", nombre: "Losartán 50mg", dosis: "1 tableta", tipo: "tableta", ml: "", gotas: "", notas: "Tomar con agua, después del desayuno", horarios: "08:00, 20:00", color: "teal", stock: 30, stockInicial: 30, critico: false, verificado: true },
-    { id: "2", nombre: "Insulina", dosis: "10 unidades", tipo: "otra", ml: "", gotas: "", notas: "Aplicar en el abdomen", horarios: "08:00", color: "coral", stock: 5, stockInicial: 10, critico: true, verificado: false }
+    { id: "1", nombre: "Losartán 50mg", dosis: "1 tableta", tipo: "tableta", ml: "", gotas: "", puff: "", notas: "Tomar con agua, después del desayuno", horarios: "08:00, 20:00", color: "teal", stock: 30, stockInicial: 30, critico: false, rescate: false },
+    { id: "2", nombre: "Insulina", dosis: "10 unidades", tipo: "otra", ml: "", gotas: "", puff: "", notas: "Aplicar en el abdomen", horarios: "08:00", color: "coral", stock: 5, stockInicial: 10, critico: true, rescate: false },
+    { id: "3", nombre: "Salbutamol Inhalador", dosis: "2 puff", tipo: "puff", ml: "", gotas: "", puff: "2", notas: "Usar en caso de crisis", horarios: "A demanda", color: "coral", stock: 10, stockInicial: 10, critico: true, rescate: true }
   ]);
 
   // Historial
@@ -103,10 +104,12 @@ export default function App() {
     dosis: "",
     ml: "",
     gotas: "",
+    puff: "",
     notas: "",
     horarios: "",
     color: "teal",
-    stock: "30"
+    stock: "30",
+    rescate: false
   });
 
   // Modal de verificación por foto
@@ -115,8 +118,11 @@ export default function App() {
 
   // Modal de vinculación
   const [showVinculacion, setShowVinculacion] = useState(false);
-  const [codigoVinculacion, setCodigoVinculacion] = useState("");
   const [codigoIngresado, setCodigoIngresado] = useState("");
+
+  // Búsqueda en el carro de compras
+  const [busqueda, setBusqueda] = useState("");
+  const [resultadosBusqueda, setResultadosBusqueda] = useState([]);
 
   const C = darkMode ? DARK : LIGHT;
 
@@ -125,7 +131,7 @@ export default function App() {
     { titulo: "Bienvenido a Contigo Siempre", texto: "Te enseñaré a usar la app en 9 pasos. Empecemos por lo básico." },
     { titulo: "Crea tu familia", texto: "Haz clic en 'Soy nueva familia' para crear un nuevo grupo familiar. O ingresa un código si ya tienes uno." },
     { titulo: "Agrega un adulto mayor", texto: "En Ajustes, agrega a la persona a la que le recordarás sus medicamentos." },
-    { titulo: "Agrega un medicamento", texto: "En la pestaña Canasta, haz clic en '+ Agregar medicamento' para crear un nuevo recordatorio." },
+    { titulo: "Agrega un medicamento", texto: "En la pestaña Medicamentos, haz clic en '+ Agregar medicamento' para crear un nuevo recordatorio." },
     { titulo: "Configura los horarios", texto: "En el formulario, define los horarios en que el adulto mayor debe tomar cada medicamento." },
     { titulo: "Pantalla del adulto mayor", texto: "Esta es la pantalla que verá el adulto mayor. Es simple, con letra grande y botones claros." },
     { titulo: "Confirma una toma", texto: "Cuando el adulto mayor tome su medicamento, debe presionar el botón verde '✓ YA LA TOMÉ'." },
@@ -190,11 +196,12 @@ export default function App() {
   // ==================== FUNCIONES DE MEDICAMENTOS ====================
   const handleAgregarMedicamento = () => {
     if (!nuevoMed.nombre) return;
-    
+
     let dosisFinal = nuevoMed.dosis;
     if (nuevoMed.tipo === "tableta") dosisFinal = nuevoMed.dosis || "1 tableta";
     if (nuevoMed.tipo === "ml") dosisFinal = `${nuevoMed.ml || "0"} ml`;
     if (nuevoMed.tipo === "gotas") dosisFinal = `${nuevoMed.gotas || "0"} gotas`;
+    if (nuevoMed.tipo === "puff") dosisFinal = `${nuevoMed.puff || "0"} puff`;
 
     const med = {
       id: Date.now().toString(),
@@ -203,17 +210,18 @@ export default function App() {
       dosis: dosisFinal,
       ml: nuevoMed.ml,
       gotas: nuevoMed.gotas,
+      puff: nuevoMed.puff,
       notas: nuevoMed.notas,
-      horarios: nuevoMed.horarios,
+      horarios: nuevoMed.rescate ? "A demanda" : nuevoMed.horarios,
       color: esCritico(nuevoMed.nombre) ? "coral" : nuevoMed.color,
       stock: parseInt(nuevoMed.stock) || 30,
       stockInicial: parseInt(nuevoMed.stock) || 30,
       critico: esCritico(nuevoMed.nombre),
-      verificado: false
+      rescate: nuevoMed.rescate
     };
 
     setMedicamentos([...medicamentos, med]);
-    setNuevoMed({ nombre: "", tipo: "tableta", dosis: "", ml: "", gotas: "", notas: "", horarios: "", color: "teal", stock: "30" });
+    setNuevoMed({ nombre: "", tipo: "tableta", dosis: "", ml: "", gotas: "", puff: "", notas: "", horarios: "", color: "teal", stock: "30", rescate: false });
     setShowModal(false);
   };
 
@@ -230,13 +238,27 @@ export default function App() {
     }));
   };
 
-  const handleAjustarStock = (id, nuevoStock) => {
-    setMedicamentos(medicamentos.map(m => {
-      if (m.id === id) {
-        return { ...m, stock: parseInt(nuevoStock) || 0 };
-      }
-      return m;
-    }));
+  // ==================== BÚSQUEDA EN EL CARRO ====================
+  const handleBuscar = () => {
+    if (!busqueda.trim()) return;
+    
+    // Simulación de resultados basados en la búsqueda
+    const productosEjemplo = [
+      { nombre: "Crema Utopía", precio: "$5.990", categoria: "Cremas" },
+      { nombre: "Crema Hidratante", precio: "$4.500", categoria: "Cremas" },
+      { nombre: "Crema Antiinflamatoria", precio: "$6.200", categoria: "Cremas" },
+      { nombre: "Vitamina C", precio: "$3.990", categoria: "Vitaminas" },
+      { nombre: "Vitamina D", precio: "$4.500", categoria: "Vitaminas" },
+      { nombre: "Paracetamol", precio: "$2.990", categoria: "Analgésicos" },
+      { nombre: "Ibuprofeno", precio: "$3.500", categoria: "Analgésicos" }
+    ];
+
+    const filtrados = productosEjemplo.filter(p => 
+      p.nombre.toLowerCase().includes(busqueda.toLowerCase()) || 
+      p.categoria.toLowerCase().includes(busqueda.toLowerCase())
+    );
+
+    setResultadosBusqueda(filtrados);
   };
 
   // ==================== PANTALLA DE INICIO ====================
@@ -315,13 +337,11 @@ export default function App() {
 
   // ==================== PANTALLA DEL ADULTO MAYOR (SIMPLIFICADA) ====================
   if (modoDemo === "adulto" && stage === "app") {
-    // Obtener el primer medicamento pendiente (el que toca ahora)
-    const medicamentoActual = medicamentos[0]; // En producción, se calcularía según la hora
+    const medicamentoActual = medicamentos[0];
 
     return (
       <div style={{ minHeight: "100vh", background: C.CREAM, fontFamily: "'Space Grotesk', 'Segoe UI', sans-serif", padding: "20px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
         
-        {/* Tarjeta principal - SÚPER SIMPLE */}
         <div style={{ background: C.PAPER, borderRadius: "24px", padding: "30px 20px", maxWidth: "400px", width: "100%", textAlign: "center", boxShadow: "0 8px 32px rgba(0,0,0,0.1)", border: `3px solid ${medicamentoActual?.critico ? C.CORAL : C.TEAL}` }}>
           
           <h1 style={{ color: medicamentoActual?.critico ? C.CORAL : C.TEAL, fontSize: "28px", margin: "0 0 24px", fontWeight: "bold" }}>
@@ -339,25 +359,21 @@ export default function App() {
             )}
           </div>
 
-          {/* Botón GIGANTE de "Ya la tomé" */}
           <button 
             onClick={() => handleConfirmarToma(medicamentoActual?.id)}
             style={{ width: "100%", background: C.OK, color: "#FFF", border: "none", borderRadius: "20px", padding: "28px", fontSize: "28px", fontWeight: "bold", cursor: "pointer", marginBottom: "16px", boxShadow: "0 4px 12px rgba(46,125,50,0.4)" }}>
             ✓ YA LA TOMÉ
           </button>
 
-          {/* Botón de llamar al cuidador */}
           <button style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "16px", padding: "20px", fontSize: "20px", fontWeight: "600", cursor: "pointer", marginBottom: "12px" }}>
             📞 LLAMAR A JAIRO
           </button>
 
-          {/* Botón de postergar */}
           <button style={{ width: "100%", background: "transparent", color: C.CORAL, border: `2px solid ${C.CORAL}`, borderRadius: "16px", padding: "16px", fontSize: "18px", fontWeight: "600", cursor: "pointer" }}>
             ⏰ RECORDAR EN 5 MIN
           </button>
         </div>
 
-        {/* Botón pequeño para volver (solo para demo) */}
         <button onClick={handleVolver} style={{ marginTop: "20px", background: "transparent", color: C.MUTED, border: "none", padding: "12px", fontSize: "12px", cursor: "pointer", opacity: 0.5 }}>
           (Salir de demo)
         </button>
@@ -370,7 +386,7 @@ export default function App() {
     return (
       <div style={{ minHeight: "100vh", background: C.CREAM, fontFamily: "'Space Grotesk', 'Segoe UI', sans-serif", position: "relative" }}>
         
-        {/* Barra superior con menú hamburguesa */}
+        {/* Barra superior */}
         <div style={{ background: C.TEAL, padding: "16px 20px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <button onClick={() => setMenuAbierto(true)} style={{ background: "transparent", border: "none", cursor: "pointer", padding: 0 }}>
@@ -383,16 +399,11 @@ export default function App() {
           </button>
         </div>
 
-        {/* MENÚ LATERAL (DRAWER) */}
+        {/* MENÚ LATERAL */}
         {menuAbierto && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000 }}>
-            {/* Overlay oscuro */}
             <div onClick={() => setMenuAbierto(false)} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)" }} />
-            
-            {/* Menú */}
             <div style={{ position: "absolute", top: 0, left: 0, bottom: 0, width: "280px", background: C.PAPER, boxShadow: "4px 0 20px rgba(0,0,0,0.3)", overflowY: "auto" }}>
-              
-              {/* Encabezado del menú */}
               <div style={{ background: C.TEAL, padding: "24px 20px", display: "flex", alignItems: "center", gap: "12px" }}>
                 <div style={{ width: "50px", height: "50px", borderRadius: "50%", background: "#FFF", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <Heart size={28} color={C.TEAL} />
@@ -402,12 +413,10 @@ export default function App() {
                   <p style={{ color: "rgba(255,255,255,0.8)", fontSize: "12px", margin: 0 }}>Familia Larrota</p>
                 </div>
               </div>
-
-              {/* Opciones del menú */}
               <div style={{ padding: "12px 0" }}>
                 {[
                   { id: "Inicio", icono: <Home size={20} />, label: "Inicio" },
-                  { id: "Canasta", icono: <ShoppingCart size={20} />, label: "Canasta" },
+                  { id: "Canasta", icono: <ShoppingCart size={20} />, label: "Medicamentos" },
                   { id: "Carro", icono: <ShoppingCart size={20} />, label: "Carro de compras" },
                   { id: "Historial", icono: <List size={20} />, label: "Historial" },
                   { id: "Ajustes", icono: <Settings size={20} />, label: "Ajustes" },
@@ -436,25 +445,8 @@ export default function App() {
                     {item.label}
                   </button>
                 ))}
-
                 <div style={{ borderTop: `1px solid ${C.LINE}`, margin: "12px 0" }} />
-
-                <button
-                  onClick={handleVolver}
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "14px",
-                    padding: "14px 20px",
-                    background: "transparent",
-                    border: "none",
-                    color: C.CORAL,
-                    fontSize: "15px",
-                    cursor: "pointer",
-                    textAlign: "left"
-                  }}
-                >
+                <button onClick={handleVolver} style={{ width: "100%", display: "flex", alignItems: "center", gap: "14px", padding: "14px 20px", background: "transparent", border: "none", color: C.CORAL, fontSize: "15px", cursor: "pointer", textAlign: "left" }}>
                   <LogOut size={20} />
                   Salir
                 </button>
@@ -463,25 +455,55 @@ export default function App() {
           </div>
         )}
 
-        {/* CONTENIDO DE LA PESTAÑA ACTIVA */}
+        {/* CONTENIDO */}
         <div style={{ padding: "20px" }}>
           
           {/* PESTAÑA INICIO */}
           {tabActiva === "Inicio" && (
             <>
-              <h2 style={{ color: C.INK, fontSize: "22px", marginBottom: "16px" }}>🏠 Resumen del día</h2>
-              <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Aquí verás el resumen de las tomas de tu ser querido.</p>
-              <div style={{ background: C.PAPER, borderRadius: "16px", padding: "20px", textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-                <h3 style={{ color: C.TEAL, fontSize: "36px", margin: "0 0 8px" }}>3 / 4</h3>
-                <p style={{ color: C.MUTED, fontSize: "14px", margin: 0 }}>Tomas confirmadas hoy</p>
+              <h2 style={{ color: C.INK, fontSize: "22px", marginBottom: "16px" }}>📅 Calendario de adherencia</h2>
+              <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Verde: todas las tomas. Amarillo: faltó alguna. Rojo: faltaron varias.</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "8px", marginBottom: "20px" }}>
+                {["L", "M", "M", "J", "V", "S", "D"].map((dia, i) => (
+                  <div key={i} style={{ textAlign: "center", color: C.MUTED, fontSize: "12px", fontWeight: "600" }}>{dia}</div>
+                ))}
+                {[
+                  { dia: 1, estado: "verde" }, { dia: 2, estado: "verde" }, { dia: 3, estado: "amarillo" }, { dia: 4, estado: "verde" },
+                  { dia: 5, estado: "rojo" }, { dia: 6, estado: "verde" }, { dia: 7, estado: "verde" },
+                  { dia: 8, estado: "amarillo" }, { dia: 9, estado: "verde" }, { dia: 10, estado: "verde" }, { dia: 11, estado: "verde" },
+                  { dia: 12, estado: "amarillo" }, { dia: 13, estado: "rojo" }, { dia: 14, estado: "verde" },
+                  { dia: 15, estado: "verde" }, { dia: 16, estado: "verde" }, { dia: 17, estado: "verde" }, { dia: 18, estado: "amarillo" },
+                  { dia: 19, estado: "verde" }, { dia: 20, estado: "verde" }, { dia: 21, estado: "verde" },
+                  { dia: 22, estado: "rojo" }, { dia: 23, estado: "verde" }, { dia: 24, estado: "verde" }, { dia: 25, estado: "verde" },
+                  { dia: 26, estado: "amarillo" }, { dia: 27, estado: "verde" }, { dia: 28, estado: "verde" },
+                  { dia: 29, estado: "verde" }, { dia: 30, estado: "verde" }, { dia: 31, estado: "verde" }
+                ].map((item) => (
+                  <div key={item.dia} style={{ aspectRatio: "1", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "8px", background: item.estado === "verde" ? "rgba(46,125,50,0.2)" : item.estado === "amarillo" ? "rgba(255,193,7,0.2)" : "rgba(211,47,47,0.2)", color: item.estado === "verde" ? C.OK : item.estado === "amarillo" ? C.WARN : C.CORAL, fontSize: "14px", fontWeight: "600", border: `1px solid ${item.estado === "verde" ? C.OK : item.estado === "amarillo" ? C.WARN : C.CORAL}` }}>
+                    {item.dia}
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: "flex", justifyContent: "center", gap: "16px", flexWrap: "wrap" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{ width: "12px", height: "12px", borderRadius: "3px", background: C.OK }}></span>
+                  <span style={{ color: C.MUTED, fontSize: "12px" }}>Completo</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{ width: "12px", height: "12px", borderRadius: "3px", background: C.WARN }}></span>
+                  <span style={{ color: C.MUTED, fontSize: "12px" }}>Faltó alguno</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{ width: "12px", height: "12px", borderRadius: "3px", background: C.CORAL }}></span>
+                  <span style={{ color: C.MUTED, fontSize: "12px" }}>Faltaron varios</span>
+                </div>
               </div>
             </>
           )}
 
-          {/* PESTAÑA CANASTA */}
+          {/* PESTAÑA MEDICAMENTOS (CANASTA) */}
           {tabActiva === "Canasta" && (
             <>
-              <h2 style={{ color: C.INK, fontSize: "22px", marginBottom: "16px" }}>🧺 Canasta de medicamentos</h2>
+              <h2 style={{ color: C.INK, fontSize: "22px", marginBottom: "16px" }}>💊 Medicamentos</h2>
               <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Aquí puedes ver y agregar los medicamentos de tu ser querido.</p>
 
               {medicamentos.map((med) => (
@@ -489,13 +511,12 @@ export default function App() {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                     <div style={{ flex: 1 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-                        <h3 style={{ color: C.INK, fontSize: "16px", margin: 0 }}>💊 {med.nombre}</h3>
+                        <h3 style={{ color: C.INK, fontSize: "16px", margin: 0 }}>{med.nombre}</h3>
                         {med.critico && <span style={{ background: C.CORAL, color: "#FFF", fontSize: "10px", padding: "2px 6px", borderRadius: "4px", fontWeight: "600" }}>CRÍTICO</span>}
+                        {med.rescate && <span style={{ background: C.WARN, color: "#FFF", fontSize: "10px", padding: "2px 6px", borderRadius: "4px", fontWeight: "600" }}>RESCATE</span>}
                       </div>
                       <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 4px" }}>Dosis: {med.dosis} | Horarios: {med.horarios}</p>
                       {med.notas && <p style={{ color: C.MUTED, fontSize: "12px", margin: "0 0 8px" }}>📝 {med.notas}</p>}
-                      
-                      {/* Stock */}
                       <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "8px" }}>
                         <span style={{ color: med.stock < 5 ? C.CORAL : C.MUTED, fontSize: "12px", fontWeight: med.stock < 5 ? "600" : "400" }}>
                           📦 Stock: {med.stock} unidades
@@ -504,14 +525,14 @@ export default function App() {
                       </div>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                      <button style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}>✏️</button>
+                      <button onClick={() => { setNuevoMed({ ...med, stock: med.stock.toString() }); setShowModal(true); }} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}>✏️</button>
                       <button onClick={() => handleEliminarMedicamento(med.id)} style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: "16px" }}>🗑️</button>
                     </div>
                   </div>
                 </div>
               ))}
 
-              <button onClick={() => setShowModal(true)} style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginTop: "12px" }}>
+              <button onClick={() => { setNuevoMed({ nombre: "", tipo: "tableta", dosis: "", ml: "", gotas: "", puff: "", notas: "", horarios: "", color: "teal", stock: "30", rescate: false }); setShowModal(true); }} style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "14px", padding: "16px", fontSize: "16px", fontWeight: "600", cursor: "pointer", marginTop: "12px" }}>
                 + Agregar medicamento
               </button>
             </>
@@ -523,7 +544,43 @@ export default function App() {
               <h2 style={{ color: C.INK, fontSize: "22px", marginBottom: "16px" }}>🛒 Carro de compras</h2>
               <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Productos recomendados según el stock y los medicamentos de tu ser querido.</p>
 
-              {/* Productos recomendados (ejemplo) */}
+              {/* Buscador */}
+              <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
+                <div style={{ flex: 1, display: "flex", alignItems: "center", background: C.PAPER, borderRadius: "12px", border: `1px solid ${C.LINE}`, padding: "0 12px" }}>
+                  <Search size={18} color={C.MUTED} />
+                  <input
+                    type="text"
+                    value={busqueda}
+                    onChange={(e) => setBusqueda(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && handleBuscar()}
+                    placeholder="Buscar productos (ej: crema, vitamina, paracetamol)"
+                    style={{ flex: 1, padding: "14px 12px", border: "none", background: "transparent", fontSize: "14px", outline: "none", color: C.INK }}
+                  />
+                </div>
+                <button onClick={handleBuscar} style={{ background: C.TEAL, color: "#FFF", border: "none", borderRadius: "12px", padding: "14px 20px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>
+                  Buscar
+                </button>
+              </div>
+
+              {/* Resultados de búsqueda */}
+              {resultadosBusqueda.length > 0 && (
+                <div style={{ marginBottom: "20px" }}>
+                  <h3 style={{ color: C.INK, fontSize: "16px", marginBottom: "12px" }}>Resultados de búsqueda</h3>
+                  {resultadosBusqueda.map((prod, i) => (
+                    <div key={i} style={{ background: C.PAPER, borderRadius: "12px", padding: "14px", marginBottom: "8px", display: "flex", justifyContent: "space-between", alignItems: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                      <div>
+                        <h4 style={{ color: C.INK, fontSize: "14px", margin: "0 0 4px" }}>{prod.nombre}</h4>
+                        <p style={{ color: C.MUTED, fontSize: "12px", margin: 0 }}>{prod.categoria} - {prod.precio}</p>
+                      </div>
+                      <button style={{ background: C.OK, color: "#FFF", border: "none", borderRadius: "8px", padding: "8px 12px", fontSize: "12px", fontWeight: "600", cursor: "pointer" }}>
+                        🛒 Agregar
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Productos recomendados por stock bajo */}
               {medicamentos.filter(m => m.stock < 5).length > 0 ? (
                 medicamentos.filter(m => m.stock < 5).map((med) => (
                   <div key={med.id} style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginBottom: "12px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
@@ -547,15 +604,6 @@ export default function App() {
                   <p style={{ color: C.MUTED, fontSize: "14px", margin: 0 }}>No hay productos recomendados por ahora. ¡Todo el stock está bien!</p>
                 </div>
               )}
-
-              {/* Verificación por foto */}
-              <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginTop: "20px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-                <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 8px" }}>📸 Verificación por foto</h3>
-                <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 12px" }}>Cada 7 días, toma una foto de los sachets para verificar el stock.</p>
-                <button onClick={() => setShowFotoModal(true)} style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "12px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>
-                  📷 Tomar foto de verificación
-                </button>
-              </div>
             </>
           )}
 
@@ -581,6 +629,14 @@ export default function App() {
                   </span>
                 </div>
               ))}
+
+              <div style={{ background: C.PAPER, borderRadius: "16px", padding: "16px", marginTop: "20px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 8px" }}>📸 Verificación por foto</h3>
+                <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 12px" }}>Cada 7 días, toma una foto de los sachets para verificar el stock.</p>
+                <button onClick={() => setShowFotoModal(true)} style={{ width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "12px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>
+                  📷 Tomar foto de verificación
+                </button>
+              </div>
             </>
           )}
 
@@ -624,14 +680,14 @@ export default function App() {
                     <div style={{ width: "22px", height: "22px", borderRadius: "50%", background: "#FFF", position: "absolute", top: "2px", left: darkMode ? "26px" : "2px", transition: "0.3s" }} />
                   </button>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
                   <span style={{ color: C.MUTED, fontSize: "14px" }}>Tamaño de letra</span>
                   <div style={{ display: "flex", gap: "8px" }}>
                     <button onClick={() => setFontSize(Math.max(0.8, fontSize - 0.1))} style={{ background: C.LINE, border: "none", borderRadius: "8px", width: "36px", height: "36px", cursor: "pointer", fontSize: "16px" }}>A-</button>
                     <button onClick={() => setFontSize(Math.min(1.5, fontSize + 0.1))} style={{ background: C.TEAL, border: "none", borderRadius: "8px", width: "36px", height: "36px", cursor: "pointer", fontSize: "16px", color: "#FFF" }}>A+</button>
                   </div>
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "12px" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ color: C.MUTED, fontSize: "14px" }}>Modo daltonismo</span>
                   <select value={daltonismo} onChange={(e) => setDaltonismo(e.target.value)} style={{ padding: "6px 10px", borderRadius: "8px", border: `1px solid ${C.LINE}`, fontSize: "13px" }}>
                     <option value="ninguno">Ninguno</option>
@@ -655,8 +711,8 @@ export default function App() {
           )}
 
         </div>
-}
-                {/* MODAL DE AGREGAR MEDICAMENTO */}
+
+        {/* MODAL DE AGREGAR MEDICAMENTO */}
         {showModal && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", zIndex: 1000 }}>
             <div style={{ background: C.PAPER, borderRadius: "20px", padding: "24px", maxWidth: "400px", width: "100%", maxHeight: "90vh", overflowY: "auto" }}>
@@ -669,130 +725,81 @@ export default function App() {
               </div>
 
               <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Nombre del medicamento</label>
-              <input
-                type="text"
-                value={nuevoMed.nombre}
-                onChange={(e) => setNuevoMed({ ...nuevoMed, nombre: e.target.value })}
-                placeholder="Ej: Losartán 50mg"
-                style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }}
-              />
+              <input type="text" value={nuevoMed.nombre} onChange={(e) => setNuevoMed({ ...nuevoMed, nombre: e.target.value })} placeholder="Ej: Losartán 50mg" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }} />
 
               <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Tipo de dosis</label>
               <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
-                {["tableta", "ml", "gotas", "otra"].map((tipo) => (
-                  <button
-                    key={tipo}
-                    onClick={() => setNuevoMed({ ...nuevoMed, tipo })}
-                    style={{
-                      padding: "8px 16px",
-                      borderRadius: "10px",
-                      border: `1px solid ${nuevoMed.tipo === tipo ? C.TEAL : C.LINE}`,
-                      background: nuevoMed.tipo === tipo ? C.TEAL : "transparent",
-                      color: nuevoMed.tipo === tipo ? "#FFF" : C.INK,
-                      fontSize: "13px",
-                      cursor: "pointer",
-                      textTransform: "capitalize"
-                    }}
-                  >
+                {["tableta", "ml", "gotas", "puff", "otra"].map((tipo) => (
+                  <button key={tipo} onClick={() => setNuevoMed({ ...nuevoMed, tipo })} style={{ padding: "8px 16px", borderRadius: "10px", border: `1px solid ${nuevoMed.tipo === tipo ? C.TEAL : C.LINE}`, background: nuevoMed.tipo === tipo ? C.TEAL : "transparent", color: nuevoMed.tipo === tipo ? "#FFF" : C.INK, fontSize: "13px", cursor: "pointer", textTransform: "capitalize" }}>
                     {tipo}
                   </button>
                 ))}
               </div>
 
-              {nuevoMed.tipo === "tableta" && (
-                <input
-                  type="text"
-                  value={nuevoMed.dosis}
-                  onChange={(e) => setNuevoMed({ ...nuevoMed, dosis: e.target.value })}
-                  placeholder="Ej: 1 tableta"
-                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }}
-                />
-              )}
-
-              {nuevoMed.tipo === "ml" && (
-                <input
-                  type="text"
-                  value={nuevoMed.ml}
-                  onChange={(e) => setNuevoMed({ ...nuevoMed, ml: e.target.value })}
-                  placeholder="Ej: 5"
-                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }}
-                />
-              )}
-
-              {nuevoMed.tipo === "gotas" && (
-                <input
-                  type="text"
-                  value={nuevoMed.gotas}
-                  onChange={(e) => setNuevoMed({ ...nuevoMed, gotas: e.target.value })}
-                  placeholder="Ej: 10"
-                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }}
-                />
-              )}
-
-              {nuevoMed.tipo === "otra" && (
-                <input
-                  type="text"
-                  value={nuevoMed.dosis}
-                  onChange={(e) => setNuevoMed({ ...nuevoMed, dosis: e.target.value })}
-                  placeholder="Ej: 1 cucharada"
-                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }}
-                />
-              )}
+              {nuevoMed.tipo === "tableta" && <input type="text" value={nuevoMed.dosis} onChange={(e) => setNuevoMed({ ...nuevoMed, dosis: e.target.value })} placeholder="Ej: 1 tableta" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }} />}
+              {nuevoMed.tipo === "ml" && <input type="text" value={nuevoMed.ml} onChange={(e) => setNuevoMed({ ...nuevoMed, ml: e.target.value })} placeholder="Ej: 5" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }} />}
+              {nuevoMed.tipo === "gotas" && <input type="text" value={nuevoMed.gotas} onChange={(e) => setNuevoMed({ ...nuevoMed, gotas: e.target.value })} placeholder="Ej: 10" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }} />}
+              {nuevoMed.tipo === "puff" && <input type="text" value={nuevoMed.puff} onChange={(e) => setNuevoMed({ ...nuevoMed, puff: e.target.value })} placeholder="Ej: 2" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }} />}
+              {nuevoMed.tipo === "otra" && <input type="text" value={nuevoMed.dosis} onChange={(e) => setNuevoMed({ ...nuevoMed, dosis: e.target.value })} placeholder="Ej: 1 cucharada" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }} />}
 
               <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Notas (opcional)</label>
-              <textarea
-                value={nuevoMed.notas}
-                onChange={(e) => setNuevoMed({ ...nuevoMed, notas: e.target.value })}
-                placeholder="Ej: Tomar con agua, después del desayuno"
-                rows="3"
-                style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box", resize: "vertical" }}
-              />
+              <textarea value={nuevoMed.notas} onChange={(e) => setNuevoMed({ ...nuevoMed, notas: e.target.value })} placeholder="Ej: Tomar con agua, después del desayuno" rows="3" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box", resize: "vertical" }} />
 
-              <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Horarios</label>
-              <input
-                type="text"
-                value={nuevoMed.horarios}
-                onChange={(e) => setNuevoMed({ ...nuevoMed, horarios: e.target.value })}
-                placeholder="Ej: 08:00, 20:00"
-                style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }}
-              />
+              {/* Modo rescate */}
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px", background: C.CREAM, padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}` }}>
+                <input type="checkbox" id="rescate" checked={nuevoMed.rescate} onChange={(e) => setNuevoMed({ ...nuevoMed, rescate: e.target.checked })} style={{ width: "20px", height: "20px", cursor: "pointer" }} />
+                <label htmlFor="rescate" style={{ color: C.INK, fontSize: "14px", cursor: "pointer", flex: 1 }}>
+                  <strong>Modo rescate</strong> (medicamento de uso a demanda, sin horario fijo)
+                </label>
+              </div>
+
+              {/* Horarios */}
+              {!nuevoMed.rescate && (
+                <>
+                  <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Horarios</label>
+                  <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
+                    {(nuevoMed.horarios ? nuevoMed.horarios.split(", ") : []).map((h, i) => (
+                      <span key={i} style={{ background: C.TEAL, color: "#FFF", padding: "6px 12px", borderRadius: "8px", fontSize: "13px", display: "flex", alignItems: "center", gap: "6px" }}>
+                        🕐 {h}
+                        <button onClick={() => { const nuevos = nuevoMed.horarios.split(", ").filter((_, idx) => idx !== i).join(", "); setNuevoMed({ ...nuevoMed, horarios: nuevos }); }} style={{ background: "transparent", border: "none", color: "#FFF", cursor: "pointer", padding: 0, fontSize: "14px" }}>×</button>
+                      </span>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+                    <input type="time" id="nuevoHorario" style={{ flex: 1, padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", boxSizing: "border-box" }} />
+                    <button onClick={() => { const input = document.getElementById("nuevoHorario"); if (input.value) { const nuevos = nuevoMed.horarios ? `${nuevoMed.horarios}, ${input.value}` : input.value; setNuevoMed({ ...nuevoMed, horarios: nuevos }); input.value = ""; } }} style={{ background: C.TEAL, color: "#FFF", border: "none", borderRadius: "10px", padding: "12px 20px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>+ Agregar</button>
+                  </div>
+                </>
+              )}
 
               <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Stock inicial (cantidad recetada)</label>
-              <input
-                type="number"
-                value={nuevoMed.stock}
-                onChange={(e) => setNuevoMed({ ...nuevoMed, stock: e.target.value })}
-                placeholder="Ej: 30"
-                style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }}
-              />
+              <input type="number" value={nuevoMed.stock} onChange={(e) => setNuevoMed({ ...nuevoMed, stock: e.target.value })} placeholder="Ej: 30" style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }} />
 
-              <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Color</label>
+              <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Color identificador</label>
               <div style={{ display: "flex", gap: "12px", marginBottom: "24px" }}>
-                <button
-                  onClick={() => setNuevoMed({ ...nuevoMed, color: "teal" })}
-                  style={{ width: "40px", height: "40px", borderRadius: "50%", background: C.TEAL, border: nuevoMed.color === "teal" ? `3px solid ${C.INK}` : "none", cursor: "pointer" }}
-                />
-                <button
-                  onClick={() => setNuevoMed({ ...nuevoMed, color: "coral" })}
-                  style={{ width: "40px", height: "40px", borderRadius: "50%", background: C.CORAL, border: nuevoMed.color === "coral" ? `3px solid ${C.INK}` : "none", cursor: "pointer" }}
-                />
+                <button onClick={() => setNuevoMed({ ...nuevoMed, color: "teal" })} style={{ width: "50px", height: "50px", borderRadius: "12px", background: C.TEAL, border: nuevoMed.color === "teal" ? `3px solid ${C.INK}` : `2px solid ${C.LINE}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {nuevoMed.color === "teal" && <CheckCircle size={24} color="#FFF" />}
+                </button>
+                <button onClick={() => setNuevoMed({ ...nuevoMed, color: "coral" })} style={{ width: "50px", height: "50px", borderRadius: "12px", background: C.CORAL, border: nuevoMed.color === "coral" ? `3px solid ${C.INK}` : `2px solid ${C.LINE}`, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  {nuevoMed.color === "coral" && <CheckCircle size={24} color="#FFF" />}
+                </button>
               </div>
 
               {esCritico(nuevoMed.nombre) && (
-                <div style={{ background: "rgba(211,47,47,0.1)", border: `1px solid ${C.CORAL}`, borderRadius: "10px", padding: "12px", marginBottom: "16px" }}>
-                  <p style={{ color: C.CORAL, fontSize: "13px", margin: 0, fontWeight: "600" }}>
-                    ⚠️ Este medicamento ha sido identificado como CRÍTICO. Si no se confirma la toma, se notificará al cuidador de inmediato.
+                <div style={{ background: "rgba(211,47,47,0.1)", border: `2px solid ${C.CORAL}`, borderRadius: "12px", padding: "16px", marginBottom: "16px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+                    <AlertCircle size={20} color={C.CORAL} />
+                    <h4 style={{ color: C.CORAL, fontSize: "14px", margin: 0, fontWeight: "700" }}>MEDICAMENTO CRÍTICO</h4>
+                  </div>
+                  <p style={{ color: C.CORAL, fontSize: "13px", margin: 0, lineHeight: "1.4" }}>
+                    Este medicamento ha sido identificado como crítico. Si el adulto mayor no confirma la toma en el horario indicado, se enviará una notificación inmediata al cuidador.
                   </p>
                 </div>
               )}
 
               <div style={{ display: "flex", gap: "12px" }}>
-                <button onClick={() => setShowModal(false)} style={{ flex: 1, background: "transparent", color: C.MUTED, border: `1px solid ${C.LINE}`, borderRadius: "12px", padding: "14px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>
-                  Cancelar
-                </button>
-                <button onClick={handleAgregarMedicamento} style={{ flex: 1, background: C.TEAL, color: "#FFF", border: "none", borderRadius: "12px", padding: "14px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>
-                  Guardar
-                </button>
+                <button onClick={() => setShowModal(false)} style={{ flex: 1, background: "transparent", color: C.MUTED, border: `1px solid ${C.LINE}`, borderRadius: "12px", padding: "14px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>Cancelar</button>
+                <button onClick={handleAgregarMedicamento} style={{ flex: 1, background: C.TEAL, color: "#FFF", border: "none", borderRadius: "12px", padding: "14px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>Guardar</button>
               </div>
 
             </div>
@@ -803,76 +810,33 @@ export default function App() {
         {showFotoModal && (
           <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px", zIndex: 1000 }}>
             <div style={{ background: C.PAPER, borderRadius: "20px", padding: "24px", maxWidth: "400px", width: "100%", textAlign: "center" }}>
-              
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
                 <h2 style={{ color: C.INK, fontSize: "20px", margin: 0 }}>📸 Verificación por foto</h2>
-                <button onClick={() => setShowFotoModal(false)} style={{ background: "transparent", border: "none", cursor: "pointer" }}>
-                  <X size={24} color={C.MUTED} />
-                </button>
+                <button onClick={() => setShowFotoModal(false)} style={{ background: "transparent", border: "none", cursor: "pointer" }}><X size={24} color={C.MUTED} /></button>
               </div>
-
-              <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>
-                Toma una foto de los sachets de los medicamentos para verificar que el stock coincide con lo que la app tiene registrado.
-              </p>
-
+              <p style={{ color: C.MUTED, fontSize: "14px", marginBottom: "20px" }}>Toma una foto de los sachets de los medicamentos para verificar que el stock coincide.</p>
               <div style={{ background: C.CREAM, borderRadius: "12px", padding: "30px", marginBottom: "20px", border: `2px dashed ${C.LINE}` }}>
-                {fotoVerificacion ? (
-                  <img src={fotoVerificacion} alt="Verificación" style={{ maxWidth: "100%", borderRadius: "8px" }} />
-                ) : (
-                  <div>
-                    <Camera size={48} color={C.MUTED} style={{ marginBottom: "12px" }} />
-                    <p style={{ color: C.MUTED, fontSize: "13px", margin: 0 }}>Aquí aparecerá la foto</p>
-                  </div>
-                )}
+                {fotoVerificacion ? <img src={fotoVerificacion} alt="Verificación" style={{ maxWidth: "100%", borderRadius: "8px" }} /> : <div><Camera size={48} color={C.MUTED} style={{ marginBottom: "12px" }} /><p style={{ color: C.MUTED, fontSize: "13px", margin: 0 }}>Aquí aparecerá la foto</p></div>}
               </div>
-
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={(e) => {
-                  const file = e.target.files[0];
-                  if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (event) => setFotoVerificacion(event.target.result);
-                    reader.readAsDataURL(file);
-                  }
-                }}
-                style={{ display: "none" }}
-                id="inputFoto"
-              />
-              <label htmlFor="inputFoto" style={{ display: "block", width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "12px", padding: "14px", fontSize: "14px", fontWeight: "600", cursor: "pointer", marginBottom: "12px" }}>
-                📷 {fotoVerificacion ? "Tomar otra foto" : "Tomar foto"}
-              </label>
-
-              {fotoVerificacion && (
-                <button style={{ width: "100%", background: C.OK, color: "#FFF", border: "none", borderRadius: "12px", padding: "14px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }} onClick={() => { alert("Foto guardada. El stock ha sido verificado."); setShowFotoModal(false); setFotoVerificacion(null); }}>
-                  ✓ Confirmar verificación
-                </button>
-              )}
-
+              <input type="file" accept="image/*" capture="environment" onChange={(e) => { const file = e.target.files[0]; if (file) { const reader = new FileReader(); reader.onload = (event) => setFotoVerificacion(event.target.result); reader.readAsDataURL(file); } }} style={{ display: "none" }} id="inputFoto" />
+              <label htmlFor="inputFoto" style={{ display: "block", width: "100%", background: C.TEAL, color: "#FFF", border: "none", borderRadius: "12px", padding: "14px", fontSize: "14px", fontWeight: "600", cursor: "pointer", marginBottom: "12px" }}>📷 {fotoVerificacion ? "Tomar otra foto" : "Tomar foto"}</label>
+              {fotoVerificacion && <button style={{ width: "100%", background: C.OK, color: "#FFF", border: "none", borderRadius: "12px", padding: "14px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }} onClick={() => { alert("Foto guardada. El stock ha sido verificado."); setShowFotoModal(false); setFotoVerificacion(null); }}>✓ Confirmar verificación</button>}
             </div>
           </div>
         )}
 
-        {/* TUTORIAL MODAL (para el cuidador) */}
+        {/* TUTORIAL MODAL (tooltip pequeño) */}
         {showTutorial && (
           <div style={{ position: "fixed", bottom: "20px", right: "20px", background: C.PAPER, borderRadius: "16px", padding: "20px", maxWidth: "300px", width: "100%", boxShadow: "0 8px 32px rgba(0,0,0,0.3)", zIndex: 2000 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
               <span style={{ color: C.MUTED, fontSize: "11px" }}>Paso {tutorialPaso + 1} de {tutorialPasos.length}</span>
-              <button onClick={() => setShowTutorial(false)} style={{ background: "transparent", border: "none", cursor: "pointer" }}>
-                <X size={16} color={C.MUTED} />
-              </button>
+              <button onClick={() => setShowTutorial(false)} style={{ background: "transparent", border: "none", cursor: "pointer" }}><X size={16} color={C.MUTED} /></button>
             </div>
             <h3 style={{ color: C.INK, fontSize: "16px", margin: "0 0 8px" }}>{tutorialPasos[tutorialPaso].titulo}</h3>
             <p style={{ color: C.MUTED, fontSize: "13px", margin: "0 0 16px" }}>{tutorialPasos[tutorialPaso].texto}</p>
             <div style={{ display: "flex", gap: "8px" }}>
-              <button onClick={handleAnteriorPaso} disabled={tutorialPaso === 0} style={{ flex: 1, background: "transparent", color: tutorialPaso === 0 ? C.LINE : C.MUTED, border: `1px solid ${C.LINE}`, borderRadius: "8px", padding: "8px", fontSize: "12px", cursor: tutorialPaso === 0 ? "not-allowed" : "pointer" }}>
-                Anterior
-              </button>
-              <button onClick={handleSiguientePaso} style={{ flex: 1, background: C.TEAL, color: "#FFF", border: "none", borderRadius: "8px", padding: "8px", fontSize: "12px", fontWeight: "600", cursor: "pointer" }}>
-                {tutorialPaso === tutorialPasos.length - 1 ? "Finalizar" : "Siguiente"}
-              </button>
+              <button onClick={handleAnteriorPaso} disabled={tutorialPaso === 0} style={{ flex: 1, background: "transparent", color: tutorialPaso === 0 ? C.LINE : C.MUTED, border: `1px solid ${C.LINE}`, borderRadius: "8px", padding: "8px", fontSize: "12px", cursor: tutorialPaso === 0 ? "not-allowed" : "pointer" }}>Anterior</button>
+              <button onClick={handleSiguientePaso} style={{ flex: 1, background: C.TEAL, color: "#FFF", border: "none", borderRadius: "8px", padding: "8px", fontSize: "12px", fontWeight: "600", cursor: "pointer" }}>{tutorialPaso === tutorialPasos.length - 1 ? "Finalizar" : "Siguiente"}</button>
             </div>
           </div>
         )}
