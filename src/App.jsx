@@ -161,19 +161,25 @@ export default function App() {
               Notification.requestPermission().then((permission) => {
                 if (permission === "granted") {
                   console.log("Permiso de notificaciones concedido");
-                  // NO usamos el Service Worker de Firebase. Solo obtenemos el token con la clave VAPID.
-                  messaging.getToken({ vapidKey: VAPID_KEY })
-                    .then((currentToken) => {
+                  // Usar el Service Worker existente de la PWA para Firebase
+                  navigator.serviceWorker.ready.then((registration) => {
+                    console.log("Service Worker listo para Firebase");
+                    messaging.getToken({
+                      vapidKey: VAPID_KEY,
+                      serviceWorkerRegistration: registration
+                    }).then((currentToken) => {
                       if (currentToken) {
                         console.log("Token FCM obtenido:", currentToken);
                         setTokenNotificaciones(currentToken);
                       } else {
-                        console.log("No se pudo obtener el token. Se necesita permiso para generar el token.");
+                        console.log("No se pudo obtener el token.");
                       }
-                    })
-                    .catch((err) => {
+                    }).catch((err) => {
                       console.error("Error al obtener el token:", err);
                     });
+                  }).catch((err) => {
+                    console.error("Error al esperar el Service Worker:", err);
+                  });
                 } else {
                   console.log("Permiso de notificaciones denegado");
                 }
