@@ -161,25 +161,25 @@ export default function App() {
               Notification.requestPermission().then((permission) => {
                 if (permission === "granted") {
                   console.log("Permiso de notificaciones concedido");
-                  navigator.serviceWorker.register("/firebase-messaging-sw.js")
-                    .then((registration) => {
-                      messaging.getToken({
-                        vapidKey: VAPID_KEY,
-                        serviceWorkerRegistration: registration
-                      }).then((currentToken) => {
-                        if (currentToken) {
-                          console.log("Token FCM obtenido:", currentToken);
-                          setTokenNotificaciones(currentToken);
-                        } else {
-                          console.log("No se pudo obtener el token.");
-                        }
-                      }).catch((err) => {
-                        console.error("Error al obtener el token:", err);
-                      });
-                    })
-                    .catch((err) => {
-                      console.error("Error al registrar el Service Worker:", err);
+                  // Usar el Service Worker existente (el de la PWA)
+                  navigator.serviceWorker.ready.then((registration) => {
+                    console.log("Service Worker listo para Firebase");
+                    messaging.getToken({
+                      vapidKey: VAPID_KEY,
+                      serviceWorkerRegistration: registration
+                    }).then((currentToken) => {
+                      if (currentToken) {
+                        console.log("Token FCM obtenido:", currentToken);
+                        setTokenNotificaciones(currentToken);
+                      } else {
+                        console.log("No se pudo obtener el token.");
+                      }
+                    }).catch((err) => {
+                      console.error("Error al obtener el token:", err);
                     });
+                  }).catch((err) => {
+                    console.error("Error al esperar el Service Worker:", err);
+                  });
                 } else {
                   console.log("Permiso de notificaciones denegado");
                 }
@@ -401,6 +401,7 @@ export default function App() {
     setHistorial(nuevoHistorial);
     await guardarMedicamentos(nuevosMedicamentos);
     await guardarHistorial(nuevoHistorial);
+    alert("✓ Toma confirmada correctamente");
   };
 
   // ==================== DETALLE DEL DÍA ====================
@@ -621,20 +622,6 @@ export default function App() {
                       {item.dia}
                     </button>
                   ))}
-                </div>
-                <div style={{ display: "flex", justifyContent: "center", gap: "12px", flexWrap: "wrap" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                    <span style={{ width: "10px", height: "10px", borderRadius: "3px", background: C.OK }}></span>
-                    <span style={{ color: C.MUTED, fontSize: "11px" }}>Completo</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                    <span style={{ width: "10px", height: "10px", borderRadius: "3px", background: C.WARN }}></span>
-                    <span style={{ color: C.MUTED, fontSize: "11px" }}>Faltó</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                    <span style={{ width: "10px", height: "10px", borderRadius: "3px", background: C.CORAL }}></span>
-                    <span style={{ color: C.MUTED, fontSize: "11px" }}>Faltaron</span>
-                  </div>
                 </div>
               </div>
             </>
