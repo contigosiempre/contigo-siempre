@@ -487,4 +487,57 @@ export default function App() {
                 <input
                   type="text"
                   value={nuevoMed.dosis}
-                  onChange={(e) => setN
+                  onChange={(e) => setNuevoMed({ ...nuevoMed, dosis: e.target.value })}
+                  placeholder="Ej: 1 cucharada"
+                  style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }}
+                />
+              )}
+
+              <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Notas (opcional)</label>
+              <textarea
+                value={nuevoMed.notas}
+                onChange={(e) => setNuevoMed({ ...nuevoMed, notas: e.target.value })}
+                placeholder="Ej: Tomar con agua, después del desayuno"
+                rows="3"
+                style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box", resize: "vertical" }}
+              />
+
+              <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Horarios</label>
+              <input
+                type="text"
+                value={nuevoMed.horarios}
+                onChange={(e) => setNuevoMed({ ...nuevoMed, horarios: e.target.value })}
+                placeholder="Ej: 08:00, 20:00"
+                style={{ width: "100%", padding: "12px", borderRadius: "10px", border: `1px solid ${C.LINE}`, fontSize: "14px", marginBottom: "16px", boxSizing: "border-box" }}
+              />
+
+              <label style={{ display: "block", color: C.INK, fontSize: "14px", fontWeight: "600", marginBottom: "6px" }}>Color</label>
+              <div style={{ display: "flex", gap: "12px", marginBottom: "24px" }}>
+                <button
+                  onClick={() => setNuevoMed({ ...nuevoMed, color: "teal" })}
+                  style={{ width: "40px", height: "40px", borderRadius: "50%", background: C.TEAL, border: nuevoMed.color === "teal" ? `3px solid ${C.INK}` : "none", cursor: "pointer" }}
+                />
+                <button
+                  onClick={() => setNuevoMed({ ...nuevoMed, color: "coral" })}
+                  style={{ width: "40px", height: "40px", borderRadius: "50%", background: C.CORAL, border: nuevoMed.color === "coral" ? `3px solid ${C.INK}` : "none", cursor: "pointer" }}
+                />
+              </div>
+
+              <div style={{ display: "flex", gap: "12px" }}>
+                <button onClick={() => setShowModal(false)} style={{ flex: 1, background: "transparent", color: C.MUTED, border: `1px solid ${C.LINE}`, borderRadius: "12px", padding: "14px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>
+                  Cancelar
+                </button>
+                <button onClick={handleAgregarMedicamento} style={{ flex: 1, background: C.TEAL, color: "#FFF", border: "none", borderRadius: "12px", padding: "14px", fontSize: "14px", fontWeight: "600", cursor: "pointer" }}>
+                  Guardar
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return null;
+}
