@@ -1023,11 +1023,15 @@ function registrarDato(clave, valor = 1, detalle = null) {
 
 export default function App() {
   const [stage, setStage] = useState("cargando");
-  const [codigo, setCodigo] = useState(null);
+    const [codigo, setCodigo] = useState(() => {
+    return localStorage.getItem("codigo_familia") || null;
+  });
   const [codigoInput, setCodigoInput] = useState("");
   const [nombreInput, setNombreInput] = useState("");
   const [edadInput, setEdadInput] = useState("");
-  const [nombreCuidadorInput, setNombreCuidadorInput] = useState("");
+    const [nombreCuidadorInput, setNombreCuidadorInput] = useState(() => {
+    return localStorage.getItem("nombre_cuidador") || "";
+  });
   const [modoEntrada, setModoEntrada] = useState("elegir");
   const [familia, setFamilia] = useState(null);
   const [error, setError] = useState("");
@@ -1106,7 +1110,32 @@ export default function App() {
   }, []);
 
   useEffect(() => { const id = setInterval(() => setNowMin(toMinutes(nowHHMM())), 30000); return () => clearInterval(id); }, []);
-  useEffect(() => { setStage("entrada"); }, []);
+   useEffect(() => {
+    const codigoGuardado = localStorage.getItem("codigo_familia");
+    const cuidadorGuardado = localStorage.getItem("nombre_cuidador");
+    if (codigoGuardado && cuidadorGuardado) {
+      cuandoDbListo(async (d) => {
+        if (!d) { setStage("entrada"); return; }
+        try {
+          const res = await storage.get(STORAGE_PREFIX + codigoGuardado);
+          if (res && res.value) {
+            const data = JSON.parse(res.value);
+            setFamilia(data);
+            setCodigo(codigoGuardado);
+            setPersonaActualId(data.personas?.[0]?.id || null);
+            setNombreCuidadorInput(cuidadorGuardado);
+            setStage(data.settings?.aceptoTerminos ? "app" : "consentimiento");
+          } else {
+            setStage("entrada");
+          }
+        } catch (e) {
+          setStage("entrada");
+        }
+      });
+    } else {
+      setStage("entrada");
+    }
+  }, []);
   useEffect(() => { cuandoDbListo((d) => { setFirebaseEstado(d ? "conectado" : "local"); }); }, []);
   useEffect(() => { if (familia && !personaActualId && familia.personas && familia.personas.length > 0) setPersonaActualId(familia.personas[0].id); }, [familia, personaActualId]);
 
@@ -1311,6 +1340,8 @@ export default function App() {
         if (data.settings.vibracionActiva === undefined) data.settings.vibracionActiva = true;
         if (data.settings.tutorialVisto === undefined) data.settings.tutorialVisto = true;
         await guardarFamilia(cod, data);
+                localStorage.setItem("codigo_familia", cod);
+                localStorage.setItem("nombre_cuidador", nombreCuidador);
         setFamilia(data); setCodigo(cod); setPersonaActualId(data.personas[0]?.id || null);
         setNombreCuidadorInput(nombreCuidador);
         setStage(data.settings?.aceptoTerminos ? "app" : "consentimiento");
@@ -1338,6 +1369,8 @@ export default function App() {
       settings: { fontSize: "normal", daltonico: false, darkMode: false, aceptoTerminos: false, onboardingPremiumVisto: false, sonidoActivo: true, vibracionActiva: true, tutorialVisto: false }
     };
     await guardarFamilia(cod, nueva);
+        localStorage.setItem("codigo_familia", cod);
+        localStorage.setItem("nombre_cuidador", nombreCuidadorInput.trim());
     setFamilia(nueva); setCodigo(cod); setPersonaActualId(personaId); setStage("consentimiento");
     registrarEvento(cod, "crear_familia", `Familia creada para ${nombreInput.trim()}${edadNum ? ` (${edadNum} años)` : ""}`, { cuidador: nombreCuidadorInput, persona: nombreInput.trim(), edad: edadNum || "" });
     // NUEVO: Guardar token FCM al crear la familia
