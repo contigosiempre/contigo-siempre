@@ -1048,7 +1048,8 @@ export default function App() {
   const [nowMin, setNowMin] = useState(toMinutes(nowHHMM()));
   const [personaActualId, setPersonaActualId] = useState(null);
   const [showSelector, setShowSelector] = useState(false);
-  const [showAdd, setShowAdd] = useState(false);
+    const [showAdd, setShowAdd] = useState(false);
+  const [editandoId, setEditandoId] = useState(null);
   const [restockTarget, setRestockTarget] = useState(null);
   const [showAjustes, setShowAjustes] = useState(false);
   const [cuidadorTab, setCuidadorTab] = useState("meds");
@@ -1537,13 +1538,35 @@ export default function App() {
 
   const intentarAgregarMed = () => { if (meds.length >= maxMeds) { setShowLimite("meds"); return; } addStartRef.current = Date.now(); setShowAdd(true); };
   const intentarAgregarPersona = () => { if ((familia.personas?.length || 0) >= maxPersonas) { setShowLimite("personas"); return; } setShowAddPersona(true); };
+  const abrirEditar = (med) => {
+    setForm({
+      name: med.name || "",
+      dose: med.dose || "",
+      times: med.times || ["08:00"],
+      color: med.color || PILL_COLORS[0],
+      shape: med.shape || PILL_SHAPES[0],
+      stock: med.stock || 30,
+      doseAmount: med.doseAmount || 1,
+      type: med.type || "privada",
+      receta: med.receta || null,
+      criticidad: med.criticidad || null,
+      modoAviso: med.modoAviso || null,
+      notas: med.notas || "",
+      recetaVence: med.recetaVence || "",
+      ventanaMin: med.ventanaMin || 0,
+    });
+    setEditandoId(med.id);
+    addStartRef.current = Date.now();
+    setShowAdd(true);
+  };
 
   const agregarMed = () => {
     if (!form.name.trim()) return;
     const critF = form.criticidad || detectarCriticidad(form.name);
     const modoF = critF === "vital" ? "inmediato" : (form.modoAviso || (critF === "importante" ? "inmediato" : "final_dia"));
     const nuevo = {
-      id: Date.now(), name: form.name.trim(), dose: form.dose.trim() || "1 dosis",
+      id: editandoId || Date.now(),
+      name: form.name.trim(), dose: form.dose.trim() || "1 dosis",
       times: form.times.filter(Boolean), color: form.color, shape: form.shape,
       stock: form.stock, doseAmount: form.doseAmount, type: form.type,
       receta: form.receta || clasificarMedicamento(form.name) || "sin_receta",
@@ -1551,10 +1574,19 @@ export default function App() {
       notas: form.notas || "", recetaVence: form.recetaVence || "",
       ventanaMin: Number(form.ventanaMin) || 0,
     };
-    actualizarPersona((p) => ({ ...p, meds: [...p.meds, nuevo] }));
-    registrarCambio("Agregó", nuevo.name);
     const duracionSeg = addStartRef.current ? Math.round((Date.now() - addStartRef.current) / 1000) : 0;
-    registrarEvento(codigo, "agregar_med", nuevo.name, { cuidador: nombreCuidadorInput, persona: elderName, edad: elderEdad || "", med: nuevo.name, criticidad: critF, duracion_seg: duracionSeg });
+    if (editandoId) {
+      // MODO EDICIÓN
+      actualizarPersona((p) => ({ ...p, meds: p.meds.map((m) => m.id === editandoId ? { ...m, ...nuevo } : m) }));
+      registrarCambio("Editó", nuevo.name);
+      registrarEvento(codigo, "editar_med", nuevo.name, { cuidador: nombreCuidadorInput, persona: elderName, edad: elderEdad || "", med: nuevo.name, criticidad: critF, duracion_seg: duracionSeg });
+      setEditandoId(null);
+    } else {
+      // MODO CREACIÓN
+      actualizarPersona((p) => ({ ...p, meds: [...p.meds, nuevo] }));
+      registrarCambio("Agregó", nuevo.name);
+      registrarEvento(codigo, "agregar_med", nuevo.name, { cuidador: nombreCuidadorInput, persona: elderName, edad: elderEdad || "", med: nuevo.name, criticidad: critF, duracion_seg: duracionSeg });
+    }
     addStartRef.current = null;
     setForm({ name: "", dose: "", times: ["08:00"], color: PILL_COLORS[0], shape: PILL_SHAPES[0], stock: 30, doseAmount: 1, type: "privada", receta: null, criticidad: null, modoAviso: null, notas: "", recetaVence: "", ventanaMin: 0 });
     setShowAdd(false);
@@ -1839,6 +1871,7 @@ export default function App() {
                             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.LINE}` }}>
                               <div style={{ fontSize: 11.5, color: semColor, fontWeight: 700 }}>{sem.dias !== null ? `${fmtN(sem.dias)} días · ${sem.nivel}` : "Sin datos"}</div>
                               <div style={{ display: "flex", gap: 6 }}>
+                              <button onClick={() => abrirEditar(m)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: C.TEAL, background: oscuro ? "#1E3A5F" : "#E3F2FD", border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer" }}>✏️</button>
                                 <button onClick={() => setShowNotas(m)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: C.AMBER, background: oscuro ? "#3A2F1A" : "#FFF8E1", border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}><StickyNote size={11} /></button>
                                 <button onClick={() => esPremium ? setReconteoTarget(m) : setShowPremium(true)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: esPremium ? C.TEAL : C.GOLD, background: esPremium ? (oscuro ? "#1E3A5F" : "#E3F2FD") : (oscuro ? "#3A2F1A" : "#FFF8E1"), border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>{esPremium ? <Camera size={11} /> : <Lock size={11} />}</button>
                                 <button onClick={() => setRestockTarget(m)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: C.TEAL, background: oscuro ? "#1E3A5F" : "#E3F2FD", border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer" }}>Reponer</button>
@@ -2185,7 +2218,7 @@ export default function App() {
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.55)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 25 }}>
             <div className="modal-slide" style={{ width: "100%", maxWidth: 420, background: C.CREAM, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 -8px 30px rgba(0,0,0,0.25)" }}>
               <div style={{ width: 40, height: 4, background: C.LINE, borderRadius: 999, margin: "0 auto 16px" }} />
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}><div style={{ fontWeight: 700, fontSize: 17 }}>Nuevo medicamento</div><button onClick={() => setShowAdd(false)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button></div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}><div style={{ fontWeight: 700, fontSize: 17 }}>{editandoId ? "Editar medicamento" : "Nuevo medicamento"}</div><button onClick={() => setShowAdd(false)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button></div>
               <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>NOMBRE</div>
               <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value, receta: null, criticidad: null }))} placeholder="Ej. Losartán" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, marginBottom: 8, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
               {form.name.trim().length > 2 && detectadoCrit === "vital" && (<div style={{ background: "#FFEBEE", border: `1px solid #FFCDD2`, borderRadius: 12, padding: "10px 12px", fontSize: 12, color: C.CORAL, marginBottom: 10, fontWeight: 600 }}>🔴 Medicamento vital. Aviso fijo a los 15 min.</div>)}
