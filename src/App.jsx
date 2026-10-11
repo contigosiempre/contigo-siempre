@@ -1167,6 +1167,21 @@ export default function App() {
       }
     });
   }, [codigo]);
+  
+    // NUEVO: Escuchar mensajes del Service Worker (botones de notificación)
+  useEffect(() => {
+    if (!navigator.serviceWorker) return;
+    const handler = (event) => {
+      if (!event.data) return;
+      if (event.data.tipo === "confirmar_toma" && alertaActiva) {
+        confirmar(alertaActiva);
+      } else if (event.data.tipo === "postergar_toma" && alertaActiva) {
+        posponerAlerta();
+      }
+    };
+    navigator.serviceWorker.addEventListener("message", handler);
+    return () => navigator.serviceWorker.removeEventListener("message", handler);
+  }, [alertaActiva]);
 
   useEffect(() => {
     if (stage !== "app" || !codigo || !personaActualId) return;
