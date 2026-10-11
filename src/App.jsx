@@ -77,8 +77,8 @@ const FONT_SCALE = { normal: 1, grande: 1.2, muy_grande: 1.45 };
 const UMBRAL_MIN = { vital: 15, importante: 60, normal: 120 };
 const LIMITES_ESTANDAR = { maxMeds: 5, maxElderly: 1, maxCuidadores: 2 };
 const CODIGOS_PILOTO = ["PILOTO2026", "FUNDADOR", "BETA01", "FAMILIA1", "FAMILIA2", "FAMILIA3", "FAMILIA4", "FAMILIA5"];
-const CODIGO_ADMIN = "ADMIN2026";
-const CODIGO_DATOS = "DATOS2026";
+const CODIGO_ADMIN = "ADMIN" + new Date().getFullYear();
+const CODIGO_DATOS = "DATOS" + new Date().getFullYear();
 const APP_VERSION = "1.10.0-tutorial-interactivo";
 const MINUTOS_SIN_CONEXION_ALERTA = 5;
 
