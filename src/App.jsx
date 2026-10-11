@@ -561,10 +561,17 @@ function PantallaAlertaMedicamento({ C, med, hora, onConfirmar, onPosponer, esca
 }
 
 // ================== TUTORIAL INTERACTIVO ==================
-function TutorialInteractivo({ pasos, onCerrar, C }) {
+function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
   const [paso, setPaso] = useState(0);
   const [rect, setRect] = useState(null);
-  const pasoActual = pasos[paso];
+    const pasoActual = pasos[paso];
+
+  // NUEVO: Si el paso apunta al menú, abrirlo automáticamente
+  useEffect(() => {
+    if (pasoActual.target === '[data-tutorial="menu"]' && onAbrirMenu) {
+      onAbrirMenu();
+    }
+  }, [paso, pasoActual, onAbrirMenu]);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -2022,7 +2029,8 @@ export default function App() {
         {showEventos && <VerEventos C={C} onCerrar={() => setShowEventos(false)} />}
         {showCarroCompleto && <CarroCompleto C={C} meds={meds} onCerrar={() => setShowCarroCompleto(false)} onElegirFarmacia={abrirFarmaciaCarro} />}
 
-        {showTutorial && <TutorialInteractivo pasos={PASOS_TUTORIAL} onCerrar={() => { setShowTutorial(false); actualizar((prev) => ({ ...prev, settings: { ...prev.settings, tutorialVisto: true } })); registrarEvento(codigo, "tutorial_completado", "Tutorial finalizado", { cuidador: nombreCuidadorInput }); }} C={C} />}
+        {showTutorial && <TutorialInteractivo pasos={PASOS_TUTORIAL} onCerrar={() => { setShowTutorial(false); actualizar((prev) => ({ ...prev, settings: { ...prev.settings, tutorialVisto: true } })); registrarEvento(codigo, "tutorial_completado", "Tutorial finalizado", { cuidador: nombreCuidadorInput }); }} C={C} 
+                            onAbrirMenu={() => setShowMenuLateral(true)}/>
 
         {showContactos && (
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 35 }}>
