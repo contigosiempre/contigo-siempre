@@ -1300,7 +1300,7 @@ export default function App() {
         if (dias !== null && dias >= 0 && dias <= 7) {
           const rk = `receta_${m.id}_${todayStr()}`;
           if (!alertasDisparadas[rk]) {
-            nuevas.push({ tipo: "alerta", hora: smsTime(), texto: `📄 Receta de ${m.name} vence en ${fmtN(dias)} día${dias !== 1 ? "s" : ""}.` });
+                          nuevas.push({ tipo: "alerta", hora: smsTime(), texto: `📄 Receta de ${elderName}: ${m.name} vence en ${fmtN(dias)} día${dias !== 1 ? "s" : ""}.` });
             setAlertasDisparadas((prev) => ({ ...prev, [rk]: true }));
           }
         }
@@ -1312,7 +1312,7 @@ export default function App() {
     if (stockCrit.length > 0) {
       const k = `sc_${personaActual.id}_${todayStr()}`;
       if (!alertasDisparadas[k]) {
-        nuevas.push({ tipo: "alerta", hora: smsTime(), texto: `🔴 Stock crítico: ${stockCrit.join(", ")}.` });
+        nuevas.push({ tipo: "alerta", hora: smsTime(), texto: `🔴 Stock crítico de ${elderName}: ${stockCrit.join(", ")}.` });
         setAlertasDisparadas((prev) => ({ ...prev, [k]: true }));
       }
     }
