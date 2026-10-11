@@ -18,11 +18,12 @@ exports.revisarRecordatorios = functions.pubsub
   .schedule("every 1 minutes")
   .timeZone("America/Santiago")
   .onRun(async (context) => {
-    const ahora = new Date();
-    const ahoraMin = ahora.getHours() * 60 + ahora.getMinutes();
-    const hoy = fechaLocal(ahora);
+    const ahoraUTC = new Date();
+    const ahoraChile = new Date(ahoraUTC.toLocaleString("en-US", { timeZone: "America/Santiago" }));
+    const ahoraMin = ahoraChile.getHours() * 60 + ahoraChile.getMinutes();
+    const hoy = fechaLocal(ahoraChile);
 
-    console.log(`[${ahora.toISOString()}] Revisando recordatorios...`);
+    console.log(`[${ahoraUTC.toISOString()}] Revisando... (Chile: ${ahoraChile.getHours()}:${String(ahoraChile.getMinutes()).padStart(2, "0")})`);
 
     try {
       const familiasSnap = await db.collection("familias").get();
@@ -54,11 +55,11 @@ exports.revisarRecordatorios = functions.pubsub
               if (confirmedHoy[key]) continue;
 
               const pospuestaHasta = posposiciones[key];
-              if (pospuestaHasta && pospuestaHasta > ahora.getTime()) {
+              if (pospuestaHasta && pospuestaHasta > ahoraUTC.getTime()) {
                 continue;
               }
 
-              const esReactivacion = pospuestaHasta && pospuestaHasta <= ahora.getTime();
+              const esReactivacion = pospuestaHasta && pospuestaHasta <= ahoraUTC.getTime();
 
               const diff = ahoraMin - horaMin;
 
@@ -136,7 +137,9 @@ exports.resumenDiario = functions.pubsub
   .schedule("0 21 * * *")
   .timeZone("America/Santiago")
   .onRun(async (context) => {
-    const hoy = fechaLocal(new Date());
+    const ahoraUTC = new Date();
+    const ahoraChile = new Date(ahoraUTC.toLocaleString("en-US", { timeZone: "America/Santiago" }));
+    const hoy = fechaLocal(ahoraChile);
     console.log(`[${hoy}] Enviando resumen diario...`);
 
     try {
