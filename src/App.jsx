@@ -1442,8 +1442,7 @@ export default function App() {
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <button onClick={() => setModoEntrada("crear")} className="btn-press" style={{ padding: 14, borderRadius: 14, border: "none", background: LIGHT.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 15 }}>Soy nueva familia</button>
               <button onClick={() => setModoEntrada("unirse")} className="btn-press-soft" style={{ padding: 14, borderRadius: 14, border: `1.5px solid ${LIGHT.LINE}`, background: LIGHT.PAPER, color: LIGHT.INK, fontWeight: 700, cursor: "pointer", fontSize: 15 }}>Ya tengo un código</button>
-              <button onClick={cargarDemo} className="btn-press-soft" style={{ padding: 14, borderRadius: 14, border: `1.5px dashed ${LIGHT.GOLD}`, background: LIGHT.PAPER, color: LIGHT.GOLD, fontWeight: 700, cursor: "pointer", fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Sparkles size={16} /> Ver demo</button>
-            </div>
+                         </div>
           )}
           {modoEntrada === "crear" && (
             <div style={{ textAlign: "left" }}>
