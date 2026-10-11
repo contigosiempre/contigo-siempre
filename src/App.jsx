@@ -284,18 +284,19 @@ async function obtenerTokenFCM() {
   });
 }
 
-async function guardarTokenEnFirestore(codigoFamilia, token) {
-  if (!codigoFamilia || !token || !db) return;
-  try {
-    await db.collection("familias").doc(STORAGE_PREFIX + codigoFamilia).set({
-      tokenNotificaciones: token,
-      fechaToken: Date.now()
-    }, { merge: true });
-    console.log("Token guardado en Firestore para la familia:", codigoFamilia);
-  } catch (error) {
-    console.error("Error al guardar el token en Firestore:", error);
+async function guardarTokenEnFirestore(codigoFamilia, token, rol = "paciente") {
+    if (!codigoFamilia || !token || !db) return;
+    try {
+      const campo = rol === "cuidador" ? "tokenCuidador" : "tokenNotificaciones";
+      await db.collection("familias").doc(STORAGE_PREFIX + codigoFamilia).set({
+        [campo]: token,
+        fechaToken: Date.now()
+      }, { merge: true });
+      console.log(`Token guardado en Firestore (${rol}) para la familia:`, codigoFamilia);
+    } catch (error) {
+      console.error("Error al guardar el token en Firestore:", error);
+    }
   }
-}
 
 // ================== EVENTOS EN FIREBASE ==================
 const EVENTOS_COLLECTION = "eventos";
@@ -1172,6 +1173,7 @@ export default function App() {
     const enviarHeartbeat = async () => {
       if (!isOnline) return;
       try {
+      
         const ref = db.collection("familias").doc(STORAGE_PREFIX + codigo);
         const doc = await ref.get();
         if (doc.exists) {
@@ -1354,7 +1356,7 @@ export default function App() {
         setStage(data.settings?.aceptoTerminos ? "app" : "consentimiento");
         registrarEvento(cod, "unirse_familia", `Cuidador ${nombreCuidador} se unió`, { cuidador: nombreCuidador, persona: data.personas[0]?.nombre || "", edad: data.personas[0]?.edad || "" });
         // NUEVO: Guardar token FCM al unirse a una familia
-        if (tokenFCM) await guardarTokenEnFirestore(cod, tokenFCM);
+              if (tokenFCM) await guardarTokenEnFirestore(cod, tokenFCM, "cuidador");
       } else setError("No encontramos ese código.");
     } catch (e) { setError("No encontramos ese código."); }
   };
@@ -1381,12 +1383,12 @@ export default function App() {
     setFamilia(nueva); setCodigo(cod); setPersonaActualId(personaId); setStage("consentimiento");
     registrarEvento(cod, "crear_familia", `Familia creada para ${nombreInput.trim()}${edadNum ? ` (${edadNum} años)` : ""}`, { cuidador: nombreCuidadorInput, persona: nombreInput.trim(), edad: edadNum || "" });
     // NUEVO: Guardar token FCM al crear la familia
-    if (tokenFCM) await guardarTokenEnFirestore(cod, tokenFCM);
+       if (tokenFCM) await guardarTokenEnFirestore(cod, tokenFCM, "cuidador");
   };
 
   const unirseFamilia = () => {
     if (codigoInput.trim().length !== 4) return;
-    if (!nombreCuidadorInput.trim()) { setError("Pon tu nombre como cuidador"); return; }
+    if (!nombreCuidadorInput.trim()) { setError("Pontu nombre como cuidador"); return; }
     cargarFamiliaConNombre(codigoInput.trim(), nombreCuidadorInput.trim());
   };
 
@@ -2295,7 +2297,7 @@ export default function App() {
                     const token = await obtenerTokenFCM();
                     if (token) {
                       setTokenFCM(token);
-                      if (codigo) await guardarTokenEnFirestore(codigo, token);
+                                      if (codigo) await guardarTokenEnFirestore(codigo, token, "cuidador");
                       alert("¡Notificaciones activadas!");
                     } else {
                       alert("No se pudieron activar las notificaciones. Revisa los permisos del navegador.");
