@@ -1390,16 +1390,6 @@ export default function App() {
     cargarFamiliaConNombre(codigoInput.trim(), nombreCuidadorInput.trim());
   };
 
-  const cargarDemo = async () => {
-    const cod = "DEMO";
-    const data = generarDemo();
-    await guardarFamilia(cod, data);
-    setFamilia(data); setCodigo(cod); setPersonaActualId(data.personas[0].id);
-    setNombreCuidadorInput("Tú");
-    setStage("app");
-    registrarEvento(cod, "crear_familia", "Demo cargada", { cuidador: "Tú", persona: "Rosa Pérez (Demo)", edad: 78 });
-  };
-
   const actualizar = async (updater) => { setFamilia((prev) => { const next = updater(prev); guardarFamilia(codigo, next); return next; }); };
   const actualizarPersona = async (updater) => { actualizar((prev) => ({ ...prev, personas: prev.personas.map((p) => p.id === personaActualId ? updater(p) : p) })); };
   const actualizarSettings = (c) => actualizar((prev) => ({ ...prev, settings: { ...(prev.settings || {}), ...c } }));
