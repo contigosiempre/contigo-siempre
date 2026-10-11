@@ -37,13 +37,16 @@ messaging.onBackgroundMessage((payload) => {
 });
 
 // Manejar clics en la notificación y en los botones de acción
+// Manejar clics en la notificación y en los botones de acción
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  
+  const APP_URL = 'https://contigo-siempre.vercel.app';
   
   if (event.action === 'tomar') {
     console.log('El adulto mayor confirmó la toma');
     event.waitUntil(
-      clients.matchAll({ type: 'window' }).then((clientList) => {
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
         for (const client of clientList) {
           if (client.url.includes('contigo-siempre') && 'focus' in client) {
             client.postMessage({ tipo: 'confirmar_toma' });
@@ -51,41 +54,35 @@ self.addEventListener('notificationclick', (event) => {
           }
         }
         if (clients.openWindow) {
-          return clients.openWindow('/?accion=confirmar');
+          return clients.openWindow(APP_URL + '?accion=confirmar');
         }
       })
     );
   } else if (event.action === 'postergar') {
     console.log('El adulto mayor postergó 5 minutos');
     event.waitUntil(
-      new Promise((resolve) => {
-        setTimeout(() => {
-          self.registration.showNotification("⏰ Recordatorio postergado", {
-            body: "Es hora de tomar tu medicamento",
-            icon: '/icons/icon-192.png',
-            vibrate: [500, 200, 500],
-            sound: 'default',
-            requireInteraction: true,
-            priority: 'high',
-            actions: [
-              { action: 'tomar', title: '✓ Ya la tomé' },
-              { action: 'postergar', title: '⏰ Postergar 5 min' }
-            ]
-          });
-          resolve();
-        }, 5 * 60 * 1000);
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+        for (const client of clientList) {
+          if (client.url.includes('contigo-siempre') && 'focus' in client) {
+            client.postMessage({ tipo: 'postergar_toma' });
+            return client.focus();
+          }
+        }
+        if (clients.openWindow) {
+          return clients.openWindow(APP_URL + '?accion=postergar');
+        }
       })
     );
   } else {
     event.waitUntil(
-      clients.matchAll({ type: 'window' }).then((clientList) => {
+      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
         for (const client of clientList) {
           if (client.url.includes('contigo-siempre') && 'focus' in client) {
             return client.focus();
           }
         }
         if (clients.openWindow) {
-          return clients.openWindow('/');
+          return clients.openWindow(APP_URL);
         }
       })
     );
