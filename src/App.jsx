@@ -729,6 +729,79 @@ function CampoHora({ C, valor, onCambio, oscuro }) {
   );
 }
 
+function SelectorRol({ C, onSeleccionar, onCerrar }) {
+  const roles = [
+    {
+      id: "mayor",
+      Icono: User,
+      titulo: "Adulto mayor",
+      descripcion: "Solo veo mis medicamentos y confirmo las tomas",
+    },
+    {
+      id: "cuidador",
+      Icono: Users,
+      titulo: "Cuidador / Familiar",
+      descripcion: "Cuido a alguien más y administro sus medicamentos",
+    },
+    {
+      id: "autocuidado",
+      Icono: Heart,
+      titulo: "Autocuidado (Premium)",
+      descripcion: "Yo también tomo medicamentos y cuido a otros",
+    },
+  ];
+  
+  return (
+    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+      <div className="modal-scale" style={{ width: "100%", maxWidth: 380, background: C.CREAM, borderRadius: 24, padding: 26, margin: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+        <div style={{ fontWeight: 800, fontSize: 22, marginBottom: 6, textAlign: "center", color: C.INK }}>
+          ¿Quién usará este celular?
+        </div>
+        <div style={{ fontSize: 13, color: C.MUTED, marginBottom: 20, textAlign: "center", lineHeight: 1.5 }}>
+          Elige tu rol. Podrás cambiarlo después en Ajustes.
+        </div>
+        
+        {roles.map((r) => {
+          const Icono = r.Icono;
+          return (
+            <button
+              key={r.id}
+              onClick={() => onSeleccionar(r.id)}
+              className="btn-press-soft"
+              style={{
+                width: "100%",
+                padding: 16,
+                borderRadius: 16,
+                border: `1.5px solid ${C.LINE}`,
+                background: C.PAPER,
+                cursor: "pointer",
+                marginBottom: 10,
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                textAlign: "left",
+                boxShadow: C.SHADOW,
+              }}
+            >
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: C.TEAL + "15", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Icono size={22} color={C.TEAL} strokeWidth={2.2} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 15, color: C.INK, marginBottom: 2 }}>
+                  {r.titulo}
+                </div>
+                <div style={{ fontSize: 11.5, color: C.MUTED, lineHeight: 1.4 }}>
+                  {r.descripcion}
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function MenuLateral({ C, abierto, onCerrar, tabActual, setTabActual, avisosNuevos, onCompartir, onModoOscuro, onAyuda, onAcercaDe, onPolitica, onPremium, onAjustes, oscuro, cuidadorNombre, elderName }) {
   if (!abierto) return null;
   const secciones = [
@@ -1044,12 +1117,19 @@ export default function App() {
   const [familia, setFamilia] = useState(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [view, setView] = useState("mayor");
+ const [view, setView] = useState(() => {
+  const rol = localStorage.getItem("rol_usuario");
+  return rol === "mayor" ? "mayor" : "cuidador";
+});
   const [nowMin, setNowMin] = useState(toMinutes(nowHHMM()));
   const [personaActualId, setPersonaActualId] = useState(null);
   const [showSelector, setShowSelector] = useState(false);
     const [showAdd, setShowAdd] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
+    const [rolUsuario, setRolUsuario] = useState(() => {
+    return localStorage.getItem("rol_usuario") || null;
+  });
+  const [showSelectorRol, setShowSelectorRol] = useState(false);
     const [archivarTarget, setArchivarTarget] = useState(null);
   const [restockTarget, setRestockTarget] = useState(null);
   const [showAjustes, setShowAjustes] = useState(false);
@@ -1134,7 +1214,14 @@ export default function App() {
             setCodigo(codigoGuardado);
             setPersonaActualId(data.personas?.[0]?.id || null);
             setNombreCuidadorInput(cuidadorGuardado);
-            setStage(data.settings?.aceptoTerminos ? "app" : "consentimiento");
+        const rolGuardado = localStorage.getItem("rol_usuario");
+    if (!data.settings?.aceptoTerminos) {
+      setStage("consentimiento");
+    } else if (!rolGuardado) {
+      setShowSelectorRol(true);
+    } else {
+      setStage("app");
+    }
           } else {
             setStage("entrada");
           }
@@ -1397,10 +1484,29 @@ export default function App() {
     await guardarFamilia(cod, nueva);
         localStorage.setItem("codigo_familia", cod);
         localStorage.setItem("nombre_cuidador", nombreCuidadorInput.trim());
-    setFamilia(nueva); setCodigo(cod); setPersonaActualId(personaId); setStage("consentimiento");
+    setFamilia(nueva); setCodigo(cod); setPersonaActualId(personaId); setShowSelectorRol(true);
     registrarEvento(cod, "crear_familia", `Familia creada para ${nombreInput.trim()}${edadNum ? ` (${edadNum} años)` : ""}`, { cuidador: nombreCuidadorInput, persona: nombreInput.trim(), edad: edadNum || "" });
     // NUEVO: Guardar token FCM al crear la familia
        if (tokenFCM) await guardarTokenEnFirestore(cod, tokenFCM, "cuidador");
+  };
+
+ 
+  const seleccionarRol = (rol) => {
+    setRolUsuario(rol);
+    localStorage.setItem("rol_usuario", rol);
+    setShowSelectorRol(false);
+    
+    // Después del rol → consentimiento (si no aceptó aún)
+    if (!familia?.settings?.aceptoTerminos) {
+      setStage("consentimiento");
+    } else {
+      setStage("app");
+    }
+    
+    registrarEvento(codigo, "seleccionar_rol", rol, {
+      cuidador: nombreCuidadorInput,
+      rol: rol,
+    });
   };
 
   const unirseFamilia = () => {
@@ -1499,8 +1605,15 @@ export default function App() {
           <button onClick={async () => {
             if (!aceptoCheck) return;
             const next = { ...familia, settings: { ...familia.settings, aceptoTerminos: true, tutorialVisto: false } };
-            await guardarFamilia(codigo, next); setFamilia(next); setStage("app");
-            setShowTutorial(true);
+                await guardarFamilia(codigo, next); setFamilia(next);
+    const rolGuardado = localStorage.getItem("rol_usuario");
+    if (!rolGuardado) {
+      setShowSelectorRol(true);
+    } else {
+      setStage("app");
+      setShowTutorial(true);
+    }  
+            
             registrarEvento(codigo, "acepto_terminos", "Términos aceptados", { cuidador: nombreCuidadorInput });
           }} disabled={!aceptoCheck} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: aceptoCheck ? LIGHT.TEAL : "#E0E4EB", color: "#fff", fontWeight: 700, cursor: aceptoCheck ? "pointer" : "not-allowed" }}>Continuar</button>
           {showPolitica && <PoliticaPrivacidad C={LIGHT} onCerrar={() => setShowPolitica(false)} />}
@@ -1730,19 +1843,32 @@ export default function App() {
           </div>
         )}
 
-        {familia.personas && familia.personas.length > 1 && view === "cuidador" && (
-          <div style={{ padding: "12px 20px 0", position: "relative" }}>
-            <button onClick={() => setShowSelector(!showSelector)} className="btn-press-soft" style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: C.SHADOW }}>
-              <span>👤 {elderName}{elderEdad ? ` · ${elderEdad} años` : ""}</span><ChevronDown size={14} />
+
+                  {rolUsuario !== "mayor" && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 20px 0", position: "relative" }}>
+            <button onClick={() => setShowMenuLateral(true)} data-tutorial="menu" className="btn-press-soft" style={{ border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, borderRadius: 12, width: 42, height: 42, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative", boxShadow: C.SHADOW }}>
+              <Menu size={20} strokeWidth={2.2} />
+              {smsLog.length > 0 && <span style={{ position: "absolute", top: -4, right: -4, background: C.CORAL, color: "#fff", fontSize: 9, fontWeight: 700, borderRadius: 999, padding: "1px 5px", minWidth: 16, textAlign: "center" }}>{fmtN(smsLog.length)}</span>}
             </button>
+            <div style={{ flex: 1 }}>
+              {familia.personas && familia.personas.length > 1 ? (
+                <button onClick={() => setShowSelector(!showSelector)} className="btn-press-soft" style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: C.SHADOW }}>
+                  <span>{elderName}{elderEdad ? ` · ${elderEdad} años` : ""}</span><ChevronDown size={14} />
+                </button>
+              ) : (
+                <div style={{ padding: "10px 14px", textAlign: "center", fontSize: 13, fontWeight: 700, color: C.INK }}>
+                  {elderName}{elderEdad ? ` · ${elderEdad} años` : ""}
+                </div>
+              )}
+            </div>
             {showSelector && (
-              <div className="modal-scale" style={{ position: "absolute", top: 52, left: 20, right: 20, background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 12, padding: 6, zIndex: 20, boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
+              <div className="modal-scale" style={{ position: "absolute", top: 60, left: 60, right: 20, background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 12, padding: 6, zIndex: 20, boxShadow: "0 8px 24px rgba(0,0,0,0.18)" }}>
                 {familia.personas.map((p) => {
                   const mins = minutosDesde(p.ultimaConexion);
                   const desconectado = mins !== null && mins > MINUTOS_SIN_CONEXION_ALERTA;
                   return (
                     <button key={p.id} onClick={() => { setPersonaActualId(p.id); setShowSelector(false); }} className="btn-press-soft" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "none", background: p.id === personaActualId ? (oscuro ? "#1E3A5F" : "#E3F2FD") : "transparent", color: C.INK, fontWeight: p.id === personaActualId ? 700 : 500, fontSize: 13, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 6 }}>
-                      <span>👤 {p.nombre}{p.edad ? ` · ${p.edad} años` : ""}</span>
+                      <span>{p.nombre}{p.edad ? ` · ${p.edad} años` : ""}</span>
                       {desconectado && <WifiOff size={12} color="#E65100" />}
                     </button>
                   );
@@ -1752,22 +1878,7 @@ export default function App() {
             )}
           </div>
         )}
-
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 20px 0" }}>
-          {view === "cuidador" && (
-            <button onClick={() => setShowMenuLateral(true)} data-tutorial="menu" className="btn-press-soft" style={{ border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, borderRadius: 12, width: 42, height: 42, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative", boxShadow: C.SHADOW }}>
-              <Menu size={20} strokeWidth={2.2} />
-              {smsLog.length > 0 && <span style={{ position: "absolute", top: -4, right: -4, background: C.CORAL, color: "#fff", fontSize: 9, fontWeight: 700, borderRadius: 999, padding: "1px 5px", minWidth: 16, textAlign: "center" }}>{fmtN(smsLog.length)}</span>}
-            </button>
-          )}
-          <button onClick={() => setView("mayor")} className="btn-press-soft" style={{ flex: 1, padding: "11px", borderRadius: 12, border: `1px solid ${view === "mayor" ? "transparent" : C.LINE}`, fontWeight: 700, fontSize: 12.5, cursor: "pointer", background: view === "mayor" ? C.TEAL : C.PAPER, color: view === "mayor" ? "#fff" : C.MUTED, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: view === "mayor" ? `0 4px 12px ${C.TEAL}40` : C.SHADOW }}><User size={14} /> {elderName.split(" ")[0]}</button>
-          <button onClick={() => setView("cuidador")} data-tutorial="tab-cuidador" className="btn-press-soft" style={{ flex: 1, padding: "11px", borderRadius: 12, border: `1px solid ${view === "cuidador" ? "transparent" : C.LINE}`, fontWeight: 700, fontSize: 12.5, cursor: "pointer", background: view === "cuidador" ? C.TEAL : C.PAPER, color: view === "cuidador" ? "#fff" : C.MUTED, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: view === "cuidador" ? `0 4px 12px ${C.TEAL}40` : C.SHADOW }}><Users size={14} /> Cuidador {esPremium && "⭐"}</button>
-        </div>
-
-        {view === "cuidador" && <div style={{ margin: "8px 20px 0", display: "flex", justifyContent: "center" }}>
-          <AvisoSinConexion C={C} offline={!isOnline} ultimaConexion={ultimaConexionPersona} compacto={false} />
-        </div>}
-
+      
         <div data-tutorial="codigo" style={{ margin: "10px 20px 0", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 11, color: C.MUTED, padding: 4, borderRadius: 8 }}>
           <KeyRound size={11} /> Código: <strong>{codigo}</strong>
           <button onClick={() => navigator.clipboard?.writeText(codigo)} className="btn-press-soft" style={{ border: "none", background: "transparent", color: C.TEAL, cursor: "pointer", display: "flex", padding: 4 }}><Copy size={12} /></button>
@@ -2093,7 +2204,15 @@ export default function App() {
         {showEventos && <VerEventos C={C} onCerrar={() => setShowEventos(false)} />}
         {showCarroCompleto && <CarroCompleto C={C} meds={meds} onCerrar={() => setShowCarroCompleto(false)} onElegirFarmacia={abrirFarmaciaCarro} />}
 
-{showTutorial && <TutorialInteractivo pasos={PASOS_TUTORIAL} onCerrar={() => { setShowTutorial(false); actualizar((prev) => ({ ...prev, settings: { ...prev.settings, tutorialVisto: true } })); registrarEvento(codigo, "tutorial_completado", "Tutorial finalizado", { cuidador: nombreCuidadorInput }); }} C={C} onAbrirMenu={() => setShowMenuLateral(true)} />}
+      {showSelectorRol && (
+        <SelectorRol
+          C={C}
+          onSeleccionar={(rol) => seleccionarRol(rol)}
+          onCerrar={() => setShowSelectorRol(false)}
+        />
+      )}
+
+        {showTutorial && <TutorialInteractivo pasos={PASOS_TUTORIAL} onCerrar={() => { setShowTutorial(false); actualizar((prev) => ({ ...prev, settings: { ...prev.settings, tutorialVisto: true } })); registrarEvento(codigo, "tutorial_completado", "Tutorial finalizado", { cuidador: nombreCuidadorInput }); }} C={C} onAbrirMenu={() => setShowMenuLateral(true)} />}
 
         {showContactos && (
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 35 }}>
