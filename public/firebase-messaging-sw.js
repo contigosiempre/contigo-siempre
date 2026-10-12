@@ -18,20 +18,22 @@ messaging.onBackgroundMessage((payload) => {
   console.log('[service-worker.js] Mensaje recibido en segundo plano:', payload);
   
   const notificationTitle = payload.notification?.title || "Contigo Siempre";
-  const notificationOptions = {
-    body: payload.notification?.body || "Es hora de tomar tu medicamento",
-    icon: '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
-    vibrate: [500, 200, 500, 200, 500],
-    sound: 'default',
-    requireInteraction: true,
-    priority: 'high',
-    importance: 'high',
-    actions: [
-      { action: 'tomar', title: '✓ Ya la tomé' },
-      { action: 'postergar', title: '⏰ Postergar 5 min' }
-    ]
-  };
+      const notificationOptions = {
+        body: payload.notification?.body || "Es hora de tomar tu medicamento",
+        icon: '/icons/icon-192.png',
+        badge: '/icons/icon-192.png',
+        vibrate: [1000, 500, 1000, 500, 1000, 500, 1000],
+        sound: 'default',
+        requireInteraction: true,
+        renotify: true,
+        silent: false,
+        priority: 'high',
+        importance: 'high',
+        actions: [
+          { action: 'tomar', title: '✓ Ya la tomé' },
+          { action: 'postergar', title: '⏰ Postergar 5 min' }
+        ]
+      };
   
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
