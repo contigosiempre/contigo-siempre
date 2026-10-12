@@ -92,7 +92,7 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // ==================== CACHÉ DE LA PWA ====================
-const CACHE_NAME = 'contigo-siempre-v13';
+const CACHE_NAME = 'contigo-siempre-v14';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
