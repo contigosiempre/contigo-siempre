@@ -93,13 +93,17 @@ exports.revisarRecordatorios = functions.pubsub
                     personaId: String(persona.id),
                     familiaCodigo: familiaDoc.id,
                   },
-                  webpush: {
-                    fcmOptions: { link: "https://contigo-siempre.vercel.app" },
-                    notification: {
-                      requireInteraction: true,
-                      tag: `med-${med.id}-${hora}`,
-                    },
-                  },
+                            webpush: {
+                fcmOptions: { link: "https://contigo-siempre.vercel.app" },
+                notification: {
+                  requireInteraction: true,
+                  tag: `med-${med.id}-${hora}`,
+                  vibrate: [1000, 500, 1000, 500, 1000, 500, 1000],
+                  sound: "default",
+                  renotify: true,
+                  silent: false,
+                },
+              },
                 });
                 console.log(`✅ Notificación enviada: ${med.name} a las ${hora} (familia ${familiaDoc.id})`);
               } catch (err) {
