@@ -1050,6 +1050,7 @@ export default function App() {
   const [showSelector, setShowSelector] = useState(false);
     const [showAdd, setShowAdd] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
+    const [archivarTarget, setArchivarTarget] = useState(null);
   const [restockTarget, setRestockTarget] = useState(null);
   const [showAjustes, setShowAjustes] = useState(false);
   const [cuidadorTab, setCuidadorTab] = useState("meds");
@@ -1226,7 +1227,7 @@ export default function App() {
   const personaActual = familia?.personas?.find((p) => p.id === personaActualId) || familia?.personas?.[0] || null;
   const elderName = personaActual?.nombre || "";
   const elderEdad = personaActual?.edad || null;
-  const meds = personaActual?.meds || [];
+  const meds = (personaActual?.meds || []).filter((m) => !m.archivado);
   const confirmedByDate = personaActual?.confirmedByDate || {};
   const contactos = familia?.contactos || [];
   const historialCambios = familia?.historialCambios || [];
@@ -1538,6 +1539,26 @@ export default function App() {
 
   const intentarAgregarMed = () => { if (meds.length >= maxMeds) { setShowLimite("meds"); return; } addStartRef.current = Date.now(); setShowAdd(true); };
   const intentarAgregarPersona = () => { if ((familia.personas?.length || 0) >= maxPersonas) { setShowLimite("personas"); return; } setShowAddPersona(true); };
+ 
+  const archivarMed = (id) => {
+    actualizarPersona((p) => ({
+      ...p,
+      meds: p.meds.map((m) =>
+        m.id === id
+          ? { ...m, archivado: true, fechaArchivado: Date.now() }
+          : m
+      ),
+    }));
+    const med = meds.find((m) => m.id === id);
+    if (med) registrarCambio("Archivó", med.name);
+    registrarEvento(codigo, "archivar_med", med?.name || "", {
+      cuidador: nombreCuidadorInput,
+      persona: elderName,
+      med: med?.name,
+    });
+    setArchivarTarget(null);
+  };
+
   const abrirEditar = (med) => {
     setForm({
       name: med.name || "",
@@ -1878,6 +1899,7 @@ export default function App() {
                                 <button onClick={() => setShowNotas(m)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: C.AMBER, background: oscuro ? "#3A2F1A" : "#FFF8E1", border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}><StickyNote size={11} /></button>
                                 <button onClick={() => esPremium ? setReconteoTarget(m) : setShowPremium(true)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: esPremium ? C.TEAL : C.GOLD, background: esPremium ? (oscuro ? "#1E3A5F" : "#E3F2FD") : (oscuro ? "#3A2F1A" : "#FFF8E1"), border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>{esPremium ? <Camera size={11} /> : <Lock size={11} />}</button>
                                 <button onClick={() => setRestockTarget(m)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: C.TEAL, background: oscuro ? "#1E3A5F" : "#E3F2FD", border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer" }}>Reponer</button>
+                                                <button onClick={() => setArchivarTarget(m)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: C.CORAL, background: "transparent", border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer" }}>🗑️</button>
                               </div>
                             </div>
                             {fechaCompra && (sem.nivel === "urgente" || sem.nivel === "atención") && (<div style={{ marginTop: 8, fontSize: 11, color: C.MUTED }}><Calendar size={11} /> Compra antes del <strong>{fechaCompra}</strong></div>)}
@@ -2277,6 +2299,22 @@ export default function App() {
             </div>
           </div>
         )}
+
+            {archivarTarget && (
+        <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 28 }}>
+          <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 24, padding: 26, margin: 20, textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+            <div style={{ width: 64, height: 64, borderRadius: 999, background: C.CORAL + "15", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+              <Trash2 size={30} color={C.CORAL} strokeWidth={2.2} />
+            </div>
+            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>¿Terminar tratamiento de {archivarTarget.name}?</div>
+            <div style={{ fontSize: 13, color: C.MUTED, marginBottom: 18, lineHeight: 1.6 }}>Se archivará y podrás verlo en "Medicamentos anteriores".</div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setArchivarTarget(null)} className="btn-press-soft" style={{ flex: 1, padding: 12, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.MUTED, fontWeight: 700, cursor: "pointer" }}>Cancelar</button>
+              <button onClick={() => archivarMed(archivarTarget.id)} className="btn-press" style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: C.CORAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Sí, terminar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
         {restockTarget && (
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 26 }}>
