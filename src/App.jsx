@@ -1201,11 +1201,13 @@ export default function App() {
 
   useEffect(() => { const id = setInterval(() => setNowMin(toMinutes(nowHHMM())), 30000); return () => clearInterval(id); }, []);
    useEffect(() => {
-    const codigoGuardado = localStorage.getItem("codigo_familia");
+  console.log("useEffect auto-reconexión ejecutado");
+  const codigoGuardado = localStorage.getItem("codigo_familia");
     const cuidadorGuardado = localStorage.getItem("nombre_cuidador");
     if (codigoGuardado && cuidadorGuardado) {
-      cuandoDbListo(async (d) => {
-        if (!d) { setStage("entrada"); return; }
+     cuandoDbListo(async (d) => {
+  console.log("cuandoDbListo callback ejecutado, db:", d ? "listo" : "null");
+  if (!d) { setStage("entrada"); return; }
         try {
           const res = await storage.get(STORAGE_PREFIX + codigoGuardado);
           if (res && res.value) {
