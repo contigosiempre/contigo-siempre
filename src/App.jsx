@@ -1572,12 +1572,15 @@ export default function App() {
       receta: form.receta || clasificarMedicamento(form.name) || "sin_receta",
       criticidad: critF, modoAviso: modoF,
       notas: form.notas || "", recetaVence: form.recetaVence || "",
-      ventanaMin: Number(form.ventanaMin) || 0,
+            ventanaMin: Number(form.ventanaMin) || 0,
+      archivado: false,
+      fechaInicio: Date.now(),
+      fechaArchivado: null,
     };
     const duracionSeg = addStartRef.current ? Math.round((Date.now() - addStartRef.current) / 1000) : 0;
     if (editandoId) {
       // MODO EDICIÓN
-      actualizarPersona((p) => ({ ...p, meds: p.meds.map((m) => m.id === editandoId ? { ...m, ...nuevo } : m) }));
+    actualizarPersona((p) => ({ ...p, meds: p.meds.map((m) => m.id === editandoId ? { ...m, ...nuevo, fechaInicio: m.fechaInicio || nuevo.fechaInicio, archivado: m.archivado || false, fechaArchivado: m.fechaArchivado || null } : m) }));
       registrarCambio("Editó", nuevo.name);
       registrarEvento(codigo, "editar_med", nuevo.name, { cuidador: nombreCuidadorInput, persona: elderName, edad: elderEdad || "", med: nuevo.name, criticidad: critF, duracion_seg: duracionSeg });
       setEditandoId(null);
