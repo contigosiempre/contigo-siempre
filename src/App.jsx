@@ -1048,6 +1048,8 @@ export default function App() {
   const [nowMin, setNowMin] = useState(toMinutes(nowHHMM()));
   const [personaActualId, setPersonaActualId] = useState(null);
   const [showSelector, setShowSelector] = useState(false);
+  const [rolUsuario, setRolUsuario] = useState(() => localStorage.getItem("rol_usuario") || null);
+const [showSelectorRol, setShowSelectorRol] = useState(false);
     const [showAdd, setShowAdd] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
     const [archivarTarget, setArchivarTarget] = useState(null);
