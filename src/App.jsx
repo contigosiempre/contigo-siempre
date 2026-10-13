@@ -1293,6 +1293,7 @@ const [showSelectorRol, setShowSelectorRol] = useState(false);
   useEffect(() => {
     if (stage === "app" && familia && familia.settings && familia.settings.tutorialVisto === false) {
       setShowTutorial(true);
+              actualizar((prev) => ({ ...prev, settings: { ...prev.settings, tutorialVisto: true } }));
     }
   }, [stage, familia]);
 
