@@ -1587,7 +1587,20 @@ const [showSelectorRol, setShowSelectorRol] = useState(false);
     setAlertaActiva(null);
     registrarEvento(codigo, "alerta_pospuesta", `${alertaActiva.med.name} a las ${fmtHoraConAmPm(alertaActiva.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: alertaActiva.med.name, hora: alertaActiva.time });
   };
-
+const seleccionarRol = (rol) => {
+  setRolUsuario(rol);
+  localStorage.setItem("rol_usuario", rol);
+  setShowSelectorRol(false);
+  if (!familia?.settings?.aceptoTerminos) {
+    setStage("consentimiento");
+  } else {
+    setStage("app");
+  }
+  registrarEvento(codigo, "seleccionar_rol", rol, {
+    cuidador: nombreCuidadorInput,
+    rol: rol,
+  });
+};
   const intentarAgregarMed = () => { if (meds.length >= maxMeds) { setShowLimite("meds"); return; } addStartRef.current = Date.now(); setShowAdd(true); };
   const intentarAgregarPersona = () => { if ((familia.personas?.length || 0) >= maxPersonas) { setShowLimite("personas"); return; } setShowAddPersona(true); };
  
