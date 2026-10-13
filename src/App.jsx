@@ -1093,7 +1093,10 @@ export default function App() {
   const [familia, setFamilia] = useState(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [view, setView] = useState("mayor");
+  const [view, setView] = useState(() => {
+  const rol = localStorage.getItem("rol_usuario");
+  return rol === "mayor" ? "mayor" : "cuidador";
+});
   const [nowMin, setNowMin] = useState(toMinutes(nowHHMM()));
   const [personaActualId, setPersonaActualId] = useState(null);
   const [showSelector, setShowSelector] = useState(false);
