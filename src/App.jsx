@@ -1820,7 +1820,7 @@ const seleccionarRol = (rol) => {
           </div>
         )}
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 20px 0" }}>
+        {rolUsuario !== "mayor" && <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 20px 0" }}>
           {view === "cuidador" && (
             <button onClick={() => setShowMenuLateral(true)} data-tutorial="menu" className="btn-press-soft" style={{ border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, borderRadius: 12, width: 42, height: 42, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative", boxShadow: C.SHADOW }}>
               <Menu size={20} strokeWidth={2.2} />
