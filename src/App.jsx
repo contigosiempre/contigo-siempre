@@ -779,7 +779,7 @@ function MenuLateral({ C, abierto, onCerrar, tabActual, setTabActual, avisosNuev
 function ComoFunciona({ C, onCerrar }) {
   const pasos = [
     { Icono: Pill, titulo: "1. Agrega los medicamentos", texto: "Nombre, dosis, horarios y stock." },
-    { Icono: KeyRound, titulo: "2. Comparte el código", texto: "Dale el código de 4 dígitos a tu familiar para vincular su app con la tuya." },
+    { Icono: KeyRound, titulo: "2. Comparte el código", texto: "Dale el código de 6 dígitos a tu familiar para vincular su app con la tuya." },
     { Icono: BellRing, titulo: "3. Alerta con pantalla completa", texto: "Cuando es la hora, el teléfono del adulto mayor suena, vibra y muestra la alerta a pantalla completa." },
     { Icono: Check, titulo: "4. Confirma cada toma", texto: "Él aprieta 'Sí, ya lo tomé' y tú lo ves al instante." },
     { Icono: WifiOff, titulo: "5. Funciona sin internet", texto: "Si no hay conexión, la app guarda los datos y los sincroniza cuando vuelva la señal." },
