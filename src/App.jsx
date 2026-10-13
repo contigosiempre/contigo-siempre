@@ -2201,7 +2201,7 @@ export default function App() {
                 <Lock size={30} color={C.GOLD} strokeWidth={2.2} />
               </div>
               <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Llegaste al límite</div>
-              <div style={{ fontSize: 13, color: C.MUTED, marginBottom: 18, lineHeight: 1.6 }}>{showLimite === "meds" ? "En Estándar puedes tener hasta 5 medicamentos." : "En Estándar puedes cuidar a 1 persona."} Con Premium, sin límites.</div>
+              <div style={{ fontSize: 13, color: C.MUTED, marginBottom: 18, lineHeight: 1.6 }}>{showLimite === "meds" ? "En Estándar puedes tener hasta 4 medicamentos." : "En Estándar puedes cuidar a 1 persona."} Con Premium, sin límites.</div>
               <button onClick={() => { setShowLimite(null); setShowPremium(true); }} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: `linear-gradient(135deg, ${C.GOLD}, #E65100)`, color: "#fff", fontWeight: 700, cursor: "pointer", marginBottom: 10 }}>⭐ Ver Premium</button>
               <button onClick={() => setShowLimite(null)} className="btn-press-soft" style={{ width: "100%", padding: 12, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.MUTED, fontWeight: 700, cursor: "pointer" }}>Cerrar</button>
             </div>
