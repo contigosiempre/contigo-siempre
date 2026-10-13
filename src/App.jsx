@@ -1451,7 +1451,7 @@ const [showSelectorRol, setShowSelectorRol] = useState(false);
     await guardarFamilia(cod, nueva);
         localStorage.setItem("codigo_familia", cod);
         localStorage.setItem("nombre_cuidador", nombreCuidadorInput.trim());
-    setFamilia(nueva); setCodigo(cod); setPersonaActualId(personaId); setStage("consentimiento");
+    setFamilia(nueva); setCodigo(cod); setPersonaActualId(personaId); setShowSelectorRol(true);
     registrarEvento(cod, "crear_familia", `Familia creada para ${nombreInput.trim()}${edadNum ? ` (${edadNum} años)` : ""}`, { cuidador: nombreCuidadorInput, persona: nombreInput.trim(), edad: edadNum || "" });
     // NUEVO: Guardar token FCM al crear la familia
        if (tokenFCM) await guardarTokenEnFirestore(cod, tokenFCM, "cuidador");
