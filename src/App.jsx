@@ -1594,6 +1594,7 @@ const seleccionarRol = (rol) => {
   setRolUsuario(rol);
   localStorage.setItem("rol_usuario", rol);
   setShowSelectorRol(false);
+  setView(rol === "mayor" ? "mayor" : "cuidador");
   if (!familia?.settings?.aceptoTerminos) {
     setStage("consentimiento");
   } else {
