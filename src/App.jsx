@@ -656,7 +656,56 @@ function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
     </>
   );
 }
+function SelectorRol({ C, onSeleccionar, onCerrar }) {
+  const roles = [
+    { id: "mayor", Icono: User, titulo: "Adulto mayor", descripcion: "Solo veo mis medicamentos y confirmo las tomas" },
+    { id: "cuidador", Icono: Users, titulo: "Cuidador / Familiar", descripcion: "Cuido a alguien más y administro sus medicamentos" },
+    { id: "autocuidado", Icono: Heart, titulo: "Autocuidado (Premium)", descripcion: "Yo también tomo medicamentos y cuido a otros" },
+  ];
 
+  return (
+    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
+      <div className="modal-scale" style={{ width: "100%", maxWidth: 380, background: C.CREAM, borderRadius: 24, padding: 26, margin: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+        <div style={{ fontWeight: 800, fontSize: 22, marginBottom: 6, textAlign: "center", color: C.INK }}>
+          ¿Quién usará este celular?
+        </div>
+        <div style={{ fontSize: 13, color: C.MUTED, marginBottom: 20, textAlign: "center", lineHeight: 1.5 }}>
+          Elige tu rol. Podrás cambiarlo después en Ajustes.
+        </div>
+
+        {roles.map((r) => {
+          const Icono = r.Icono;
+          return (
+            <button
+              key={r.id}
+              onClick={() => onSeleccionar(r.id)}
+              className="btn-press-soft"
+              style={{
+                width: "100%", padding: 16, borderRadius: 16,
+                border: `1.5px solid ${C.LINE}`, background: C.PAPER,
+                cursor: "pointer", marginBottom: 10,
+                display: "flex", alignItems: "center", gap: 14,
+                textAlign: "left", boxShadow: C.SHADOW,
+              }}
+            >
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: C.TEAL + "15", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Icono size={22} color={C.TEAL} strokeWidth={2.2} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 15, color: C.INK, marginBottom: 2 }}>
+                  {r.titulo}
+                </div>
+                <div style={{ fontSize: 11.5, color: C.MUTED, lineHeight: 1.4 }}>
+                  {r.descripcion}
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 function EstadoVacio({ C, icono: Icono, titulo, texto, botonTexto, onBoton }) {
   return (
     <div style={{ background: C.PAPER, border: `1px dashed ${C.LINE}`, borderRadius: 20, padding: "40px 24px", textAlign: "center" }}>
