@@ -387,7 +387,7 @@ function fmt(mins) { const h = Math.floor(mins / 60) % 24; const m = mins % 60; 
 function fmtN(n) { if (n === null || n === undefined) return ""; if (Number.isInteger(n)) return String(n); return String(parseFloat(n.toFixed(2))); }
 function fmtUnid(n) { return `${fmtN(n)} unid.`; }
 function occKey(id, t) { return `${id}__${t}`; }
-function genCode() { return String(Math.floor(1000 + Math.random() * 9000)); }
+function genCode() { return String(Math.floor(100000 + Math.random() * 900000)); }
 function todayStr() { return new Date().toISOString().slice(0, 10); }
 function smsTime() { const d = new Date(); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; }
 function dateKeyOffset(d) { const x = new Date(); x.setDate(x.getDate() - d); return x.toISOString().slice(0, 10); }
