@@ -1554,7 +1554,7 @@ const [showSelectorRol, setShowSelectorRol] = useState(false);
             if (!aceptoCheck) return;
             const next = { ...familia, settings: { ...familia.settings, aceptoTerminos: true, tutorialVisto: false } };
             await guardarFamilia(codigo, next); setFamilia(next); setStage("app");
-            setShowTutorial(true);
+            
             registrarEvento(codigo, "acepto_terminos", "Términos aceptados", { cuidador: nombreCuidadorInput });
           }} disabled={!aceptoCheck} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: aceptoCheck ? LIGHT.TEAL : "#E0E4EB", color: "#fff", fontWeight: 700, cursor: aceptoCheck ? "pointer" : "not-allowed" }}>Continuar</button>
           {showPolitica && <PoliticaPrivacidad C={LIGHT} onCerrar={() => setShowPolitica(false)} />}
