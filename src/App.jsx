@@ -1553,7 +1553,7 @@ const [showSelectorRol, setShowSelectorRol] = useState(false);
           </label>
           <button onClick={async () => {
             if (!aceptoCheck) return;
-            const next = { ...familia, settings: { ...familia.settings, aceptoTerminos: true, tutorialVisto: false } };
+           const next = { ...familia, settings: { ...familia.settings, aceptoTerminos: true } };
             await guardarFamilia(codigo, next); setFamilia(next); setStage("app");
             
             registrarEvento(codigo, "acepto_terminos", "Términos aceptados", { cuidador: nombreCuidadorInput });
