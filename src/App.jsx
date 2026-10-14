@@ -1133,7 +1133,7 @@ const [showSelectorRol, setShowSelectorRol] = useState(false);
   const [nombrePersonaNueva, setNombrePersonaNueva] = useState("");
   const [edadPersonaNueva, setEdadPersonaNueva] = useState("");
   const [formContacto, setFormContacto] = useState({ nombre: "", telefono: "", tipo: "médico" });
-{ name: "", dose: "", times: ["08:00"], color: PILL_COLORS[0], shape: PILL_SHAPES[0], unidad: "pastilla", stock: 30, ...
+const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: PILL_COLORS[0], shape: PILL_SHAPES[0], unidad: "pastilla", stock: 30, doseAmount: 1, type: "privada", receta: null, criticidad: null, modoAviso: null, notas: "", recetaVence: "", ventanaMin: 0 });
   const [smsLog, setSmsLog] = useState([]);
   const [alertasDisparadas, setAlertasDisparadas] = useState({});
   const [alertasPatron, setAlertasPatron] = useState({});
