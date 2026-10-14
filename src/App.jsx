@@ -530,7 +530,7 @@ function AvisoSinConexion({ C, offline, ultimaConexion, compacto, nombre }) {
   return null;
 }
 
-function PantallaAlertaMedicamento({ C, med, hora, onConfirmar, onPosponer, escala, daltonico, sonidoActivo }) {
+function PantallaAlertaMedicamento({ C, med, hora, onConfirmar, onPosponer, escala, daltonico, sonidoActivo, esVital }) {
   return (
     <div className="modal-fade" style={{ position: "fixed", inset: 0, background: `linear-gradient(160deg, ${dispColor(med.color, daltonico)}, #0D47A1)`, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
       <div style={{ fontSize: 16 * escala, fontWeight: 700, color: "rgba(255,255,255,0.85)", letterSpacing: 2, textTransform: "uppercase", marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
@@ -548,9 +548,11 @@ function PantallaAlertaMedicamento({ C, med, hora, onConfirmar, onPosponer, esca
         <Check size={32} strokeWidth={3} /> SÍ, YA LO TOMÉ
       </button>
 
-      <button onClick={onPosponer} className="btn-press-soft" style={{ width: "100%", maxWidth: 360, padding: "16px 20px", borderRadius: 18, border: "2px solid rgba(255,255,255,0.4)", background: "transparent", color: "#FFFFFF", fontWeight: 700, fontSize: 16 * escala, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-        <Clock size={18} /> Recordar en 5 minutos
-      </button>
+    {!esVital && (
+  <button onClick={onPosponer} className="btn-press-soft" style={{ width: "100%", maxWidth: 360, padding: "16px 20px", borderRadius: 18, border: "2px solid rgba(255,255,255,0.4)", background: "transparent", color: "#FFFFFF", fontWeight: 700, fontSize: 16 * escala, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+    <Clock size={18} /> Recordar en 5 minutos
+  </button>
+)}
 
       {sonidoActivo && (
         <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", marginTop: 20 }}>
@@ -1810,6 +1812,7 @@ const seleccionarRol = (rol) => {
             escala={scale}
             daltonico={settings.daltonico}
             sonidoActivo={settings.sonidoActivo !== false}
+                              esVital={(alertaActiva.med.criticidad || detectarCriticidad(alertaActiva.med.name)) === "vital"}
           />
         )}
 
