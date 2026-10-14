@@ -1143,6 +1143,7 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [alertaActiva, setAlertaActiva] = useState(null);
   const [alertasSonadasHoy, setAlertasSonadasHoy] = useState({});
+  const [alertasPorToma, setAlertasPorToma] = useState({});
   const alertasPostergadasRef = useRef({});
   const [triggerPostergacion, setTriggerPostergacion] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
@@ -1320,12 +1321,20 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
       const ak = `sonada_${personaActual.id}_${due.med.id}_${due.time}_${todayStr()}`;
       if (!alertasSonadasHoy[ak]) {
         setAlertasSonadasHoy(prev => ({ ...prev, [ak]: true }));
-        setAlertaActiva(due);
-        if (settings.sonidoActivo !== false) reproducirAlertaSonido();
-        if (settings.vibracionActiva !== false) vibrarPatron();
-        registrarEvento(codigo, "alerta_activada", `${due.med.name} a las ${fmtHoraConAmPm(due.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: due.med.name, hora: due.time });
-      }
-    }
+                    setAlertaActiva(due);
+              const akKey = `alertas_${personaActual.id}_${due.med.id}_${due.time}_${todayStr()}`;
+              const alertasActuales = alertasPorToma[akKey] || 0;
+              const esVitalAhora = (due.med.criticidad || detectarCriticidad(due.med.name)) === "vital";
+              const maxAlertas = esVitalAhora ? 2 : 3;
+              setAlertasPorToma((prev) => ({ ...prev, [akKey]: alertasActuales + 1 }));
+              if (settings.sonidoActivo !== false) reproducirAlertaSonido();
+              if (settings.vibracionActiva !== false) vibrarPatron();
+              registrarEvento(codigo, "alerta_activada", `${due.med.name} a las ${fmtHoraConAmPm(due.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: due.med.name, hora: due.time });
+              if (alertasActuales + 1 < maxAlertas) {
+                setTimeout(() => {
+                  setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[ak]; return nuevo; });
+                }, 2 * 60 * 1000);
+              }
   }, [nowMin, stage, familia, personaActual, confirmedByDate, view, alertaActiva, alertasSonadasHoy, settings, codigo, nombreCuidadorInput, elderName, meds]);
     useEffect(() => {
     if (!alertaActiva) return;
