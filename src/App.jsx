@@ -2036,7 +2036,7 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
                                   {m.receta === "con_receta" && <span style={{ fontSize: 9, background: C.TEAL + "20", color: C.TEAL, padding: "2px 7px", borderRadius: 999, fontWeight: 700, letterSpacing: 0.3 }}>RECETA</span>}
                                   <span style={{ width: 8, height: 8, borderRadius: 999, background: semColor, marginLeft: "auto" }} />
                                 </div>
-                                <div style={{ fontSize: 11, color: C.MUTED, marginTop: 3 }}>{m.times.map(fmtHoraConAmPm).join(" · ")} · Aviso: {modo === "inmediato" ? `a los ${UMBRAL_MIN[crit]} min` : modo === "final_dia" ? "al final del día" : "nunca"}{m.ventanaMin > 0 ? ` · ventana ${m.ventanaMin}min` : ""}</div>
+                              <div style={{ fontSize: 11, color: C.MUTED, marginTop: 3 }}>{m.times.map(fmtHoraConAmPm).join(" · ")} · Aviso: {crit === "vital" ? "a los 2 min" : "al cerrar la alerta"}{m.ventanaMin > 0 ? ` · ventana ${m.ventanaMin}min` : ""}</div>
                                 {m.notas && <div style={{ fontSize: 11, color: C.AMBER, marginTop: 4, fontStyle: "italic" }}>📝 {m.notas}</div>}
                                 {diasReceta !== null && diasReceta >= 0 && diasReceta <= 30 && (<div style={{ fontSize: 11, color: diasReceta <= 7 ? C.CORAL : C.MUTED, marginTop: 4 }}>📄 Receta vence en {fmtN(diasReceta)} día{diasReceta !== 1 ? "s" : ""}</div>)}
                               </div>
