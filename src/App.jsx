@@ -1447,6 +1447,8 @@ const [showSelectorRol, setShowSelectorRol] = useState(false);
       personas: [{ id: personaId, nombre: nombreInput.trim(), edad: edadNum, meds: [], confirmedByDate: {}, preferenciasFarmacia: {}, ultimoReconteo: {}, ultimaConexion: Date.now() }],
       contactos: [], cuidadores: [nombreCuidadorInput.trim()], historialCambios: [],
       plan: "estandar", planInicio: null,
+      esPiloto: false, fechaFinPiloto: null,
+      esFundador: false, fechaFinFundador: null,
       settings: { fontSize: "normal", daltonico: false, darkMode: false, aceptoTerminos: false, onboardingPremiumVisto: false, sonidoActivo: true, vibracionActiva: true, tutorialVisto: false }
     };
     await guardarFamilia(cod, nueva);
