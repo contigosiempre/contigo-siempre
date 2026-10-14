@@ -1332,6 +1332,7 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
         registrarEvento(codigo, "alerta_activada", `${due.med.name} a las ${fmtHoraConAmPm(due.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: due.med.name, hora: due.time });
                    if (alertasActuales + 1 < maxAlertas) {
                 setTimeout(() => {
+                                    setAlertaActiva(null);
                   setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[ak]; return nuevo; });
                 }, 2 * 60 * 1000);
               } else {
