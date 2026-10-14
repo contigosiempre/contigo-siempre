@@ -1348,7 +1348,9 @@ const [showSelectorRol, setShowSelectorRol] = useState(false);
       m.times.forEach((t) => {
         const key = occKey(m.id, t);
         if (confirmedHoy[key]) return;
-        const diff = ahoraMin - toMinutes(t);
+        const clavePostergacion = `${personaActual.id}_${m.id}_${t}`;
+const baseTiempo = alertasPostergadas[clavePostergacion] || toMinutes(t);
+const diff = ahoraMin - baseTiempo;
         if (modo === "inmediato" && diff >= umbral + ventana) {
           const ak = `aviso_${personaActual.id}_${m.id}_${t}_${todayStr()}`;
           if (!alertasDisparadas[ak]) {
