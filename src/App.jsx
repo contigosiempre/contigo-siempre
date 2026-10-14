@@ -1141,6 +1141,7 @@ const [showSelectorRol, setShowSelectorRol] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [alertaActiva, setAlertaActiva] = useState(null);
   const [alertasSonadasHoy, setAlertasSonadasHoy] = useState({});
+  const [alertasPostergadas, setAlertasPostergadas] = useState({});
   const [showTutorial, setShowTutorial] = useState(false);
   const [tokenFCM, setTokenFCM] = useState(null); // NUEVO: Token de notificaciones push
   
@@ -1598,6 +1599,10 @@ const posponerAlerta = () => {
   const alertaGuardada = alertaActiva;
   setAlertaActiva(null);
   registrarEvento(codigo, "alerta_pospuesta", `${alertaGuardada.med.name} a las ${fmtHoraConAmPm(alertaGuardada.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: alertaGuardada.med.name, hora: alertaGuardada.time });
+  setAlertasPostergadas((prev) => ({
+    ...prev,
+    [`${personaActual.id}_${alertaGuardada.med.id}_${alertaGuardada.time}`]: toMinutes(nowHHMM()),
+  }));
   setTimeout(() => {
     setAlertaActiva(alertaGuardada);
     if (settings.sonidoActivo !== false) reproducirAlertaSonido();
