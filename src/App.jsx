@@ -2352,18 +2352,13 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
                   <button key={op.v} onClick={() => setForm((f) => ({ ...f, criticidad: op.v }))} className="btn-press-soft" style={{ flex: 1, padding: 10, borderRadius: 10, border: (form.criticidad || detectadoCrit) === op.v ? `2px solid ${op.c}` : `1.5px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 11, cursor: "pointer", transition: "all 0.15s ease" }}>{op.l}</button>
                 ))}
               </div>
-              {(form.criticidad || detectadoCrit) === "vital" ? (
-                <div style={{ background: oscuro ? "#1E2F48" : "#F0F4F8", border: `1px solid ${C.LINE}`, borderRadius: 12, padding: "10px 12px", fontSize: 12, color: C.MUTED, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}><Lock size={14} /> Aviso fijo a los 15 min.</div>
-              ) : (
-                <>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 8, letterSpacing: 0.3 }}>¿CUÁNDO TE AVISAMOS?</div>
-                  <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-                    {[{ v: "inmediato", l: `A los ${UMBRAL_MIN[(form.criticidad || detectadoCrit) || "normal"]} min` }, { v: "final_dia", l: "Al final del día" }, { v: "nunca", l: "Nunca" }].map((op) => (
-                      <button key={op.v} onClick={() => setForm((f) => ({ ...f, modoAviso: op.v }))} className="btn-press-soft" style={{ flex: 1, padding: 10, borderRadius: 10, border: (form.modoAviso || (detectadoCrit === "importante" ? "inmediato" : "final_dia")) === op.v ? `2px solid ${C.TEAL}` : `1.5px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 10.5, cursor: "pointer", transition: "all 0.15s ease" }}>{op.l}</button>
-                    ))}
-                  </div>
-                </>
-              )}
+            {(form.criticidad || detectadoCrit) === "vital" ? (
+  <div style={{...}}>Aviso fijo a los 2 min.</div>
+) : (
+  <div style={{ background: oscuro ? "#1E2F48" : "#F0F4F8", border: `1px solid ${C.LINE}`, borderRadius: 12, padding: "10px 12px", fontSize: 12, color: C.MUTED }}>
+    Se avisará al cuidador según la criticidad del medicamento.
+  </div>
+)}
           
               <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>INDICACIÓN</div>
               <input value={form.dose} onChange={(e) => setForm((f) => ({ ...f, dose: e.target.value }))} placeholder="Ej. 1 pastilla" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, marginBottom: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
