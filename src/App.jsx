@@ -1499,13 +1499,30 @@ const diff = ahoraMin - baseTiempo;
     setShowOnboardingPremium(true);
     registrarEvento(codigo, "activar_premium", "Premium activado", { cuidador: nombreCuidadorInput });
   };
-  const canjearCodigo = () => {
-    const up = codigoPremium.trim().toUpperCase();
-    if (up === CODIGO_ADMIN) { storage.listAll().then(setFamiliasAdmin); setShowAdmin(true); setCodigoPremium(""); setShowPremium(false); }
-    else if (up === CODIGO_DATOS) { setShowDatos(true); setCodigoPremium(""); setShowPremium(false); }
-    else if (CODIGOS_PILOTO.includes(up)) { activarPremium(); setCodigoPremium(""); }
-    else alert("Código no válido");
-  };
+const canjearCodigo = async () => {
+  const up = codigoPremium.trim().toUpperCase();
+  if (up === CODIGO_ADMIN) { storage.listAll().then(setFamiliasAdmin); setShowAdmin(true); setCodigoPremium(""); setShowPremium(false); }
+  else if (up === CODIGO_DATOS) { setShowDatos(true); setCodigoPremium(""); setShowPremium(false); }
+  else if (up === "PILOTO2026") {
+    try {
+      const todas = await storage.listAll();
+      const pilotosActuales = todas.filter((f) => f.data?.esPiloto === true).length;
+      if (pilotosActuales >= 50) {
+        alert("Cupos de piloto agotados. Lo sentimos.");
+        setCodigoPremium("");
+        return;
+      }
+      const nuevaFecha = Date.now() + (60 * 24 * 60 * 60 * 1000);
+      actualizar((prev) => ({ ...prev, esPiloto: true, fechaFinPiloto: nuevaFecha }));
+      setCodigoPremium("");
+      setShowPremium(false);
+      alert("¡Bienvenido al programa piloto! Tienes Premium completo por 60 días.");
+      registrarEvento(codigo, "activar_piloto", "Piloto activado", { cuidador: nombreCuidadorInput });
+    } catch (e) { alert("Error al activar piloto. Intenta de nuevo."); }
+  }
+  else if (CODIGOS_PILOTO.includes(up)) { activarPremium(); setCodigoPremium(""); }
+  else alert("Código no válido");
+};
 
   if (stage === "cargando") return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: LIGHT.TEAL }}><Loader2 size={30} color="#fff" /></div>;
 
