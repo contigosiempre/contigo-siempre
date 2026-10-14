@@ -1330,11 +1330,19 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
         if (settings.sonidoActivo !== false) reproducirAlertaSonido();
         if (settings.vibracionActiva !== false) vibrarPatron();
         registrarEvento(codigo, "alerta_activada", `${due.med.name} a las ${fmtHoraConAmPm(due.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: due.med.name, hora: due.time });
-        if (alertasActuales + 1 < maxAlertas) {
-          setTimeout(() => {
-            setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[ak]; return nuevo; });
-          }, 2 * 60 * 1000);
-        }
+                   if (alertasActuales + 1 < maxAlertas) {
+                setTimeout(() => {
+                  setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[ak]; return nuevo; });
+                }, 2 * 60 * 1000);
+              } else {
+                setTimeout(() => {
+                  setAlertaActiva((actual) => {
+                    if (actual && actual.key === due.key) return null;
+                    return actual;
+                  });
+                  registrarEvento(codigo, "alerta_cerrada_max_reenvios", `${due.med.name} a las ${fmtHoraConAmPm(due.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: due.med.name, hora: due.time });
+                }, 2 * 60 * 1000);
+              }
       }
     }
   }, [nowMin, stage, familia, personaActual, confirmedByDate, view, alertaActiva, alertasSonadasHoy, settings, codigo, nombreCuidadorInput, elderName, meds]);
