@@ -1351,8 +1351,8 @@ const [showSelectorRol, setShowSelectorRol] = useState(false);
         const clavePostergacion = `${personaActual.id}_${m.id}_${t}`;
 const baseTiempo = alertasPostergadas[clavePostergacion] || toMinutes(t);
 const minutosExtra = alertasPostergadas[clavePostergacion] ? 5 : 0;
-const diff = ahoraMin - baseTiempo - minutosExtra;
-        if (modo === "inmediato" && diff >= umbral + ventana) {
+const diff = ahoraMin - baseTiempo;
+       if (modo === "inmediato" && diff >= umbral + ventana + minutosExtra) {
           const ak = `aviso_${personaActual.id}_${m.id}_${t}_${todayStr()}`;
           if (!alertasDisparadas[ak]) {
             const etiq = crit === "vital" ? "🔴 VITAL" : crit === "importante" ? "🟡 Importante" : "🟢 Normal";
