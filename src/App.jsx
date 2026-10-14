@@ -1143,7 +1143,7 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [alertaActiva, setAlertaActiva] = useState(null);
   const [alertasSonadasHoy, setAlertasSonadasHoy] = useState({});
-  const [alertasPorToma, setAlertasPorToma] = useState({});
+ const alertasPorTomaRef = useRef({});
   const alertasPostergadasRef = useRef({});
   const [triggerPostergacion, setTriggerPostergacion] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
@@ -1323,10 +1323,10 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
         setAlertasSonadasHoy(prev => ({ ...prev, [ak]: true }));
               setAlertaActiva(due);
         const akKey = `alertas_${personaActual.id}_${due.med.id}_${due.time}_${todayStr()}`;
-        const alertasActuales = alertasPorToma[akKey] || 0;
+        const alertasActuales = alertasPorTomaRef.current[akKey] || 0;
         const esVitalAhora = (due.med.criticidad || detectarCriticidad(due.med.name)) === "vital";
         const maxAlertas = esVitalAhora ? 2 : 3;
-        setAlertasPorToma((prev) => ({ ...prev, [akKey]: alertasActuales + 1 }));
+        alertasPorTomaRef.current[akKey] = alertasActuales + 1;
         if (settings.sonidoActivo !== false) reproducirAlertaSonido();
         if (settings.vibracionActiva !== false) vibrarPatron();
         registrarEvento(codigo, "alerta_activada", `${due.med.name} a las ${fmtHoraConAmPm(due.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: due.med.name, hora: due.time });
@@ -1633,7 +1633,7 @@ const canjearCodigo = async () => {
       return { ...p, meds: nm, confirmedByDate: nc, ultimaConexion: Date.now() };
     });
       const akKeyConfirm = `alertas_${personaActual.id}_${occ.med.id}_${occ.time}_${todayStr()}`;
-  setAlertasPorToma((prev) => { const nuevo = { ...prev }; delete nuevo[akKeyConfirm]; return nuevo; });
+  delete alertasPorTomaRef.current[akKeyConfirm];
     registrarEvento(codigo, "confirmar_toma", `${occ.med.name} a las ${fmtHoraConAmPm(occ.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, edad: elderEdad || "", med: occ.med.name, hora: occ.time });
     setAlertaActiva(null);
   };
@@ -1648,10 +1648,10 @@ const posponerAlerta = () => {
   const akReset = `aviso_${personaActual.id}_${alertaGuardada.med.id}_${alertaGuardada.time}_${todayStr()}`;
   setAlertasDisparadas((prev) => { const nuevo = { ...prev }; delete nuevo[akReset]; return nuevo; });
   const akKeyPosp = `alertas_${personaActual.id}_${alertaGuardada.med.id}_${alertaGuardada.time}_${todayStr()}`;
-  const alertasActualesPosp = alertasPorToma[akKeyPosp] || 0;
+  const alertasActualesPosp = alertasPorTomaRef.current[akKeyPosp] || 0;
   const esVitalPosp = (alertaGuardada.med.criticidad || detectarCriticidad(alertaGuardada.med.name)) === "vital";
   const maxAlertasPosp = esVitalPosp ? 2 : 3;
-  setAlertasPorToma((prev) => ({ ...prev, [akKeyPosp]: alertasActualesPosp + 1 }));
+  alertasPorTomaRef.current[akKeyPosp] = alertasActualesPosp + 1;
   if (alertasActualesPosp + 1 < maxAlertasPosp) {
     setTimeout(() => {
       setAlertaActiva(alertaGuardada);
