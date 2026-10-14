@@ -1593,11 +1593,17 @@ const [showSelectorRol, setShowSelectorRol] = useState(false);
     setAlertaActiva(null);
   };
 
-  const posponerAlerta = () => {
-    if (!alertaActiva) return;
-    setAlertaActiva(null);
-    registrarEvento(codigo, "alerta_pospuesta", `${alertaActiva.med.name} a las ${fmtHoraConAmPm(alertaActiva.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: alertaActiva.med.name, hora: alertaActiva.time });
-  };
+const posponerAlerta = () => {
+  if (!alertaActiva) return;
+  const alertaGuardada = alertaActiva;
+  setAlertaActiva(null);
+  registrarEvento(codigo, "alerta_pospuesta", `${alertaGuardada.med.name} a las ${fmtHoraConAmPm(alertaGuardada.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: alertaGuardada.med.name, hora: alertaGuardada.time });
+  setTimeout(() => {
+    setAlertaActiva(alertaGuardada);
+    if (settings.sonidoActivo !== false) reproducirAlertaSonido();
+    if (settings.vibracionActiva !== false) vibrarPatron();
+  }, 5 * 60 * 1000);
+};
 const seleccionarRol = (rol) => {
   setRolUsuario(rol);
   localStorage.setItem("rol_usuario", rol);
