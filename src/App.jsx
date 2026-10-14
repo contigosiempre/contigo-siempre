@@ -1144,6 +1144,7 @@ const [showSelectorRol, setShowSelectorRol] = useState(false);
   const [alertaActiva, setAlertaActiva] = useState(null);
   const [alertasSonadasHoy, setAlertasSonadasHoy] = useState({});
   const alertasPostergadasRef = useRef({});
+  const [triggerPostergacion, setTriggerPostergacion] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
   const [tokenFCM, setTokenFCM] = useState(null); // NUEVO: Token de notificaciones push
   
@@ -1605,6 +1606,7 @@ const posponerAlerta = () => {
   setAlertaActiva(null);
   registrarEvento(codigo, "alerta_pospuesta", `${alertaGuardada.med.name} a las ${fmtHoraConAmPm(alertaGuardada.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: alertaGuardada.med.name, hora: alertaGuardada.time });
   alertasPostergadasRef.current[`${personaActual.id}_${alertaGuardada.med.id}_${alertaGuardada.time}`] = toMinutes(nowHHMM());
+        setTriggerPostergacion((t) => t + 1);
     const akReset = `aviso_${personaActual.id}_${alertaGuardada.med.id}_${alertaGuardada.time}_${todayStr()}`;
   setAlertasDisparadas((prev) => { const nuevo = { ...prev }; delete nuevo[akReset]; return nuevo; });
   setTimeout(() => {
@@ -1813,7 +1815,7 @@ const seleccionarRol = (rol) => {
             daltonico={settings.daltonico}
             sonidoActivo={settings.sonidoActivo !== false}
                               esVital={(alertaActiva.med.criticidad || detectarCriticidad(alertaActiva.med.name)) === "vital"}
-                              yaPostergada={!!alertasPostergadasRef.current[`${personaActual?.id}_${alertaActiva.med.id}_${alertaActiva.time}`]}
+                            yaPostergada={(() => { void triggerPostergacion; return !!alertasPostergadasRef.current[`${personaActual?.id}_${alertaActiva.med.id}_${alertaActiva.time}`]; })()}
           />
         )}
 
