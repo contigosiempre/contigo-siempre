@@ -510,7 +510,7 @@ function LogoContigoSiempre({ size = 64, color = "#1976D2", accent = "#F9A825" }
   );
 }
 
-function AvisoSinConexion({ C, offline, ultimaConexion, compacto }) {
+function AvisoSinConexion({ C, offline, ultimaConexion, compacto, nombre }) {
   if (offline) {
     return (
       <div className="offline-pulse" style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#FFF3E0", color: "#E65100", border: "1px solid #FFB74D", borderRadius: 999, padding: compacto ? "2px 8px" : "4px 12px", fontSize: compacto ? 10 : 11.5, fontWeight: 700 }}>
@@ -523,7 +523,7 @@ function AvisoSinConexion({ C, offline, ultimaConexion, compacto }) {
   if (mins > MINUTOS_SIN_CONEXION_ALERTA) {
     return (
       <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#FFF3E0", color: "#E65100", border: "1px solid #FFB74D", borderRadius: 999, padding: compacto ? "2px 8px" : "4px 12px", fontSize: compacto ? 10 : 11.5, fontWeight: 700 }}>
-        <WifiOff size={compacto ? 11 : 13} /> Desconectado hace {mins} min
+        <WifiOff size={compacto ? 11 : 13} /> {nombre || "El adulto mayor"} está desconectado hace {mins} min
       </div>
     );
   }
@@ -1834,7 +1834,7 @@ const seleccionarRol = (rol) => {
         </div>}
 
         {view === "cuidador" && <div style={{ margin: "8px 20px 0", display: "flex", justifyContent: "center" }}>
-          <AvisoSinConexion C={C} offline={!isOnline} ultimaConexion={ultimaConexionPersona} compacto={false} />
+          <AvisoSinConexion C={C} offline={!isOnline} ultimaConexion={ultimaConexionPersona} compacto={false} nombre={elderName} />
         </div>}
 
         <div data-tutorial="codigo" style={{ margin: "10px 20px 0", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 11, color: C.MUTED, padding: 4, borderRadius: 8 }}>
