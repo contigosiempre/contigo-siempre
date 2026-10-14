@@ -1333,10 +1333,11 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
               if (alertasActuales + 1 < maxAlertas) {
                 setTimeout(() => {
                   setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[ak]; return nuevo; });
-                }, 2 * 60 * 1000);
+                  }, 2 * 60 * 1000);
               }
-  }, [nowMin, stage, familia, personaActual, confirmedByDate, view, alertaActiva, alertasSonadasHoy, settings, codigo, nombreCuidadorInput, elderName, meds]);
-    useEffect(() => {
+            }
+          }
+        }, [nowMin, stage, familia, personaActual, confirmedByDate, view, alertaActiva, alertasSonadasHoy, settings, codigo, nombreCuidadorInput, elderName, meds]);
     if (!alertaActiva) return;
     const id = setInterval(() => {
       if (settings.sonidoActivo !== false) reproducirAlertaSonido();
