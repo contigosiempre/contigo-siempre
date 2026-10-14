@@ -2353,7 +2353,7 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
                 ))}
               </div>
             {(form.criticidad || detectadoCrit) === "vital" ? (
-  <div style={{...}}>Aviso fijo a los 2 min.</div>
+ <div style={{ background: oscuro ? "#1E2F48" : "#F0F4F8", border: `1px solid ${C.LINE}`, borderRadius: 12, padding: "10px 12px", fontSize: 12, color: C.MUTED, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}><Lock size={14} /> Aviso fijo a los 2 min.</div>
 ) : (
   <div style={{ background: oscuro ? "#1E2F48" : "#F0F4F8", border: `1px solid ${C.LINE}`, borderRadius: 12, padding: "10px 12px", fontSize: 12, color: C.MUTED }}>
     Se avisará al cuidador según la criticidad del medicamento.
