@@ -1133,7 +1133,7 @@ const [showSelectorRol, setShowSelectorRol] = useState(false);
   const [nombrePersonaNueva, setNombrePersonaNueva] = useState("");
   const [edadPersonaNueva, setEdadPersonaNueva] = useState("");
   const [formContacto, setFormContacto] = useState({ nombre: "", telefono: "", tipo: "médico" });
-  const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: PILL_COLORS[0], shape: PILL_SHAPES[0], stock: 30, doseAmount: 1, type: "privada", receta: null, criticidad: null, modoAviso: null, notas: "", recetaVence: "", ventanaMin: 0 });
+{ name: "", dose: "", times: ["08:00"], color: PILL_COLORS[0], shape: PILL_SHAPES[0], unidad: "pastilla", stock: 30, ...
   const [smsLog, setSmsLog] = useState([]);
   const [alertasDisparadas, setAlertasDisparadas] = useState({});
   const [alertasPatron, setAlertasPatron] = useState({});
@@ -1682,7 +1682,7 @@ const seleccionarRol = (rol) => {
       id: editandoId || Date.now(),
       name: form.name.trim(), dose: form.dose.trim() || "1 dosis",
       times: form.times.filter(Boolean), color: form.color, shape: form.shape,
-      stock: form.stock, doseAmount: form.doseAmount, type: form.type,
+unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmount, type: form.type,
       receta: form.receta || clasificarMedicamento(form.name) || "sin_receta",
       criticidad: critF, modoAviso: modoF,
       notas: form.notas || "", recetaVence: form.recetaVence || "",
@@ -2379,10 +2379,28 @@ const seleccionarRol = (rol) => {
                 </div>
               ))}
               <button onClick={() => setForm((f) => ({ ...f, times: [...f.times, "12:00"] }))} className="btn-press-soft" style={{ fontSize: 12, fontWeight: 700, color: C.TEAL, background: oscuro ? "#1E3A5F" : "#E3F2FD", border: "none", padding: "8px 14px", borderRadius: 999, cursor: "pointer", marginBottom: 14 }}>+ Agregar horario</button>
-              <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-                <div style={{ flex: 1 }}><div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>DOSIS/TOMA</div><input type="number" step="0.5" min="0.5" value={form.doseAmount} onChange={(e) => setForm((f) => ({ ...f, doseAmount: Number(e.target.value) || 1 }))} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} /></div>
-                <div style={{ flex: 1 }}><div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>STOCK</div><input type="number" min="0" value={form.stock} onChange={(e) => setForm((f) => ({ ...f, stock: Number(e.target.value) || 0 }))} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} /></div>
-              </div>
+            <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+  <div style={{ flex: "1 1 100px" }}>
+    <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>DOSIS/TOMA</div>
+    <input type="number" step="0.5" min="0.5" value={form.doseAmount} onChange={(e) => setForm((f) => ({ ...f, doseAmount: Number(e.target.value) || 1 }))} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
+  </div>
+  <div style={{ flex: "1 1 100px" }}>
+    <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>UNIDAD</div>
+    <select value={form.unidad || "pastilla"} onChange={(e) => setForm((f) => ({ ...f, unidad: e.target.value }))} style={{ width: "100%", padding: "12px 10px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }}>
+      <option value="pastilla">pastilla</option>
+      <option value="ml">ml</option>
+      <option value="gotas">gotas</option>
+      <option value="cápsula">cápsula</option>
+      <option value="unidad">unidad</option>
+      <option value="sobre">sobre</option>
+      <option value="parche">parche</option>
+    </select>
+  </div>
+  <div style={{ flex: "1 1 100px" }}>
+    <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>STOCK</div>
+    <input type="number" min="0" value={form.stock} onChange={(e) => setForm((f) => ({ ...f, stock: Number(e.target.value) || 0 }))} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
+  </div>
+</div>
               <button onClick={agregarMed} disabled={!form.name.trim()} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", fontWeight: 700, fontSize: 15, background: form.name.trim() ? C.TEAL : (oscuro ? "#2A3A52" : "#E0E4EB"), color: "#fff", cursor: form.name.trim() ? "pointer" : "not-allowed" }}>Agregar</button>
             </div>
           </div>
