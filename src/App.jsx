@@ -1624,6 +1624,8 @@ const canjearCodigo = async () => {
       const nm = p.meds.map((m) => (m.id === occ.med.id ? { ...m, stock: Math.max(0, +(m.stock - m.doseAmount).toFixed(2)) } : m));
       return { ...p, meds: nm, confirmedByDate: nc, ultimaConexion: Date.now() };
     });
+      const akKeyConfirm = `alertas_${personaActual.id}_${occ.med.id}_${occ.time}_${todayStr()}`;
+  setAlertasPorToma((prev) => { const nuevo = { ...prev }; delete nuevo[akKeyConfirm]; return nuevo; });
     registrarEvento(codigo, "confirmar_toma", `${occ.med.name} a las ${fmtHoraConAmPm(occ.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, edad: elderEdad || "", med: occ.med.name, hora: occ.time });
     setAlertaActiva(null);
   };
