@@ -2046,19 +2046,13 @@ const seleccionarRol = (rol) => {
                   );
                 })()}
 
-                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>Medicamentos con receta</div>
-                <div style={{ fontSize: 12, color: C.MUTED, marginBottom: 12 }}>Elige la farmacia y sube tu receta allá.</div>
-                {calcularRankingFarmacias(FARMACIAS).map((r, i) => (
-                  <div key={r.farmacia.id} style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 16, padding: 16, marginBottom: 10, boxShadow: C.SHADOW }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                      <div style={{ fontWeight: 700, fontSize: 14 }}>{String.fromCharCode(65 + i)}. {r.farmacia.nombre}</div>
-                      <div style={{ fontSize: 11, color: C.MUTED }}>{r.farmacia.distanciaKm} km</div>
-                    </div>
-                    {meds.filter((m) => m.receta === "con_receta").map((m) => (
-                      <button key={m.id} onClick={() => abrirFarmaciaIndividual(r.farmacia, m)} className="btn-press-soft" style={{ width: "100%", padding: 11, borderRadius: 12, border: `1.5px solid ${C.TEAL}`, background: "transparent", color: C.TEAL, fontWeight: 700, fontSize: 12.5, cursor: "pointer", marginTop: 4 }}>Ir a farmacia — {m.name}</button>
-                    ))}
-                  </div>
-                ))}
+           <div style={{ background: C.PAPER, border: `1px dashed ${C.LINE}`, borderRadius: 20, padding: "40px 24px", textAlign: "center", marginTop: 14 }}>
+  <div style={{ width: 72, height: 72, borderRadius: 999, background: C.TEAL + "12", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+    <Truck size={34} color={C.TEAL} strokeWidth={1.5} />
+  </div>
+  <div style={{ fontSize: 18, fontWeight: 700, color: C.INK, marginBottom: 8 }}>Próximamente</div>
+  <div style={{ fontSize: 13, color: C.MUTED, lineHeight: 1.6 }}>Estamos trabajando en alianzas con farmacias para ofrecerte este servicio. Muy pronto podrás comparar precios y comprar directamente desde la app.</div>
+</div>
               </>
             )}
 
