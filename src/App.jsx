@@ -1161,7 +1161,12 @@ const [showSelectorRol, setShowSelectorRol] = useState(false);
   ];
 
   const settings = familia?.settings || { fontSize: "normal", daltonico: false, darkMode: false, sonidoActivo: true, vibracionActiva: true };
-  const esPremium = familia?.plan === "premium";
+  const esPremium = (() => {
+  if (familia?.plan === "premium") return true;
+  if (familia?.esPiloto && familia?.fechaFinPiloto && Date.now() < familia.fechaFinPiloto) return true;
+  if (familia?.esFundador && familia?.fechaFinFundador && Date.now() < familia.fechaFinFundador) return true;
+  return false;
+})();
   const oscuro = settings.darkMode;
   const C = oscuro ? DARK : LIGHT;
 
