@@ -1637,9 +1637,10 @@ const posponerAlerta = () => {
               return actual;
             });
           }, 2 * 60 * 1000);
-        }, 5 * 60 * 1000);
+          }, 5 * 60 * 1000);
       }
-};
+      }
+    };
 const seleccionarRol = (rol) => {
   setRolUsuario(rol);
   localStorage.setItem("rol_usuario", rol);
