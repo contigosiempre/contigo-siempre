@@ -1141,7 +1141,7 @@ const [showSelectorRol, setShowSelectorRol] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [alertaActiva, setAlertaActiva] = useState(null);
   const [alertasSonadasHoy, setAlertasSonadasHoy] = useState({});
-  const [alertasPostergadas, setAlertasPostergadas] = useState({});
+  const alertasPostergadasRef = useRef({});
   const [showTutorial, setShowTutorial] = useState(false);
   const [tokenFCM, setTokenFCM] = useState(null); // NUEVO: Token de notificaciones push
   
@@ -1349,8 +1349,8 @@ const [showSelectorRol, setShowSelectorRol] = useState(false);
         const key = occKey(m.id, t);
         if (confirmedHoy[key]) return;
         const clavePostergacion = `${personaActual.id}_${m.id}_${t}`;
-const baseTiempo = alertasPostergadas[clavePostergacion] || toMinutes(t);
-const minutosExtra = alertasPostergadas[clavePostergacion] ? 5 : 0;
+const baseTiempo = alertasPostergadasRef.current[clavePostergacion] || toMinutes(t);
+const minutosExtra = alertasPostergadasRef.current[clavePostergacion] ? 5 : 0;
 const diff = ahoraMin - baseTiempo;
        if (modo === "inmediato" && diff >= umbral + ventana + minutosExtra) {
           const ak = `aviso_${personaActual.id}_${m.id}_${t}_${todayStr()}`;
@@ -1602,10 +1602,7 @@ const posponerAlerta = () => {
   const alertaGuardada = alertaActiva;
   setAlertaActiva(null);
   registrarEvento(codigo, "alerta_pospuesta", `${alertaGuardada.med.name} a las ${fmtHoraConAmPm(alertaGuardada.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: alertaGuardada.med.name, hora: alertaGuardada.time });
-  setAlertasPostergadas((prev) => ({
-    ...prev,
-    [`${personaActual.id}_${alertaGuardada.med.id}_${alertaGuardada.time}`]: toMinutes(nowHHMM()),
-  }));
+  alertasPostergadasRef.current[`${personaActual.id}_${alertaGuardada.med.id}_${alertaGuardada.time}`] = toMinutes(nowHHMM());
   setTimeout(() => {
     setAlertaActiva(alertaGuardada);
     if (settings.sonidoActivo !== false) reproducirAlertaSonido();
