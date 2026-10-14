@@ -1338,7 +1338,8 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
             }
           }
         }, [nowMin, stage, familia, personaActual, confirmedByDate, view, alertaActiva, alertasSonadasHoy, settings, codigo, nombreCuidadorInput, elderName, meds]);
-    if (!alertaActiva) return;
+    useEffect(() => { 
+  if (!alertaActiva) return;
     const id = setInterval(() => {
       if (settings.sonidoActivo !== false) reproducirAlertaSonido();
       if (settings.vibracionActiva !== false) vibrarPatron();
