@@ -1169,21 +1169,7 @@ const [showSelectorRol, setShowSelectorRol] = useState(false);
 })();
   const oscuro = settings.darkMode;
   const C = oscuro ? DARK : LIGHT;
-  // Detectar parámetros de URL (ej: ?accion=confirmar&medId=123)
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const accion = params.get("accion");
-    const medId = params.get("medId");
-    const hora = params.get("hora");
-    if (accion && medId && hora && familia && personaActual) {
-      const med = (personaActual.meds || []).find((m) => String(m.id) === String(medId));
-      if (med) {
-        setView("mayor");
-        setAlertaActiva({ med, time: hora, key: occKey(med.id, hora) });
-        registrarEvento(codigo, "abrir_desde_notif", `${med.name} a las ${hora}`, { cuidador: nombreCuidadorInput, persona: elderName, med: med.name, hora });
-      }
-    }
-  }, [familia, personaActual]);
+
   useEffect(() => {
     const handleOnline = () => { setIsOnline(true); enviarEventosPendientes(); };
     const handleOffline = () => { setIsOnline(false); };
