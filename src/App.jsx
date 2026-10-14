@@ -2367,18 +2367,7 @@ const seleccionarRol = (rol) => {
                   </div>
                 </>
               )}
-              <div style={{ background: oscuro ? "#1E2F48" : "#F0F4F8", border: `1px solid ${C.LINE}`, borderRadius: 12, padding: 12, marginBottom: 14 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                  <Clock size={14} color={C.TEAL} />
-                  <span style={{ fontSize: 12, fontWeight: 700, color: C.INK }}>VENTANA DE RECORDATORIO</span>
-                </div>
-                <div style={{ fontSize: 11, color: C.MUTED, marginBottom: 8, lineHeight: 1.4 }}>Minutos de tolerancia después de la hora. Si la toma dentro de ese rango, no se considera olvido.</div>
-                <div style={{ display: "flex", gap: 6 }}>
-                  {[{ v: 0, l: "Sin ventana" }, { v: 30, l: "30 min" }, { v: 60, l: "1 hora" }, { v: 120, l: "2 horas" }].map((op) => (
-                    <button key={op.v} onClick={() => setForm((f) => ({ ...f, ventanaMin: op.v }))} className="btn-press-soft" style={{ flex: 1, padding: 8, borderRadius: 10, border: (form.ventanaMin || 0) === op.v ? `2px solid ${C.TEAL}` : `1.5px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 10.5, cursor: "pointer", transition: "all 0.15s ease" }}>{op.l}</button>
-                  ))}
-                </div>
-              </div>
+          
               <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>INDICACIÓN</div>
               <input value={form.dose} onChange={(e) => setForm((f) => ({ ...f, dose: e.target.value }))} placeholder="Ej. 1 pastilla" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, marginBottom: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
               <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>NOTAS (OPCIONAL)</div>
