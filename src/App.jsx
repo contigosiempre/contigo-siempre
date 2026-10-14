@@ -1617,24 +1617,30 @@ const posponerAlerta = () => {
   setAlertaActiva(null);
   registrarEvento(codigo, "alerta_pospuesta", `${alertaGuardada.med.name} a las ${fmtHoraConAmPm(alertaGuardada.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: alertaGuardada.med.name, hora: alertaGuardada.time });
   alertasPostergadasRef.current[`${personaActual.id}_${alertaGuardada.med.id}_${alertaGuardada.time}`] = toMinutes(nowHHMM());
-        setTriggerPostergacion((t) => t + 1);
-    const akReset = `aviso_${personaActual.id}_${alertaGuardada.med.id}_${alertaGuardada.time}_${todayStr()}`;
+  setTriggerPostergacion((t) => t + 1);
+  const akReset = `aviso_${personaActual.id}_${alertaGuardada.med.id}_${alertaGuardada.time}_${todayStr()}`;
   setAlertasDisparadas((prev) => { const nuevo = { ...prev }; delete nuevo[akReset]; return nuevo; });
- setTimeout(() => {
-  setAlertaActiva(alertaGuardada);
-  if (settings.sonidoActivo !== false) reproducirAlertaSonido();
-  if (settings.vibracionActiva !== false) vibrarPatron();
-  // N16: Después de 2 min, si no confirma, cerrar alerta
-  setTimeout(() => {
-    setAlertaActiva((actual) => {
-      if (actual && actual.key === alertaGuardada.key) {
-        registrarEvento(codigo, "alerta_cerrada_sin_confirmar", `${alertaGuardada.med.name} a las ${fmtHoraConAmPm(alertaGuardada.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: alertaGuardada.med.name, hora: alertaGuardada.time });
-        return null;
-      }
-      return actual;
-    });
-  }, 2 * 60 * 1000);
-}, 5 * 60 * 1000);
+  const akKeyPosp = `alertas_${personaActual.id}_${alertaGuardada.med.id}_${alertaGuardada.time}_${todayStr()}`;
+  const alertasActualesPosp = alertasPorToma[akKeyPosp] || 0;
+  const esVitalPosp = (alertaGuardada.med.criticidad || detectarCriticidad(alertaGuardada.med.name)) === "vital";
+  const maxAlertasPosp = esVitalPosp ? 2 : 3;
+  setAlertasPorToma((prev) => ({ ...prev, [akKeyPosp]: alertasActualesPosp + 1 }));
+  if (alertasActualesPosp + 1 < maxAlertasPosp) {
+    setTimeout(() => {
+      setAlertaActiva(alertaGuardada);
+      if (settings.sonidoActivo !== false) reproducirAlertaSonido();
+      if (settings.vibracionActiva !== false) vibrarPatron();
+      setTimeout(() => {
+        setAlertaActiva((actual) => {
+          if (actual && actual.key === alertaGuardada.key) {
+            registrarEvento(codigo, "alerta_cerrada_sin_confirmar", `${alertaGuardada.med.name} a las ${fmtHoraConAmPm(alertaGuardada.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: alertaGuardada.med.name, hora: alertaGuardada.time });
+            return null;
+          }
+          return actual;
+        });
+      }, 2 * 60 * 1000);
+    }, 5 * 60 * 1000);
+  }
 };
 const seleccionarRol = (rol) => {
   setRolUsuario(rol);
