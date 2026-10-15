@@ -1147,17 +1147,16 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
   const heartbeatRef = useRef(null);
 
   const PASOS_TUTORIAL = [
-  { titulo: "¡Bienvenido a Contigo Siempre!", texto: "Te mostraremos las funciones principales. Puedes saltar el tutorial en cualquier momento.", target: null },
-  { titulo: "1. Tu código de familia", texto: "Este código de 6 dígitos es la llave para conectar otros teléfonos. Compártelo con quien te ayude a cuidar.", target: '[data-tutorial="codigo"]' },
-  { titulo: "2. Vista del cuidador", texto: "Toca aquí para ver los medicamentos del adulto mayor. Aquí gestionas todo.", target: '[data-tutorial="tab-cuidador"]' },
-  { titulo: "3. Agregar un medicamento", texto: "Toca este botón para agregar un medicamento nuevo. Puedes poner nombre, dosis, horarios y stock.", target: '[data-tutorial="add-med"]' },
-  { titulo: "4. Ficha del medicamento", texto: "Cada tarjeta muestra el stock disponible, botones para editar, poner notas, recontar o reponer.", target: '[data-tutorial="med-card"]' },
-  { titulo: "5. Pestaña Canasta", texto: "Aquí armas la lista de compras y te sugerimos artículos útiles.", target: '[data-tutorial="tab-canasta"]' },
-  { titulo: "6. Pestaña Historial", texto: "Mira la adherencia día por día. Los colores te dicen si se tomaron los remedios completos.", target: '[data-tutorial="tab-historial"]' },
-  { titulo: "7. Menú de secciones", texto: "Aquí encuentras contactos, historial de cambios, compartir por WhatsApp y mucho más.", target: '[data-tutorial="menu"]' },
-  { titulo: "8. Ajustes y alertas", texto: "Personaliza el tamaño de letra, activa el modo oscuro y controla el sonido de las alertas.", target: '[data-tutorial="ajustes"]' },
-  { titulo: "¡Listo!", texto: "Ya puedes empezar a usar Contigo Siempre. Cuida bien a tu ser querido.", target: null },
-];
+    { titulo: "¡Bienvenido a Contigo Siempre!", texto: "Te mostraremos las funciones principales en 9 pasos rápidos. Puedes saltar el tutorial en cualquier momento.", target: null, abrirMenu: false, cerrarMenu: false },
+    { titulo: "Tu código de familia", texto: "Este código de 6 dígitos es la llave para conectar otros teléfonos. Compártelo con quien te ayude a cuidar.", target: '[data-tutorial="codigo"]', abrirMenu: false, cerrarMenu: false },
+    { titulo: "Vista del cuidador", texto: "Aquí ves todos los medicamentos, su estado (verde=tranquilo, amarillo=atención, rojo=urgente) y el stock disponible.", target: '[data-tutorial="tab-cuidador"]', abrirMenu: false, cerrarMenu: false },
+    { titulo: "Agregar un medicamento", texto: "Toca este botón para agregar un medicamento nuevo. Puedes poner nombre, dosis, horarios y stock.", target: '[data-tutorial="add-med"]', abrirMenu: false, cerrarMenu: false },
+    { titulo: "Menú de secciones", texto: "Aquí encuentras todas las secciones: medicamentos, canasta, historial, contactos y más.", target: '[data-tutorial="menu"]', abrirMenu: true, cerrarMenu: false },
+    { titulo: "Pestaña Canasta", texto: "Aquí armas la lista de compras y te sugerimos artículos útiles según la temporada.", target: '[data-tutorial="tab-canasta"]', abrirMenu: false, cerrarMenu: false },
+    { titulo: "Pestaña Historial", texto: "Mira la adherencia día por día. Los colores te dicen si se tomaron los remedios completos.", target: '[data-tutorial="tab-historial"]', abrirMenu: false, cerrarMenu: false },
+    { titulo: "Ajustes y alertas", texto: "Personaliza el tamaño de letra, activa el modo oscuro y controla el sonido de las alertas.", target: '[data-tutorial="ajustes"]', abrirMenu: false, cerrarMenu: false },
+    { titulo: "¡Listo!", texto: "Ya puedes empezar a usar Contigo Siempre. Cuida bien a tu ser querido.", target: null, abrirMenu: false, cerrarMenu: true },
+  ];
 
   const settings = familia?.settings || { fontSize: "normal", daltonico: false, darkMode: false, sonidoActivo: true, vibracionActiva: true };
   const esPremium = (() => {
