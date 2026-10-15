@@ -2022,11 +2022,12 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
             )}
 
             {!esPremium && (
-                         <div onClick={() => setShowPremium(true)} className="btn-press-soft" style={{ marginBottom: 14, background: `linear-gradient(135deg, ${C.GOLD}, #E65100)`, borderRadius: 16, padding: "14px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, color: "#fff", boxShadow: "0 6px 20px rgba(249,168,37,0.35)" }}>
+              <div onClick={() => setShowPremium(true)} className="btn-press-soft" style={{ marginBottom: 14, background: `linear-gradient(135deg, ${C.GOLD}, #E65100)`, borderRadius: 16, padding: "14px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, color: "#fff", boxShadow: "0 6px 20px rgba(249,168,37,0.35)" }}>
                 <Crown size={22} />
                 <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 700 }}>Hazte Premium</div><div style={{ fontSize: 11, opacity: 0.9 }}>Hasta 3 personas, medicamentos ilimitados</div></div>
                 <ArrowRight size={16} />
               </div>
+            )}
 
             {cuidadorTab === "meds" && (
               <>
