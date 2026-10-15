@@ -616,14 +616,7 @@ function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
     zIndex: 9998,
   };
 
-  let tooltipStyle = {};
-  if (rect) {
-    const isBelow = rect.top < window.innerHeight / 2;
-    if (isBelow) tooltipStyle = { top: Math.min(rect.bottom + 22, window.innerHeight - 320) };
-    else tooltipStyle = { bottom: Math.min(window.innerHeight - rect.top + 22, window.innerHeight - 320) };
-  } else {
-    tooltipStyle = { top: "50%", transform: "translateY(-50%)" };
-  }
+ const tooltipStyle = { bottom: 20 };
 
   return (
     <>
