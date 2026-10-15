@@ -1299,14 +1299,13 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
   const minutosSinConexion = minutosDesde(ultimaConexionPersona);
   const personaDesconectada = !isOnline || (minutosSinConexion !== null && minutosSinConexion > MINUTOS_SIN_CONEXION_ALERTA);
 
-  // Detectar cuándo mostrar el tutorial automáticamente
-  useEffect(() => {
-    if (stage === "app" && familia && familia.settings && familia.settings.tutorialVisto === false) {
-      setShowTutorial(true);
-              actualizar((prev) => ({ ...prev, settings: { ...prev.settings, tutorialVisto: true } }));
-    }
-  }, [stage, familia]);
-
+ // Detectar cuándo mostrar el tutorial automáticamente
+useEffect(() => {
+  if (stage === "app" && familia && familia.settings && familia.settings.aceptoTerminos === true && familia.settings.tutorialVisto === false && !showSelectorRol) {
+    setShowTutorial(true);
+    actualizar((prev) => ({ ...prev, settings: { ...prev.settings, tutorialVisto: true } }));
+  }
+}, [stage, familia, showSelectorRol]);
   useEffect(() => {
     if (stage !== "app" || !familia || !personaActual) return;
    if (view !== "mayor" && !(personaActual?.esAutocuidado)) return;
