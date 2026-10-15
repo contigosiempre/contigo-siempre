@@ -2022,23 +2022,11 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
             )}
 
             {!esPremium && (
-                         <div onClick={() => setShowPremium(true)} className="btn-press-soft" style={{ marginBottom: 14, background: `linear-gradient(135deg, ${C.GOLD}, #E65100)`, borderRadius: 16, padding: "14px 16px", cursor: "pointer", color: "#fff", boxShadow: "0 6px 20px rgba(249,168,37,0.35)" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                  <Crown size={22} />
-                  <div style={{ flex: 1 }}><div style={{ fontSize: 14, fontWeight: 700 }}>Hazte Premium</div><div style={{ fontSize: 11, opacity: 0.9 }}>Compara y decide</div></div>
-                  <ArrowRight size={16} />
-                </div>
-                <div style={{ background: "rgba(255,255,255,0.15)", borderRadius: 10, padding: 10, fontSize: 11, lineHeight: 1.7 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}><span>Medicamentos</span><span><strong>4</strong> → <strong>∞</strong></span></div>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}><span>Personas</span><span><strong>1</strong> → <strong>3</strong></span></div>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}><span>Cuidadores</span><span><strong>2</strong> → <strong>5+</strong></span></div>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}><span>Modo Autocuidado</span><span>❌ → ✅</span></div>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}><span>Reporte PDF</span><span>❌ → ✅</span></div>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}><span>Reconteo por foto</span><span>❌ → ✅</span></div>
-                </div>
+                         <div onClick={() => setShowPremium(true)} className="btn-press-soft" style={{ marginBottom: 14, background: `linear-gradient(135deg, ${C.GOLD}, #E65100)`, borderRadius: 16, padding: "14px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, color: "#fff", boxShadow: "0 6px 20px rgba(249,168,37,0.35)" }}>
+                <Crown size={22} />
+                <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 700 }}>Hazte Premium</div><div style={{ fontSize: 11, opacity: 0.9 }}>Hasta 3 personas, medicamentos ilimitados</div></div>
+                <ArrowRight size={16} />
               </div>
-              </div>
-            )}
 
             {cuidadorTab === "meds" && (
               <>
