@@ -618,13 +618,13 @@ function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
     pointerEvents: "none",
     zIndex: 9998,
   };
- const tooltipStyle = { bottom: 20 };
+const tooltipStyle = { top: "50%", transform: "translateY(-50%)" };
 
   return (
     <>
       <div style={spotlightStyle} />
       
-              <div style={{ position: "fixed", ...tooltipStyle, left: 16, right: 16, maxWidth: 320, margin: "0 auto", background: C.CREAM, borderRadius: 16, padding: "14px 16px", boxShadow: "0 20px 60px rgba(0,0,0,0.5)", zIndex: 9999, animation: "scaleIn 0.25s ease-out" }}>
+   <div style={{ position: "fixed", ...tooltipStyle, left: 16, right: 16, maxWidth: 320, margin: "0 auto", background: C.CREAM, borderRadius: 16, padding: "14px 16px", boxShadow: "0 20px 60px rgba(0,0,0,0.5)", zIndex: 9999, animation: "scaleIn 0.25s ease-out" }}>
           PASO {paso + 1} DE {pasos.length}
         </div>
         <div style={{ fontSize: 17, fontWeight: 800, color: C.INK, marginBottom: 6, lineHeight: 1.2 }}>
