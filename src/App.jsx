@@ -1309,7 +1309,7 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
 
   useEffect(() => {
     if (stage !== "app" || !familia || !personaActual) return;
-    if (view !== "mayor") return;
+   if (view !== "mayor" && !(personaActual?.esAutocuidado)) return;
     const confirmedHoy = confirmedByDate?.[todayStr()] || {};
     const occurrences = meds.flatMap((m) => m.times.map((t) => ({ med: m, time: t, key: occKey(m.id, t) })));
     const due = occurrences.find(o => {
@@ -1882,7 +1882,7 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
       <style>{CSS_GLOBAL}</style>
       <div style={{ width: "100%", maxWidth: 420, minHeight: "100vh", background: C.CREAM, display: "flex", flexDirection: "column" }}>
 
-        {alertaActiva && view === "mayor" && (
+        {alertaActiva && (view === "mayor" || personaActual?.esAutocuidado) && (
           <PantallaAlertaMedicamento
             C={C}
             med={alertaActiva.med}
