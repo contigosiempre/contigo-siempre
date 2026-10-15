@@ -606,26 +606,25 @@ function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
     left: rect.left - 8,
     width: rect.width + 16,
     height: rect.height + 16,
-    borderRadius: 16,
-    boxShadow: "0 0 0 9999px rgba(10,18,38,0.85)",
+    borderRadius: 14,
+    boxShadow: "0 0 0 9999px rgba(15,27,46,0.55), 0 0 0 3px #1976D2, 0 0 0 6px rgba(25,118,210,0.3)",
     pointerEvents: "none",
     zIndex: 9998,
     transition: "all 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
   } : {
     position: "fixed",
     inset: 0,
-    background: "rgba(10,18,38,0.85)",
+    background: "rgba(15,27,46,0.55)",
     pointerEvents: "none",
     zIndex: 9998,
   };
-
  const tooltipStyle = { bottom: 20 };
 
   return (
     <>
       <div style={spotlightStyle} />
-      <div style={{ position: "fixed", ...tooltipStyle, left: 16, right: 16, maxWidth: 320, margin: "0 auto", background: C.CREAM, borderRadius: 18, padding: 16, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", zIndex: 9999, animation: "scaleIn 0.25s ease-out" }}>
-        <div style={{ fontSize: 10, fontWeight: 800, color: C.TEAL, marginBottom: 4, letterSpacing: 1.2 }}>
+      
+              <div style={{ position: "fixed", ...tooltipStyle, left: 16, right: 16, maxWidth: 320, margin: "0 auto", background: C.CREAM, borderRadius: 16, padding: "14px 16px", boxShadow: "0 20px 60px rgba(0,0,0,0.5)", zIndex: 9999, animation: "scaleIn 0.25s ease-out" }}>
           PASO {paso + 1} DE {pasos.length}
         </div>
         <div style={{ fontSize: 17, fontWeight: 800, color: C.INK, marginBottom: 6, lineHeight: 1.2 }}>
@@ -635,17 +634,17 @@ function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
           {pasoActual.texto}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={onCerrar} style={{ flex: 1, padding: 12, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.MUTED, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-            Saltar
-          </button>
-          {paso > 0 && (
-            <button onClick={anterior} style={{ flex: 1, padding: 12, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-              Anterior
+                  <button onClick={onCerrar} style={{ flex: 1, padding: "10px 8px", borderRadius: 10, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.MUTED, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+              Saltar
             </button>
-          )}
-          <button onClick={siguiente} style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-            {paso < pasos.length - 1 ? "Siguiente" : "¡Listo!"}
-          </button>
+            {paso > 0 && (
+              <button onClick={anterior} style={{ flex: 1, padding: "10px 8px", borderRadius: 10, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                Anterior
+              </button>
+            )}
+            <button onClick={siguiente} style={{ flex: 1, padding: "10px 8px", borderRadius: 10, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+              {paso < pasos.length - 1 ? "Siguiente" : "¡Listo!"}
+            </button>
         </div>
         <div style={{ marginTop: 14, height: 4, background: C.LINE, borderRadius: 999, overflow: "hidden" }}>
           <div style={{ width: `${((paso + 1) / pasos.length) * 100}%`, height: "100%", background: C.TEAL, transition: "width 0.35s ease" }} />
