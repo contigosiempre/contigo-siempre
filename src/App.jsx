@@ -1897,6 +1897,9 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
                     </button>
                   );
                 })}
+                              {esPremium && (
+                  <button onClick={() => { setShowSelector(false); setView("cuidador"); setCuidadorTab("meds"); }} className="btn-press-soft" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "none", background: "transparent", color: C.TEAL, fontWeight: 700, fontSize: 13, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 6 }}>💊 Yo (mis medicamentos)</button>
+                )}
                 <button onClick={() => { setShowSelector(false); intentarAgregarPersona(); }} className="btn-press-soft" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "none", background: "transparent", color: C.TEAL, fontWeight: 700, fontSize: 13, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 6 }}><UserPlus size={14} /> Agregar persona</button>
               </div>
             )}
