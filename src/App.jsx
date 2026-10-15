@@ -1685,6 +1685,29 @@ const seleccionarRol = (rol) => {
     rol: rol,
   });
 };
+  const seleccionarYo = () => {
+  const existeYo = familia.personas.find((p) => p.nombre === "Yo");
+  if (existeYo) {
+    setPersonaActualId(existeYo.id);
+    setShowSelector(false);
+  } else {
+    const nuevaYo = {
+      id: Date.now(),
+      nombre: "Yo",
+      edad: null,
+      meds: [],
+      confirmedByDate: {},
+      preferenciasFarmacia: {},
+      ultimoReconteo: {},
+      ultimaConexion: Date.now(),
+      esAutocuidado: true,
+    };
+    actualizar((prev) => ({ ...prev, personas: [...prev.personas, nuevaYo] }));
+    setPersonaActualId(nuevaYo.id);
+    setShowSelector(false);
+    registrarEvento(codigo, "activar_autocuidado", "Modo Autocuidado activado", { cuidador: nombreCuidadorInput });
+  }
+};
   const intentarAgregarMed = () => { if (meds.length >= maxMeds) { setShowLimite("meds"); return; } addStartRef.current = Date.now(); setShowAdd(true); };
   const intentarAgregarPersona = () => { if ((familia.personas?.length || 0) >= maxPersonas) { setShowLimite("personas"); return; } setShowAddPersona(true); };
  
@@ -1898,8 +1921,8 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
                   );
                 })}
                               {esPremium && (
-                  <button onClick={() => { setShowSelector(false); setView("cuidador"); setCuidadorTab("meds"); }} className="btn-press-soft" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "none", background: "transparent", color: C.TEAL, fontWeight: 700, fontSize: 13, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 6 }}>💊 Yo (mis medicamentos)</button>
-                )}
+<button onClick={seleccionarYo} className="btn-press-soft" style={{...}}>💊 Yo (mis medicamentos)</button>
+              )}
                 <button onClick={() => { setShowSelector(false); intentarAgregarPersona(); }} className="btn-press-soft" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "none", background: "transparent", color: C.TEAL, fontWeight: 700, fontSize: 13, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 6 }}><UserPlus size={14} /> Agregar persona</button>
               </div>
             )}
