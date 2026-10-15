@@ -649,7 +649,7 @@ function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
         <div style={{ marginTop: 14, height: 4, background: C.LINE, borderRadius: 999, overflow: "hidden" }}>
           <div style={{ width: `${((paso + 1) / pasos.length) * 100}%`, height: "100%", background: C.TEAL, transition: "width 0.35s ease" }} />
         </div>
-      </div>
+      
     </>
   );
 }
