@@ -628,14 +628,14 @@ function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
   return (
     <>
       <div style={spotlightStyle} />
-      <div style={{ position: "fixed", ...tooltipStyle, left: 20, right: 20, maxWidth: 380, margin: "0 auto", background: C.CREAM, borderRadius: 22, padding: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", zIndex: 9999, animation: "scaleIn 0.25s ease-out" }}>
-        <div style={{ fontSize: 10.5, fontWeight: 800, color: C.TEAL, marginBottom: 6, letterSpacing: 1.5 }}>
+      <div style={{ position: "fixed", ...tooltipStyle, left: 16, right: 16, maxWidth: 320, margin: "0 auto", background: C.CREAM, borderRadius: 18, padding: 16, boxShadow: "0 20px 60px rgba(0,0,0,0.5)", zIndex: 9999, animation: "scaleIn 0.25s ease-out" }}>
+        <div style={{ fontSize: 10, fontWeight: 800, color: C.TEAL, marginBottom: 4, letterSpacing: 1.2 }}>
           PASO {paso + 1} DE {pasos.length}
         </div>
-        <div style={{ fontSize: 19, fontWeight: 800, color: C.INK, marginBottom: 8, lineHeight: 1.2 }}>
+        <div style={{ fontSize: 17, fontWeight: 800, color: C.INK, marginBottom: 6, lineHeight: 1.2 }}>
           {pasoActual.titulo}
         </div>
-        <div style={{ fontSize: 14, color: C.MUTED, lineHeight: 1.6, marginBottom: 18 }}>
+        <div style={{ fontSize: 13, color: C.MUTED, lineHeight: 1.5, marginBottom: 14 }}>
           {pasoActual.texto}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
