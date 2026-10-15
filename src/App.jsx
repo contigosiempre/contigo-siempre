@@ -1318,14 +1318,15 @@ useEffect(() => {
         setAlertasSonadasHoy(prev => ({ ...prev, [ak]: true }));
               setAlertaActiva(due);
         const akKey = `alertas_${personaActual.id}_${due.med.id}_${due.time}_${todayStr()}`;
+        alertasPorTomaRef.current[akKey] = (alertasPorTomaRef.current[akKey] || 0) + 1;
         const alertasActuales = alertasPorTomaRef.current[akKey] || 0;
         const esVitalAhora = (due.med.criticidad || detectarCriticidad(due.med.name)) === "vital";
         const maxAlertas = esVitalAhora ? 2 : 3;
-        alertasPorTomaRef.current[akKey] = alertasActuales + 1;
+        
         if (settings.sonidoActivo !== false) reproducirAlertaSonido();
         if (settings.vibracionActiva !== false) vibrarPatron();
         registrarEvento(codigo, "alerta_activada", `${due.med.name} a las ${fmtHoraConAmPm(due.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: due.med.name, hora: due.time });
-                   if (alertasActuales + 1 < maxAlertas) {
+                   if (alertasActuales < maxAlertas - 1) {
                 setTimeout(() => {
                                     setAlertaActiva(null);
                   setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[ak]; return nuevo; });
