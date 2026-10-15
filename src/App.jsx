@@ -662,7 +662,7 @@ function SelectorRol({ C, onSeleccionar, onCerrar }) {
   const roles = [
     { id: "mayor", Icono: User, titulo: "Adulto mayor", descripcion: "Solo veo mis medicamentos y confirmo las tomas" },
     { id: "cuidador", Icono: Users, titulo: "Cuidador / Familiar", descripcion: "Cuido a alguien más y administro sus medicamentos" },
-    { id: "autocuidado", Icono: Heart, titulo: "Autocuidado (Premium)", descripcion: "Yo también tomo medicamentos y cuido a otros" },
+ 
   ];
 
   return (
