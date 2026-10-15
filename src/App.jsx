@@ -570,12 +570,15 @@ function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
     const pasoActual = pasos[paso];
 
   // NUEVO: Si el paso apunta al menú, abrirlo automáticamente
+  // Abrir o cerrar el menú según el paso
   useEffect(() => {
-    if (pasoActual.target === '[data-tutorial="menu"]' && onAbrirMenu) {
+    if (pasoActual.abrirMenu && onAbrirMenu) {
+      onAbrirMenu();
+    }
+    if (pasoActual.cerrarMenu && onAbrirMenu) {
       onAbrirMenu();
     }
   }, [paso, pasoActual, onAbrirMenu]);
-
   useEffect(() => {
     const t = setTimeout(() => {
       if (pasoActual.target) {
@@ -594,7 +597,7 @@ function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
     return () => clearTimeout(t);
   }, [paso, pasoActual]);
 
-  const siguiente = () => { if (paso < pasos.length - 1) setPaso(paso + 1); else onCerrar(); };
+  const siguiente = () => { if (paso < pasos.length - 1) setPaso(paso + 1); else { if (onAbrirMenu) onAbrirMenu(); onCerrar(); } };
   const anterior = () => { if (paso > 0) setPaso(paso - 1); };
 
   const spotlightStyle = rect ? {
