@@ -2604,5 +2604,5 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
     )}
                   </div>
   </div>
-);
+  );
 }
