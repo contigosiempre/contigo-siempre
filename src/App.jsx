@@ -1297,7 +1297,7 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
 
  // Detectar cuándo mostrar el tutorial automáticamente
 useEffect(() => {
-  if (stage === "app" && familia && familia.settings && familia.settings.aceptoTerminos === true && familia.settings.tutorialVisto === false && !showSelectorRol) {
+    if (stage === "app" && familia && familia.settings && familia.settings.aceptoTerminos === true && familia.settings.tutorialVisto === false && !showSelectorRol && rolUsuario !== "mayor") {
     setShowTutorial(true);
     actualizar((prev) => ({ ...prev, settings: { ...prev.settings, tutorialVisto: true } }));
   }
