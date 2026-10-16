@@ -1339,8 +1339,10 @@ useEffect(() => {
     registrarEvento(codigo, "alerta_cerrada_max_reenvios", `${due.med.name} a las ${fmtHoraConAmPm(due.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: due.med.name, hora: due.time });
   }, 2 * 60 * 1000);
 }
+          }
     }
-  [nowMin, stage, familia, personaActual, confirmedByDate, view, alertaActiva, alertasSonadasHoy, settings, codigo, nombreCuidadorInput, elderName, meds, triggerPostergacion]
+  }, [nowMin, stage, familia, personaActual, confirmedByDate, view, alertaActiva, alertasSonadasHoy, settings, codigo, nombreCuidadorInput, elderName, meds, triggerPostergacion]);
+  
     useEffect(() => {
     if (!alertaActiva) return;
     const id = setInterval(() => {
