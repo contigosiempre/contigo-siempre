@@ -2582,10 +2582,12 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
                 <span style={{ fontSize: 14, fontWeight: 600 }}>Modo daltonismo</span>
                 <span style={{ width: 46, height: 26, borderRadius: 999, background: settings.daltonico ? C.TEAL : C.LINE, position: "relative", transition: "all 0.2s ease" }}><span style={{ position: "absolute", top: 3, left: settings.daltonico ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
               </button>
-              <button onClick={() => setShowAjustes(false)} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Listo</button>
-                          )}
+                                     <button onClick={() => setShowAjustes(false)} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Listo</button>
             </div>
+          </div>
+        </div>
+        )}
       </div>
-      </div>
+    </div>
   );
 }
