@@ -2468,7 +2468,7 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
   </div>
   <div style={{ flex: "1 1 100px" }}>
     <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>STOCK</div>
-    <input type="number" min="0" value={form.stock} onChange={(e) => setForm((f) => ({ ...f, stock: Number(e.target.value) || 0 }))} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
+    <input type="number" min="0" value={form.stock} onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value === "" ? "" : Number(e.target.value) }))} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
   </div>
 </div>
               <button onClick={agregarMed} disabled={!form.name.trim()} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", fontWeight: 700, fontSize: 15, background: form.name.trim() ? C.TEAL : (oscuro ? "#2A3A52" : "#E0E4EB"), color: "#fff", cursor: form.name.trim() ? "pointer" : "not-allowed" }}>Agregar</button>
