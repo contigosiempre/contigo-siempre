@@ -2538,12 +2538,12 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
                   <span style={{ fontSize: 13.5, fontWeight: 600, color: C.GREEN }}>✅ Notificaciones activadas</span>
                 </div>
               ) : (
-                <button onClick={async () => {
+                          <button onClick={async () => {
                   try {
                     const token = await obtenerTokenFCM();
                     if (token) {
                       setTokenFCM(token);
-                                      if (codigo) await guardarTokenEnFirestore(codigo, token, "cuidador");
+                      if (codigo) await guardarTokenEnFirestore(codigo, token, "cuidador");
                       alert("¡Notificaciones activadas!");
                     } else {
                       alert("No se pudieron activar las notificaciones. Revisa los permisos del navegador.");
