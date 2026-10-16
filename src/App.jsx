@@ -1326,23 +1326,21 @@ useEffect(() => {
         if (settings.sonidoActivo !== false) reproducirAlertaSonido();
         if (settings.vibracionActiva !== false) vibrarPatron();
         registrarEvento(codigo, "alerta_activada", `${due.med.name} a las ${fmtHoraConAmPm(due.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: due.med.name, hora: due.time });
-                   if (alertasActuales < maxAlertas - 1) {
-                setTimeout(() => {
-                                    setAlertaActiva(null);
-                  setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[ak]; return nuevo; });
-                }, 2 * 60 * 1000);
-              } else {
-                setTimeout(() => {
-                  setAlertaActiva((actual) => {
-                    if (actual && actual.key === due.key) return null;
-                    return actual;
-                  });
-                  registrarEvento(codigo, "alerta_cerrada_max_reenvios", `${due.med.name} a las ${fmtHoraConAmPm(due.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: due.med.name, hora: due.time });
-                }, 2 * 60 * 1000);
-              }
-      }
+            if (alertasActuales < maxAlertas) {
+  setTimeout(() => {
+    setAlertaActiva(null);
+    setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[ak]; return nuevo; });
+    setTriggerPostergacion((t) => t + 1);
+  }, 2 * 60 * 1000);
+} else {
+  setTimeout(() => {
+    setAlertaActiva(null);
+    setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[ak]; return nuevo; });
+    registrarEvento(codigo, "alerta_cerrada_max_reenvios", `${due.med.name} a las ${fmtHoraConAmPm(due.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: due.med.name, hora: due.time });
+  }, 2 * 60 * 1000);
+}
     }
-  }, [nowMin, stage, familia, personaActual, confirmedByDate, view, alertaActiva, alertasSonadasHoy, settings, codigo, nombreCuidadorInput, elderName, meds]);
+  [nowMin, stage, familia, personaActual, confirmedByDate, view, alertaActiva, alertasSonadasHoy, settings, codigo, nombreCuidadorInput, elderName, meds, triggerPostergacion]
     useEffect(() => {
     if (!alertaActiva) return;
     const id = setInterval(() => {
