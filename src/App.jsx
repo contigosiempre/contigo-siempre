@@ -849,7 +849,7 @@ function ComoFunciona({ C, onCerrar }) {
 
 function OnboardingPremium({ C, onCerrar }) {
   const beneficios = [
-    { Icono: Pill, titulo: "Medicamentos ilimitados", texto: "Sin el tope de 5 del plan Estándar." },
+    { Icono: Pill, titulo: "Medicamentos ilimitados", texto: "Sin el tope de 4 del plan Estándar." },
     { Icono: Users, titulo: "Hasta 3 personas mayores", texto: "Cuida a mamá y papá al mismo tiempo." },
     { Icono: BellRing, titulo: "Alerta a pantalla completa", texto: "Suena y vibra hasta que confirmen la toma." },
     { Icono: Camera, titulo: "Reconteo por foto", texto: "Saca foto al blíster y ajusta el stock real." },
@@ -1575,7 +1575,7 @@ const canjearCodigo = async () => {
               <div style={{ fontSize: 12, fontWeight: 700, color: LIGHT.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>CÓDIGO DE LA FAMILIA</div>
               <input value={codigoInput} onChange={(e) => setCodigoInput(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="000000" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${LIGHT.LINE}`, fontSize: 22, letterSpacing: 6, textAlign: "center", marginBottom: 12, boxSizing: "border-box", outline: "none", fontWeight: 700 }} />
               {error && <div style={{ fontSize: 12, color: LIGHT.CORAL, marginBottom: 12 }}>{error}</div>}
-              <button onClick={unirseFamilia} disabled={codigoInput.length !== 6 || !nombreCuidadorInput.trim()} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: (codigoInput.length === 4 && nombreCuidadorInput.trim()) ? LIGHT.TEAL : "#E0E4EB", color: "#fff", fontWeight: 700, cursor: "pointer" }}>Entrar</button>
+              <button onClick={unirseFamilia} disabled={codigoInput.length !== 6 || !nombreCuidadorInput.trim()} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: (codigoInput.length === 6 && nombreCuidadorInput.trim()) ? LIGHT.TEAL : "#E0E4EB", color: "#fff", fontWeight: 700, cursor: "pointer" }}>Entrar</button>
               <button onClick={() => { setModoEntrada("elegir"); setError(""); }} style={{ marginTop: 10, width: "100%", background: "transparent", border: "none", color: LIGHT.MUTED, fontSize: 12.5, cursor: "pointer", fontWeight: 600 }}>Volver</button>
             </div>
           )}
