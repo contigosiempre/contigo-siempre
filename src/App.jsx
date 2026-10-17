@@ -163,7 +163,6 @@ const NOMBRE_TEMPORADA = {
   otono: "Artículos útiles para el otoño",
   primavera: "Artículos útiles para la primavera",
 };
-
 const CSS_GLOBAL = `
   @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -484,11 +483,11 @@ function PantallaAlertaMedicamento({ C, med, hora, onConfirmar, onPosponer, esca
         <Check size={32} strokeWidth={3} /> SÍ, YA LO TOMÉ
       </button>
 
-  {!esVital && !yaPostergada && !esAdultoMayor && (
-  <button onClick={onPosponer} className="btn-press-soft" style={{ width: "100%", maxWidth: 360, padding: "16px 20px", borderRadius: 18, border: "2px solid rgba(255,255,255,0.4)", background: "transparent", color: "#FFFFFF", fontWeight: 700, fontSize: 16 * escala, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-    <Clock size={18} /> Recordar en 5 minutos
-  </button>
-)}
+      {!esVital && !yaPostergada && !esAdultoMayor && (
+        <button onClick={onPosponer} className="btn-press-soft" style={{ width: "100%", maxWidth: 360, padding: "16px 20px", borderRadius: 18, border: "2px solid rgba(255,255,255,0.4)", background: "transparent", color: "#FFFFFF", fontWeight: 700, fontSize: 16 * escala, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <Clock size={18} /> Recordar en 5 minutos
+        </button>
+      )}
 
       {sonidoActivo && (
         <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", marginTop: 20 }}>
@@ -502,16 +501,13 @@ function PantallaAlertaMedicamento({ C, med, hora, onConfirmar, onPosponer, esca
 function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
   const [paso, setPaso] = useState(0);
   const [rect, setRect] = useState(null);
-    const pasoActual = pasos[paso];
+  const pasoActual = pasos[paso];
 
   useEffect(() => {
-    if (pasoActual.abrirMenu && onAbrirMenu) {
-      onAbrirMenu();
-    }
-    if (pasoActual.cerrarMenu && onAbrirMenu) {
-      onAbrirMenu();
-    }
+    if (pasoActual.abrirMenu && onAbrirMenu) { onAbrirMenu(); }
+    if (pasoActual.cerrarMenu && onAbrirMenu) { onAbrirMenu(); }
   }, [paso, pasoActual, onAbrirMenu]);
+
   useEffect(() => {
     const t = setTimeout(() => {
       if (pasoActual.target) {
@@ -520,12 +516,8 @@ function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
           const r = el.getBoundingClientRect();
           setRect(r);
           try { el.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) {}
-        } else {
-          setRect(null);
-        }
-      } else {
-        setRect(null);
-      }
+        } else { setRect(null); }
+      } else { setRect(null); }
     }, 400);
     return () => clearTimeout(t);
   }, [paso, pasoActual]);
@@ -552,7 +544,7 @@ function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
     zIndex: 9998,
   };
 
- const tooltipStyle = { bottom: 20 };
+  const tooltipStyle = { bottom: 20 };
 
   return (
     <>
@@ -568,13 +560,9 @@ function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
           {pasoActual.texto}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={onCerrar} style={{ flex: 1, padding: 12, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.MUTED, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-            Saltar
-          </button>
+          <button onClick={onCerrar} style={{ flex: 1, padding: 12, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.MUTED, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Saltar</button>
           {paso > 0 && (
-            <button onClick={anterior} style={{ flex: 1, padding: 12, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-              Anterior
-            </button>
+            <button onClick={anterior} style={{ flex: 1, padding: 12, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Anterior</button>
           )}
           <button onClick={siguiente} style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
             {paso < pasos.length - 1 ? "Siguiente" : "¡Listo!"}
@@ -587,11 +575,11 @@ function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
     </>
   );
 }
+
 function SelectorRol({ C, onSeleccionar, onCerrar }) {
   const roles = [
     { id: "mayor", Icono: User, titulo: "Adulto mayor", descripcion: "Solo veo mis medicamentos y confirmo las tomas" },
     { id: "cuidador", Icono: Users, titulo: "Cuidador / Familiar", descripcion: "Cuido a alguien más y administro sus medicamentos" },
- 
   ];
 
   return (
@@ -603,32 +591,16 @@ function SelectorRol({ C, onSeleccionar, onCerrar }) {
         <div style={{ fontSize: 13, color: C.MUTED, marginBottom: 20, textAlign: "center", lineHeight: 1.5 }}>
           Elige tu rol. Podrás cambiarlo después en Ajustes.
         </div>
-
         {roles.map((r) => {
           const Icono = r.Icono;
           return (
-            <button
-              key={r.id}
-              onClick={() => onSeleccionar(r.id)}
-              className="btn-press-soft"
-              style={{
-                width: "100%", padding: 16, borderRadius: 16,
-                border: `1.5px solid ${C.LINE}`, background: C.PAPER,
-                cursor: "pointer", marginBottom: 10,
-                display: "flex", alignItems: "center", gap: 14,
-                textAlign: "left", boxShadow: C.SHADOW,
-              }}
-            >
+            <button key={r.id} onClick={() => onSeleccionar(r.id)} className="btn-press-soft" style={{ width: "100%", padding: 16, borderRadius: 16, border: `1.5px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 10, display: "flex", alignItems: "center", gap: 14, textAlign: "left", boxShadow: C.SHADOW }}>
               <div style={{ width: 44, height: 44, borderRadius: 12, background: C.TEAL + "15", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <Icono size={22} color={C.TEAL} strokeWidth={2.2} />
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: 15, color: C.INK, marginBottom: 2 }}>
-                  {r.titulo}
-                </div>
-                <div style={{ fontSize: 11.5, color: C.MUTED, lineHeight: 1.4 }}>
-                  {r.descripcion}
-                </div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: C.INK, marginBottom: 2 }}>{r.titulo}</div>
+                <div style={{ fontSize: 11.5, color: C.MUTED, lineHeight: 1.4 }}>{r.descripcion}</div>
               </div>
             </button>
           );
@@ -637,6 +609,7 @@ function SelectorRol({ C, onSeleccionar, onCerrar }) {
     </div>
   );
 }
+
 function EstadoVacio({ C, icono: Icono, titulo, texto, botonTexto, onBoton }) {
   return (
     <div style={{ background: C.PAPER, border: `1px dashed ${C.LINE}`, borderRadius: 20, padding: "40px 24px", textAlign: "center" }}>
@@ -803,7 +776,6 @@ function OnboardingPremium({ C, onCerrar }) {
     </div>
   );
 }
-
 function AcercaDe({ C, onCerrar }) {
   return (
     <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 72 }}>
@@ -827,6 +799,7 @@ function AcercaDe({ C, onCerrar }) {
     </div>
   );
 }
+
 function PoliticaPrivacidad({ C, onCerrar }) {
   return (
     <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 72 }}>
@@ -1010,31 +983,27 @@ function registrarDato(clave, valor = 1, detalle = null) {
 }
 export default function App() {
   const [stage, setStage] = useState("cargando");
-    const [codigo, setCodigo] = useState(() => {
-    return localStorage.getItem("codigo_familia") || null;
-  });
+  const [codigo, setCodigo] = useState(() => localStorage.getItem("codigo_familia") || null);
   const [codigoInput, setCodigoInput] = useState("");
   const [nombreInput, setNombreInput] = useState("");
   const [edadInput, setEdadInput] = useState("");
-    const [nombreCuidadorInput, setNombreCuidadorInput] = useState(() => {
-    return localStorage.getItem("nombre_cuidador") || "";
-  });
+  const [nombreCuidadorInput, setNombreCuidadorInput] = useState(() => localStorage.getItem("nombre_cuidador") || "");
   const [modoEntrada, setModoEntrada] = useState("elegir");
   const [familia, setFamilia] = useState(null);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [view, setView] = useState(() => {
-  const rol = localStorage.getItem("rol_usuario");
-  return rol === "mayor" ? "mayor" : "cuidador";
-});
+    const rol = localStorage.getItem("rol_usuario");
+    return rol === "mayor" ? "mayor" : "cuidador";
+  });
   const [nowMin, setNowMin] = useState(toMinutes(nowHHMM()));
   const [personaActualId, setPersonaActualId] = useState(null);
   const [showSelector, setShowSelector] = useState(false);
   const [rolUsuario, setRolUsuario] = useState(() => localStorage.getItem("rol_usuario") || null);
-const [showSelectorRol, setShowSelectorRol] = useState(false);
-    const [showAdd, setShowAdd] = useState(false);
+  const [showSelectorRol, setShowSelectorRol] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
-    const [archivarTarget, setArchivarTarget] = useState(null);
+  const [archivarTarget, setArchivarTarget] = useState(null);
   const [restockTarget, setRestockTarget] = useState(null);
   const [showAjustes, setShowAjustes] = useState(false);
   const [cuidadorTab, setCuidadorTab] = useState("meds");
@@ -1061,7 +1030,7 @@ const [showSelectorRol, setShowSelectorRol] = useState(false);
   const [nombrePersonaNueva, setNombrePersonaNueva] = useState("");
   const [edadPersonaNueva, setEdadPersonaNueva] = useState("");
   const [formContacto, setFormContacto] = useState({ nombre: "", telefono: "", tipo: "médico" });
-const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: PILL_COLORS[0], shape: PILL_SHAPES[0], unidad: "pastilla", stock: 30, doseAmount: 1, type: "privada", receta: null, criticidad: null, modoAviso: null, notas: "", recetaVence: "", ventanaMin: 0 });
+  const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: PILL_COLORS[0], shape: PILL_SHAPES[0], unidad: "pastilla", stock: 30, doseAmount: 1, type: "privada", receta: null, criticidad: null, modoAviso: null, notas: "", recetaVence: "", ventanaMin: 0 });
   const [smsLog, setSmsLog] = useState([]);
   const [alertasDisparadas, setAlertasDisparadas] = useState({});
   const [alertasPatron, setAlertasPatron] = useState({});
@@ -1071,12 +1040,11 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [alertaActiva, setAlertaActiva] = useState(null);
   const [alertasSonadasHoy, setAlertasSonadasHoy] = useState({});
- const alertasPorTomaRef = useRef({});
+  const alertasPorTomaRef = useRef({});
   const alertasPostergadasRef = useRef({});
   const [triggerPostergacion, setTriggerPostergacion] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
-  const [tokenFCM, setTokenFCM] = useState(null); 
-  
+  const [tokenFCM, setTokenFCM] = useState(null);
   const appAbiertaRef = useRef(false);
   const addStartRef = useRef(null);
   const heartbeatRef = useRef(null);
@@ -1095,11 +1063,11 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
 
   const settings = familia?.settings || { fontSize: "normal", daltonico: false, darkMode: false, sonidoActivo: true, vibracionActiva: true };
   const esPremium = (() => {
-  if (familia?.plan === "premium") return true;
-  if (familia?.esPiloto && familia?.fechaFinPiloto && Date.now() < familia.fechaFinPiloto) return true;
-  if (familia?.esFundador && familia?.fechaFinFundador && Date.now() < familia.fechaFinFundador) return true;
-  return false;
-})();
+    if (familia?.plan === "premium") return true;
+    if (familia?.esPiloto && familia?.fechaFinPiloto && Date.now() < familia.fechaFinPiloto) return true;
+    if (familia?.esFundador && familia?.fechaFinFundador && Date.now() < familia.fechaFinFundador) return true;
+    return false;
+  })();
   const oscuro = settings.darkMode;
   const C = oscuro ? DARK : LIGHT;
 
@@ -1112,7 +1080,8 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
   }, []);
 
   useEffect(() => { const id = setInterval(() => setNowMin(toMinutes(nowHHMM())), 30000); return () => clearInterval(id); }, []);
-   useEffect(() => {
+  
+  useEffect(() => {
     const codigoGuardado = localStorage.getItem("codigo_familia");
     const cuidadorGuardado = localStorage.getItem("nombre_cuidador");
     if (codigoGuardado && cuidadorGuardado) {
@@ -1127,17 +1096,12 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
             setPersonaActualId(data.personas?.[0]?.id || null);
             setNombreCuidadorInput(cuidadorGuardado);
             setStage(data.settings?.aceptoTerminos ? "app" : "consentimiento");
-          } else {
-            setStage("entrada");
-          }
-        } catch (e) {
-          setStage("entrada");
-        }
+          } else { setStage("entrada"); }
+        } catch (e) { setStage("entrada"); }
       });
-    } else {
-      setStage("entrada");
-    }
+    } else { setStage("entrada"); }
   }, []);
+  
   useEffect(() => { cuandoDbListo((d) => { setFirebaseEstado(d ? "conectado" : "local"); }); }, []);
   useEffect(() => { if (familia && !personaActualId && familia.personas && familia.personas.length > 0) setPersonaActualId(familia.personas[0].id); }, [familia, personaActualId]);
 
@@ -1148,13 +1112,9 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
         const token = await obtenerTokenFCM();
         if (token) {
           setTokenFCM(token);
-          if (codigo) {
-            await guardarTokenEnFirestore(codigo, token);
-          }
+          if (codigo) { await guardarTokenEnFirestore(codigo, token); }
         }
-      } catch (err) {
-        console.warn("No se pudo inicializar FCM:", err);
-      }
+      } catch (err) { console.warn("No se pudo inicializar FCM:", err); }
     });
   }, [codigo]);
   
@@ -1162,11 +1122,8 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
     if (!navigator.serviceWorker) return;
     const handler = (event) => {
       if (!event.data) return;
-      if (event.data.tipo === "confirmar_toma" && alertaActiva) {
-        confirmar(alertaActiva);
-      } else if (event.data.tipo === "postergar_toma" && alertaActiva) {
-        posponerAlerta();
-      }
+      if (event.data.tipo === "confirmar_toma" && alertaActiva) { confirmar(alertaActiva); }
+      else if (event.data.tipo === "postergar_toma" && alertaActiva) { posponerAlerta(); }
     };
     navigator.serviceWorker.addEventListener("message", handler);
     return () => navigator.serviceWorker.removeEventListener("message", handler);
@@ -1221,16 +1178,16 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
   const minutosSinConexion = minutosDesde(ultimaConexionPersona);
   const personaDesconectada = !isOnline || (minutosSinConexion !== null && minutosSinConexion > MINUTOS_SIN_CONEXION_ALERTA);
 
-useEffect(() => {
+  useEffect(() => {
     if (stage === "app" && familia && familia.settings && familia.settings.aceptoTerminos === true && familia.settings.tutorialVisto === false && !showSelectorRol && rolUsuario !== "mayor") {
-    setShowTutorial(true);
-    actualizar((prev) => ({ ...prev, settings: { ...prev.settings, tutorialVisto: true } }));
-  }
-}, [stage, familia, showSelectorRol]);
+      setShowTutorial(true);
+      actualizar((prev) => ({ ...prev, settings: { ...prev.settings, tutorialVisto: true } }));
+    }
+  }, [stage, familia, showSelectorRol]);
 
   useEffect(() => {
     if (stage !== "app" || !familia || !personaActual) return;
-   if (view !== "mayor" && !(personaActual?.esAutocuidado)) return;
+    if (view !== "mayor" && !(personaActual?.esAutocuidado)) return;
     const confirmedHoy = confirmedByDate?.[todayStr()] || {};
     const occurrences = meds.flatMap((m) => m.times.map((t) => ({ med: m, time: t, key: occKey(m.id, t) })));
     const due = occurrences.find(o => {
@@ -1242,7 +1199,7 @@ useEffect(() => {
       const ak = `sonada_${personaActual.id}_${due.med.id}_${due.time}_${todayStr()}`;
       if (!alertasSonadasHoy[ak]) {
         setAlertasSonadasHoy(prev => ({ ...prev, [ak]: true }));
-              setAlertaActiva(due);
+        setAlertaActiva(due);
         const akKey = `alertas_${personaActual.id}_${due.med.id}_${due.time}_${todayStr()}`;
         alertasPorTomaRef.current[akKey] = (alertasPorTomaRef.current[akKey] || 0) + 1;
         const alertasActuales = alertasPorTomaRef.current[akKey] || 0;
@@ -1252,24 +1209,25 @@ useEffect(() => {
         if (settings.sonidoActivo !== false) reproducirAlertaSonido();
         if (settings.vibracionActiva !== false) vibrarPatron();
         registrarEvento(codigo, "alerta_activada", `${due.med.name} a las ${fmtHoraConAmPm(due.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: due.med.name, hora: due.time });
-            if (alertasActuales < maxAlertas) {
-  setTimeout(() => {
-    setAlertaActiva(null);
-    setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[ak]; return nuevo; });
-    setTriggerPostergacion((t) => t + 1);
-  }, 2 * 60 * 1000);
-} else {
-  setTimeout(() => {
-    setAlertaActiva(null);
-    setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[ak]; return nuevo; });
-    registrarEvento(codigo, "alerta_cerrada_max_reenvios", `${due.med.name} a las ${fmtHoraConAmPm(due.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: due.med.name, hora: due.time });
-  }, 2 * 60 * 1000);
-}
-          }
+        
+        if (alertasActuales < maxAlertas) {
+          setTimeout(() => {
+            setAlertaActiva(null);
+            setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[ak]; return nuevo; });
+            setTriggerPostergacion((t) => t + 1);
+          }, 2 * 60 * 1000);
+        } else {
+          setTimeout(() => {
+            setAlertaActiva(null);
+            setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[ak]; return nuevo; });
+            registrarEvento(codigo, "alerta_cerrada_max_reenvios", `${due.med.name} a las ${fmtHoraConAmPm(due.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: due.med.name, hora: due.time });
+          }, 2 * 60 * 1000);
+        }
+      }
     }
   }, [nowMin, stage, familia, personaActual, confirmedByDate, view, alertaActiva, alertasSonadasHoy, settings, codigo, nombreCuidadorInput, elderName, meds, triggerPostergacion]);
   
-    useEffect(() => {
+  useEffect(() => {
     if (!alertaActiva) return;
     const id = setInterval(() => {
       if (settings.sonidoActivo !== false) reproducirAlertaSonido();
@@ -1294,10 +1252,11 @@ useEffect(() => {
         const key = occKey(m.id, t);
         if (confirmedHoy[key]) return;
         const clavePostergacion = `${personaActual.id}_${m.id}_${t}`;
-const baseTiempo = alertasPostergadasRef.current[clavePostergacion] || toMinutes(t);
-const minutosExtra = alertasPostergadasRef.current[clavePostergacion] ? 5 : 0;
-const diff = ahoraMin - baseTiempo;
-       if (modo === "inmediato" && diff >= umbral + ventana + minutosExtra) {
+        const baseTiempo = alertasPostergadasRef.current[clavePostergacion] || toMinutes(t);
+        const minutosExtra = alertasPostergadasRef.current[clavePostergacion] ? 5 : 0;
+        const diff = ahoraMin - baseTiempo;
+        
+        if (modo === "inmediato" && diff >= umbral + ventana + minutosExtra) {
           const ak = `aviso_${personaActual.id}_${m.id}_${t}_${todayStr()}`;
           if (!alertasDisparadas[ak]) {
             const etiq = crit === "vital" ? "🔴 VITAL" : crit === "importante" ? "🟡 Importante" : "🟢 Normal";
@@ -1311,7 +1270,7 @@ const diff = ahoraMin - baseTiempo;
         if (dias !== null && dias >= 0 && dias <= 7) {
           const rk = `receta_${m.id}_${todayStr()}`;
           if (!alertasDisparadas[rk]) {
-                          nuevas.push({ tipo: "alerta", hora: smsTime(), texto: `📄 Receta de ${elderName}: ${m.name} vence en ${fmtN(dias)} día${dias !== 1 ? "s" : ""}.` });
+            nuevas.push({ tipo: "alerta", hora: smsTime(), texto: `📄 Receta de ${elderName}: ${m.name} vence en ${fmtN(dias)} día${dias !== 1 ? "s" : ""}.` });
             setAlertasDisparadas((prev) => ({ ...prev, [rk]: true }));
           }
         }
@@ -1375,8 +1334,8 @@ const diff = ahoraMin - baseTiempo;
         if (data.settings.vibracionActiva === undefined) data.settings.vibracionActiva = true;
         if (data.settings.tutorialVisto === undefined) data.settings.tutorialVisto = true;
         await guardarFamilia(cod, data);
-                localStorage.setItem("codigo_familia", cod);
-                localStorage.setItem("nombre_cuidador", nombreCuidador);
+        localStorage.setItem("codigo_familia", cod);
+        localStorage.setItem("nombre_cuidador", nombreCuidador);
         setFamilia(data); setCodigo(cod); setPersonaActualId(data.personas[0]?.id || null);
         setNombreCuidadorInput(nombreCuidador);
         setStage(data.settings?.aceptoTerminos ? "app" : "consentimiento");
@@ -1405,11 +1364,11 @@ const diff = ahoraMin - baseTiempo;
       settings: { fontSize: "normal", daltonico: false, darkMode: false, aceptoTerminos: false, onboardingPremiumVisto: false, sonidoActivo: true, vibracionActiva: true, tutorialVisto: false }
     };
     await guardarFamilia(cod, nueva);
-        localStorage.setItem("codigo_familia", cod);
-        localStorage.setItem("nombre_cuidador", nombreCuidadorInput.trim());
+    localStorage.setItem("codigo_familia", cod);
+    localStorage.setItem("nombre_cuidador", nombreCuidadorInput.trim());
     setStage("app"); setFamilia(nueva); setCodigo(cod); setPersonaActualId(personaId); setShowSelectorRol(true);
     registrarEvento(cod, "crear_familia", `Familia creada para ${nombreInput.trim()}${edadNum ? ` (${edadNum} años)` : ""}`, { cuidador: nombreCuidadorInput, persona: nombreInput.trim(), edad: edadNum || "" });
-       if (tokenFCM) await guardarTokenEnFirestore(cod, tokenFCM, "cuidador");
+    if (tokenFCM) await guardarTokenEnFirestore(cod, tokenFCM, "cuidador");
   };
 
   const unirseFamilia = () => {
@@ -1428,30 +1387,27 @@ const diff = ahoraMin - baseTiempo;
     setShowOnboardingPremium(true);
     registrarEvento(codigo, "activar_premium", "Premium activado", { cuidador: nombreCuidadorInput });
   };
-const canjearCodigo = async () => {
-  const up = codigoPremium.trim().toUpperCase();
-  if (up === CODIGO_ADMIN) { storage.listAll().then(setFamiliasAdmin); setShowAdmin(true); setCodigoPremium(""); setShowPremium(false); }
-  else if (up === CODIGO_DATOS) { setShowDatos(true); setCodigoPremium(""); setShowPremium(false); }
-  else if (up === "PILOTO2026") {
-    try {
-      const todas = await storage.listAll();
-      const pilotosActuales = todas.filter((f) => f.data?.esPiloto === true).length;
-      if (pilotosActuales >= 50) {
-        alert("Cupos de piloto agotados. Lo sentimos.");
+
+  const canjearCodigo = async () => {
+    const up = codigoPremium.trim().toUpperCase();
+    if (up === CODIGO_ADMIN) { storage.listAll().then(setFamiliasAdmin); setShowAdmin(true); setCodigoPremium(""); setShowPremium(false); }
+    else if (up === CODIGO_DATOS) { setShowDatos(true); setCodigoPremium(""); setShowPremium(false); }
+    else if (up === "PILOTO2026") {
+      try {
+        const todas = await storage.listAll();
+        const pilotosActuales = todas.filter((f) => f.data?.esPiloto === true).length;
+        if (pilotosActuales >= 50) { alert("Cupos de piloto agotados. Lo sentimos."); setCodigoPremium(""); return; }
+        const nuevaFecha = Date.now() + (60 * 24 * 60 * 60 * 1000);
+        actualizar((prev) => ({ ...prev, esPiloto: true, fechaFinPiloto: nuevaFecha }));
         setCodigoPremium("");
-        return;
-      }
-      const nuevaFecha = Date.now() + (60 * 24 * 60 * 60 * 1000);
-      actualizar((prev) => ({ ...prev, esPiloto: true, fechaFinPiloto: nuevaFecha }));
-      setCodigoPremium("");
-      setShowPremium(false);
-      alert("¡Bienvenido al programa piloto! Tienes Premium completo por 60 días.");
-      registrarEvento(codigo, "activar_piloto", "Piloto activado", { cuidador: nombreCuidadorInput });
-    } catch (e) { alert("Error al activar piloto. Intenta de nuevo."); }
-  }
-  else if (CODIGOS_PILOTO.includes(up)) { activarPremium(); setCodigoPremium(""); }
-  else alert("Código no válido");
-};
+        setShowPremium(false);
+        alert("¡Bienvenido al programa piloto! Tienes Premium completo por 60 días.");
+        registrarEvento(codigo, "activar_piloto", "Piloto activado", { cuidador: nombreCuidadorInput });
+      } catch (e) { alert("Error al activar piloto. Intenta de nuevo."); }
+    }
+    else if (CODIGOS_PILOTO.includes(up)) { activarPremium(); setCodigoPremium(""); }
+    else alert("Código no válido");
+  };
     if (stage === "cargando") return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: LIGHT.TEAL }}><Loader2 size={30} color="#fff" /></div>;
 
   if (stage === "entrada") {
@@ -1475,7 +1431,7 @@ const canjearCodigo = async () => {
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <button onClick={() => setModoEntrada("crear")} className="btn-press" style={{ padding: 14, borderRadius: 14, border: "none", background: LIGHT.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 15 }}>Soy nueva familia</button>
               <button onClick={() => setModoEntrada("unirse")} className="btn-press-soft" style={{ padding: 14, borderRadius: 14, border: `1.5px solid ${LIGHT.LINE}`, background: LIGHT.PAPER, color: LIGHT.INK, fontWeight: 700, cursor: "pointer", fontSize: 15 }}>Ya tengo un código</button>
-                         </div>
+            </div>
           )}
           {modoEntrada === "crear" && (
             <div style={{ textAlign: "left" }}>
@@ -1522,9 +1478,8 @@ const canjearCodigo = async () => {
           </label>
           <button onClick={async () => {
             if (!aceptoCheck) return;
-           const next = { ...familia, settings: { ...familia.settings, aceptoTerminos: true } };
+            const next = { ...familia, settings: { ...familia.settings, aceptoTerminos: true } };
             await guardarFamilia(codigo, next); setFamilia(next); setStage("app");
-            
             registrarEvento(codigo, "acepto_terminos", "Términos aceptados", { cuidador: nombreCuidadorInput });
           }} disabled={!aceptoCheck} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: aceptoCheck ? LIGHT.TEAL : "#E0E4EB", color: "#fff", fontWeight: 700, cursor: aceptoCheck ? "pointer" : "not-allowed" }}>Continuar</button>
           {showPolitica && <PoliticaPrivacidad C={LIGHT} onCerrar={() => setShowPolitica(false)} />}
@@ -1551,123 +1506,65 @@ const canjearCodigo = async () => {
       const nm = p.meds.map((m) => (m.id === occ.med.id ? { ...m, stock: Math.max(0, +(m.stock - m.doseAmount).toFixed(2)) } : m));
       return { ...p, meds: nm, confirmedByDate: nc, ultimaConexion: Date.now() };
     });
-      const akKeyConfirm = `alertas_${personaActual.id}_${occ.med.id}_${occ.time}_${todayStr()}`;
-  delete alertasPorTomaRef.current[akKeyConfirm];
+    const akKeyConfirm = `alertas_${personaActual.id}_${occ.med.id}_${occ.time}_${todayStr()}`;
+    delete alertasPorTomaRef.current[akKeyConfirm];
     registrarEvento(codigo, "confirmar_toma", `${occ.med.name} a las ${fmtHoraConAmPm(occ.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, edad: elderEdad || "", med: occ.med.name, hora: occ.time });
     setAlertaActiva(null);
   };
 
-const posponerAlerta = () => {
-  if (!alertaActiva) return;
-  const alertaGuardada = alertaActiva;
-  setAlertaActiva(null);
-  registrarEvento(codigo, "alerta_pospuesta", `${alertaGuardada.med.name} a las ${fmtHoraConAmPm(alertaGuardada.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: alertaGuardada.med.name, hora: alertaGuardada.time });
-  alertasPostergadasRef.current[`${personaActual.id}_${alertaGuardada.med.id}_${alertaGuardada.time}`] = toMinutes(nowHHMM());
-  setTriggerPostergacion((t) => t + 1);
-  setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[`sonada_${personaActual.id}_${alertaGuardada.med.id}_${alertaGuardada.time}_${todayStr()}`]; return nuevo; });
-  const akReset = `aviso_${personaActual.id}_${alertaGuardada.med.id}_${alertaGuardada.time}_${todayStr()}`;
-  setAlertasDisparadas((prev) => { const nuevo = { ...prev }; delete nuevo[akReset]; return nuevo; });
-};
+  const posponerAlerta = () => {
+    if (!alertaActiva) return;
+    const alertaGuardada = alertaActiva;
+    setAlertaActiva(null);
+    registrarEvento(codigo, "alerta_pospuesta", `${alertaGuardada.med.name} a las ${fmtHoraConAmPm(alertaGuardada.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: alertaGuardada.med.name, hora: alertaGuardada.time });
+    alertasPostergadasRef.current[`${personaActual.id}_${alertaGuardada.med.id}_${alertaGuardada.time}`] = toMinutes(nowHHMM());
+    setTriggerPostergacion((t) => t + 1);
+    setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[`sonada_${personaActual.id}_${alertaGuardada.med.id}_${alertaGuardada.time}_${todayStr()}`]; return nuevo; });
+    const akReset = `aviso_${personaActual.id}_${alertaGuardada.med.id}_${alertaGuardada.time}_${todayStr()}`;
+    setAlertasDisparadas((prev) => { const nuevo = { ...prev }; delete nuevo[akReset]; return nuevo; });
+  };
 
-const seleccionarRol = (rol) => {
-  setRolUsuario(rol);
-  localStorage.setItem("rol_usuario", rol);
-  setShowSelectorRol(false);
-  setView(rol === "mayor" ? "mayor" : "cuidador");
-  if (!familia?.settings?.aceptoTerminos) {
-    setStage("consentimiento");
-  } else {
-    setStage("app");
-  }
-  registrarEvento(codigo, "seleccionar_rol", rol, {
-    cuidador: nombreCuidadorInput,
-    rol: rol,
-  });
-};
+  const seleccionarRol = (rol) => {
+    setRolUsuario(rol);
+    localStorage.setItem("rol_usuario", rol);
+    setShowSelectorRol(false);
+    setView(rol === "mayor" ? "mayor" : "cuidador");
+    if (!familia?.settings?.aceptoTerminos) { setStage("consentimiento"); } else { setStage("app"); }
+    registrarEvento(codigo, "seleccionar_rol", rol, { cuidador: nombreCuidadorInput, rol: rol });
+  };
+
   const seleccionarYo = () => {
-  const existeYo = familia.personas.find((p) => p.nombre === "Yo");
-  if (existeYo) {
-    setPersonaActualId(existeYo.id);
-    setShowSelector(false);
-  } else {
-    const nuevaYo = {
-      id: Date.now(),
-      nombre: "Yo",
-      edad: null,
-      meds: [],
-      confirmedByDate: {},
-      preferenciasFarmacia: {},
-      ultimoReconteo: {},
-      ultimaConexion: Date.now(),
-      esAutocuidado: true,
-    };
-    actualizar((prev) => ({ ...prev, personas: [...prev.personas, nuevaYo] }));
-    setPersonaActualId(nuevaYo.id);
-    setShowSelector(false);
-    registrarEvento(codigo, "activar_autocuidado", "Modo Autocuidado activado", { cuidador: nombreCuidadorInput });
-  }
-};
+    const existeYo = familia.personas.find((p) => p.nombre === "Yo");
+    if (existeYo) { setPersonaActualId(existeYo.id); setShowSelector(false); }
+    else {
+      const nuevaYo = { id: Date.now(), nombre: "Yo", edad: null, meds: [], confirmedByDate: {}, preferenciasFarmacia: {}, ultimoReconteo: {}, ultimaConexion: Date.now(), esAutocuidado: true };
+      actualizar((prev) => ({ ...prev, personas: [...prev.personas, nuevaYo] }));
+      setPersonaActualId(nuevaYo.id); setShowSelector(false);
+      registrarEvento(codigo, "activar_autocuidado", "Modo Autocuidado activado", { cuidador: nombreCuidadorInput });
+    }
+  };
+
   const intentarAgregarMed = () => { if (meds.length >= maxMeds) { setShowLimite("meds"); return; } addStartRef.current = Date.now(); setShowAdd(true); };
   const intentarAgregarPersona = () => { if ((familia.personas?.length || 0) >= maxPersonas) { setShowLimite("personas"); return; } setShowAddPersona(true); };
  
   const archivarMed = (id) => {
-    actualizarPersona((p) => ({
-      ...p,
-      meds: p.meds.map((m) =>
-        m.id === id
-          ? { ...m, archivado: true, fechaArchivado: Date.now() }
-          : m
-      ),
-    }));
+    actualizarPersona((p) => ({ ...p, meds: p.meds.map((m) => m.id === id ? { ...m, archivado: true, fechaArchivado: Date.now() } : m) }));
     const med = meds.find((m) => m.id === id);
     if (med) registrarCambio("Archivó", med.name);
-    registrarEvento(codigo, "archivar_med", med?.name || "", {
-      cuidador: nombreCuidadorInput,
-      persona: elderName,
-      med: med?.name,
-    });
+    registrarEvento(codigo, "archivar_med", med?.name || "", { cuidador: nombreCuidadorInput, persona: elderName, med: med?.name });
     setArchivarTarget(null);
   };
 
   const abrirEditar = (med) => {
-    setForm({
-      name: med.name || "",
-      dose: med.dose || "",
-      times: med.times || ["08:00"],
-      color: med.color || PILL_COLORS[0],
-      shape: med.shape || PILL_SHAPES[0],
-      stock: med.stock || 30,
-      doseAmount: med.doseAmount || 1,
-      type: med.type || "privada",
-      receta: med.receta || null,
-      criticidad: med.criticidad || null,
-      modoAviso: med.modoAviso || null,
-      notas: med.notas || "",
-      recetaVence: med.recetaVence || "",
-      ventanaMin: med.ventanaMin || 0,
-    });
-    setEditandoId(med.id);
-    addStartRef.current = Date.now();
-    setShowAdd(true);
+    setForm({ name: med.name || "", dose: med.dose || "", times: med.times || ["08:00"], color: med.color || PILL_COLORS[0], shape: med.shape || PILL_SHAPES[0], stock: med.stock || 30, doseAmount: med.doseAmount || 1, type: med.type || "privada", receta: med.receta || null, criticidad: med.criticidad || null, modoAviso: med.modoAviso || null, notas: med.notas || "", recetaVence: med.recetaVence || "", ventanaMin: med.ventanaMin || 0 });
+    setEditandoId(med.id); addStartRef.current = Date.now(); setShowAdd(true);
   };
 
   const agregarMed = () => {
     if (!form.name.trim()) return;
     const critF = form.criticidad || detectarCriticidad(form.name);
     const modoF = critF === "vital" ? "inmediato" : (form.modoAviso || (critF === "importante" ? "inmediato" : "final_dia"));
-    const nuevo = {
-      id: editandoId || Date.now(),
-      name: form.name.trim(), dose: form.dose.trim() || "1 dosis",
-      times: form.times.filter(Boolean), color: form.color, shape: form.shape,
-unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmount, type: form.type,
-      receta: form.receta || clasificarMedicamento(form.name) || "sin_receta",
-      criticidad: critF, modoAviso: modoF,
-      notas: form.notas || "", recetaVence: form.recetaVence || "",
-            ventanaMin: Number(form.ventanaMin) || 0,
-      archivado: false,
-      fechaInicio: Date.now(),
-      fechaArchivado: null,
-    };
+    const nuevo = { id: editandoId || Date.now(), name: form.name.trim(), dose: form.dose.trim() || "1 dosis", times: form.times.filter(Boolean), color: form.color, shape: form.shape, unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmount, type: form.type, receta: form.receta || clasificarMedicamento(form.name) || "sin_receta", criticidad: critF, modoAviso: modoF, notas: form.notas || "", recetaVence: form.recetaVence || "", ventanaMin: Number(form.ventanaMin) || 0, archivado: false, fechaInicio: Date.now(), fechaArchivado: null };
     const duracionSeg = addStartRef.current ? Math.round((Date.now() - addStartRef.current) / 1000) : 0;
     if (editandoId) {
       actualizarPersona((p) => ({ ...p, meds: p.meds.map((m) => m.id === editandoId ? { ...m, ...nuevo, fechaInicio: m.fechaInicio || nuevo.fechaInicio, archivado: m.archivado || false, fechaArchivado: m.fechaArchivado || null } : m) }));
@@ -1726,9 +1623,7 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
   };
 
   const abrirFarmaciaIndividual = (f, m) => {
-    registrarDato("vioIndividualTotal");
-    registrarDato("clicsFarmacia", 1, f.nombre);
-    registrarDato("medsConsultados", f.costo, m.name);
+    registrarDato("vioIndividualTotal"); registrarDato("clicsFarmacia", 1, f.nombre); registrarDato("medsConsultados", f.costo, m.name);
     registrarEvento(codigo, "clic_farmacia_individual", `${f.nombre} — ${m.name}`, { cuidador: nombreCuidadorInput, persona: elderName, farmacia: f.nombre, med: m.name });
     const url = `${f.url}?ref=contigo_siempre_app&producto=${encodeURIComponent(m.name)}`;
     actualizarPersona((p) => ({ ...p, preferenciasFarmacia: { ...(p.preferenciasFarmacia || {}), [m.id]: f.id } }));
@@ -1736,13 +1631,10 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
   };
 
   const abrirFarmaciaCarro = (f, medsList, total) => {
-    registrarDato("abrioFarmaciaTotal");
-    registrarDato("clicsFarmacia", 1, f.nombre);
-    medsList.forEach((m) => registrarDato("medsConsultados", f.costo, m.name));
+    registrarDato("abrioFarmaciaTotal"); registrarDato("clicsFarmacia", 1, f.nombre); medsList.forEach((m) => registrarDato("medsConsultados", f.costo, m.name));
     registrarEvento(codigo, "clic_farmacia_carro", `${f.nombre} — ${medsList.length} meds — $${total}`, { cuidador: nombreCuidadorInput, persona: elderName, farmacia: f.nombre, cantidad: medsList.length, total });
     const url = `${f.url}?ref=contigo_siempre_app&carro=completo`;
-    setLinkAbierto({ farmacia: f.nombre, url, receta: "con_receta" });
-    setShowCarroCompleto(false);
+    setLinkAbierto({ farmacia: f.nombre, url, receta: "con_receta" }); setShowCarroCompleto(false);
   };
 
   const abrirCarroCompleto = () => {
@@ -1792,7 +1684,7 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
             esVital={(alertaActiva.med.criticidad || detectarCriticidad(alertaActiva.med.name)) === "vital"}
             yaPostergada={alertasPostergadasRef.current[`${personaActual?.id}_${alertaActiva.med.id}_${alertaActiva.med.time}`] === true}
             esAdultoMayor={view === "mayor"}
-            />
+          />
         )}
 
         {!isOnline && (
@@ -1971,7 +1863,7 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
                                 <button onClick={() => setShowNotas(m)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: C.AMBER, background: oscuro ? "#3A2F1A" : "#FFF8E1", border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}><StickyNote size={11} /></button>
                                 <button onClick={() => esPremium ? setReconteoTarget(m) : setShowPremium(true)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: esPremium ? C.TEAL : C.GOLD, background: esPremium ? (oscuro ? "#1E3A5F" : "#E3F2FD") : (oscuro ? "#3A2F1A" : "#FFF8E1"), border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>{esPremium ? <RefreshCw size={11} /> : <Lock size={11} />}</button>
                                 <button onClick={() => setRestockTarget(m)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: C.TEAL, background: oscuro ? "#1E3A5F" : "#E3F2FD", border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer" }}>Reponer</button>
-                                                <button onClick={() => setArchivarTarget(m)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: C.CORAL, background: "transparent", border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer" }}>🗑️</button>
+                                <button onClick={() => setArchivarTarget(m)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: C.CORAL, background: "transparent", border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer" }}>🗑️</button>
                               </div>
                             </div>
                             {fechaCompra && (sem.nivel === "urgente" || sem.nivel === "atención") && (<div style={{ marginTop: 8, fontSize: 11, color: C.MUTED }}><Calendar size={11} /> Compra antes del <strong>{fechaCompra}</strong></div>)}
@@ -2021,13 +1913,13 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
                   );
                 })()}
 
-           <div style={{ background: C.PAPER, border: `1px dashed ${C.LINE}`, borderRadius: 20, padding: "40px 24px", textAlign: "center", marginTop: 14 }}>
-  <div style={{ width: 72, height: 72, borderRadius: 999, background: C.TEAL + "12", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-    <Truck size={34} color={C.TEAL} strokeWidth={1.5} />
-  </div>
-  <div style={{ fontSize: 18, fontWeight: 700, color: C.INK, marginBottom: 8 }}>Próximamente</div>
-  <div style={{ fontSize: 13, color: C.MUTED, lineHeight: 1.6 }}>Estamos trabajando en alianzas con farmacias para ofrecerte este servicio. Muy pronto podrás comparar precios y comprar directamente desde la app.</div>
-</div>
+                <div style={{ background: C.PAPER, border: `1px dashed ${C.LINE}`, borderRadius: 20, padding: "40px 24px", textAlign: "center", marginTop: 14 }}>
+                  <div style={{ width: 72, height: 72, borderRadius: 999, background: C.TEAL + "12", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                    <Truck size={34} color={C.TEAL} strokeWidth={1.5} />
+                  </div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: C.INK, marginBottom: 8 }}>Próximamente</div>
+                  <div style={{ fontSize: 13, color: C.MUTED, lineHeight: 1.6 }}>Estamos trabajando en alianzas con farmacias para ofrecerte este servicio. Muy pronto podrás comparar precios y comprar directamente desde la app.</div>
+                </div>
               </>
             )}
 
@@ -2157,13 +2049,13 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
         {showEventos && <VerEventos C={C} onCerrar={() => setShowEventos(false)} />}
         {showCarroCompleto && <CarroCompleto C={C} meds={meds} onCerrar={() => setShowCarroCompleto(false)} onElegirFarmacia={abrirFarmaciaCarro} />}
 
-{showSelectorRol && (
-  <SelectorRol
-    C={C}
-    onSeleccionar={(rol) => seleccionarRol(rol)}
-    onCerrar={() => setShowSelectorRol(false)}
-  />
-)}
+        {showSelectorRol && (
+          <SelectorRol
+            C={C}
+            onSeleccionar={(rol) => seleccionarRol(rol)}
+            onCerrar={() => setShowSelectorRol(false)}
+          />
+        )}
 
         {showTutorial && <TutorialInteractivo pasos={PASOS_TUTORIAL} onCerrar={() => { setShowTutorial(false); actualizar((prev) => ({ ...prev, settings: { ...prev.settings, tutorialVisto: true } })); registrarEvento(codigo, "tutorial_completado", "Tutorial finalizado", { cuidador: nombreCuidadorInput }); }} C={C} onAbrirMenu={() => setShowMenuLateral(true)} />}
 
@@ -2315,7 +2207,7 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.55)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 25 }}>
             <div className="modal-slide" style={{ width: "100%", maxWidth: 420, background: C.CREAM, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 -8px 30px rgba(0,0,0,0.25)" }}>
               <div style={{ width: 40, height: 4, background: C.LINE, borderRadius: 999, margin: "0 auto 16px" }} />
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}><div style={{ fontWeight: 700, fontSize: 17 }}>{editandoId ? "Editar medicamento" : "Nuevo medicamento"}</div><button onClick={() => setShowAdd(false)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button></div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}><div style={{ fontWeight: 700, fontSize: 17 }}>{editandoId ? "Editar medicamento" : "Nuevo medicamento"}</div><button onClick={() => setShowAdd(false)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button></div>
               <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>NOMBRE</div>
               <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value, receta: null, criticidad: null }))} placeholder="Ej. Losartán" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, marginBottom: 8, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
               {form.name.trim().length > 2 && detectadoCrit === "vital" && (<div style={{ background: "#FFEBEE", border: `1px solid #FFCDD2`, borderRadius: 12, padding: "10px 12px", fontSize: 12, color: C.CORAL, marginBottom: 10, fontWeight: 600 }}>🔴 Medicamento vital. Aviso fijo a los 2 min.</div>)}
@@ -2325,14 +2217,13 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
                   <button key={op.v} onClick={() => setForm((f) => ({ ...f, criticidad: op.v }))} className="btn-press-soft" style={{ flex: 1, padding: 10, borderRadius: 10, border: (form.criticidad || detectadoCrit) === op.v ? `2px solid ${op.c}` : `1.5px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 11, cursor: "pointer", transition: "all 0.15s ease" }}>{op.l}</button>
                 ))}
               </div>
-            {(form.criticidad || detectadoCrit) === "vital" ? (
- <div style={{ background: oscuro ? "#1E2F48" : "#F0F4F8", border: `1px solid ${C.LINE}`, borderRadius: 12, padding: "10px 12px", fontSize: 12, color: C.MUTED, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}><Lock size={14} /> Aviso fijo a los 2 min.</div>
-) : (
-  <div style={{ background: oscuro ? "#1E2F48" : "#F0F4F8", border: `1px solid ${C.LINE}`, borderRadius: 12, padding: "10px 12px", fontSize: 12, color: C.MUTED }}>
-    Se avisará al cuidador según la criticidad del medicamento.
-  </div>
-)}
-          
+              {(form.criticidad || detectadoCrit) === "vital" ? (
+                <div style={{ background: oscuro ? "#1E2F48" : "#F0F4F8", border: `1px solid ${C.LINE}`, borderRadius: 12, padding: "10px 12px", fontSize: 12, color: C.MUTED, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}><Lock size={14} /> Aviso fijo a los 2 min.</div>
+              ) : (
+                <div style={{ background: oscuro ? "#1E2F48" : "#F0F4F8", border: `1px solid ${C.LINE}`, borderRadius: 12, padding: "10px 12px", fontSize: 12, color: C.MUTED }}>
+                  Se avisará al cuidador según la criticidad del medicamento.
+                </div>
+              )}
               <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>INDICACIÓN</div>
               <input value={form.dose} onChange={(e) => setForm((f) => ({ ...f, dose: e.target.value }))} placeholder="Ej. 1 pastilla" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, marginBottom: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
               <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>NOTAS (OPCIONAL)</div>
@@ -2347,48 +2238,48 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
                 </div>
               ))}
               <button onClick={() => setForm((f) => ({ ...f, times: [...f.times, "12:00"] }))} className="btn-press-soft" style={{ fontSize: 12, fontWeight: 700, color: C.TEAL, background: oscuro ? "#1E3A5F" : "#E3F2FD", border: "none", padding: "8px 14px", borderRadius: 999, cursor: "pointer", marginBottom: 14 }}>+ Agregar horario</button>
-            <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
-  <div style={{ flex: "1 1 100px" }}>
-    <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>DOSIS/TOMA</div>
-    <input type="number" step="0.5" min="0.5" value={form.doseAmount} onChange={(e) => setForm((f) => ({ ...f, doseAmount: Number(e.target.value) || 1 }))} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
-  </div>
-  <div style={{ flex: "1 1 100px" }}>
-    <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>UNIDAD</div>
-    <select value={form.unidad || "pastilla"} onChange={(e) => setForm((f) => ({ ...f, unidad: e.target.value }))} style={{ width: "100%", padding: "12px 10px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }}>
-      <option value="pastilla">pastilla</option>
-      <option value="ml">ml</option>
-      <option value="gotas">gotas</option>
-      <option value="cápsula">cápsula</option>
-      <option value="unidad">unidad</option>
-      <option value="sobre">sobre</option>
-      <option value="parche">parche</option>
-    </select>
-  </div>
-  <div style={{ flex: "1 1 100px" }}>
-    <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>STOCK</div>
-    <input type="number" min="0" value={form.stock} onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value === "" ? "" : Number(e.target.value) }))} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
-  </div>
-</div>
+              <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
+                <div style={{ flex: "1 1 100px" }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>DOSIS/TOMA</div>
+                  <input type="number" step="0.5" min="0.5" value={form.doseAmount} onChange={(e) => setForm((f) => ({ ...f, doseAmount: Number(e.target.value) || 1 }))} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
+                </div>
+                <div style={{ flex: "1 1 100px" }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>UNIDAD</div>
+                  <select value={form.unidad || "pastilla"} onChange={(e) => setForm((f) => ({ ...f, unidad: e.target.value }))} style={{ width: "100%", padding: "12px 10px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }}>
+                    <option value="pastilla">pastilla</option>
+                    <option value="ml">ml</option>
+                    <option value="gotas">gotas</option>
+                    <option value="cápsula">cápsula</option>
+                    <option value="unidad">unidad</option>
+                    <option value="sobre">sobre</option>
+                    <option value="parche">parche</option>
+                  </select>
+                </div>
+                <div style={{ flex: "1 1 100px" }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>STOCK</div>
+                  <input type="number" min="0" value={form.stock} onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value === "" ? "" : Number(e.target.value) }))} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
+                </div>
+              </div>
               <button onClick={agregarMed} disabled={!form.name.trim()} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", fontWeight: 700, fontSize: 15, background: form.name.trim() ? C.TEAL : (oscuro ? "#2A3A52" : "#E0E4EB"), color: "#fff", cursor: form.name.trim() ? "pointer" : "not-allowed" }}>Agregar</button>
             </div>
           </div>
         )}
 
-            {archivarTarget && (
-        <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 28 }}>
-          <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 24, padding: 26, margin: 20, textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
-            <div style={{ width: 64, height: 64, borderRadius: 999, background: C.CORAL + "15", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
-              <Trash2 size={30} color={C.CORAL} strokeWidth={2.2} />
-            </div>
-            <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>¿Terminar tratamiento de {archivarTarget.name}?</div>
-            <div style={{ fontSize: 13, color: C.MUTED, marginBottom: 18, lineHeight: 1.6 }}>Se archivará y podrás verlo en "Medicamentos anteriores".</div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setArchivarTarget(null)} className="btn-press-soft" style={{ flex: 1, padding: 12, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.MUTED, fontWeight: 700, cursor: "pointer" }}>Cancelar</button>
-              <button onClick={() => archivarMed(archivarTarget.id)} className="btn-press" style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: C.CORAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Sí, terminar</button>
+        {archivarTarget && (
+          <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 28 }}>
+            <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 24, padding: 26, margin: 20, textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+              <div style={{ width: 64, height: 64, borderRadius: 999, background: C.CORAL + "15", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+                <Trash2 size={30} color={C.CORAL} strokeWidth={2.2} />
+              </div>
+              <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>¿Terminar tratamiento de {archivarTarget.name}?</div>
+              <div style={{ fontSize: 13, color: C.MUTED, marginBottom: 18, lineHeight: 1.6 }}>Se archivará y podrás verlo en "Medicamentos anteriores".</div>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button onClick={() => setArchivarTarget(null)} className="btn-press-soft" style={{ flex: 1, padding: 12, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.MUTED, fontWeight: 700, cursor: "pointer" }}>Cancelar</button>
+                <button onClick={() => archivarMed(archivarTarget.id)} className="btn-press" style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: C.CORAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Sí, terminar</button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
         {restockTarget && (
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 26 }}>
@@ -2435,71 +2326,6 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
         )}
 
         {showAjustes && (
-          <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.55)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 27 }}>
-            <div className="modal-slide" style={{ width: "100%", maxWidth: 420, background: C.CREAM, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 -8px 30px rgba(0,0,0,0.25)" }}>
-              <div style={{ width: 40, height: 4, background: C.LINE, borderRadius: 999, margin: "0 auto 16px" }} />
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-                <div style={{ fontWeight: 700, fontSize: 18 * scale }}>Ajustes</div>
-                <button onClick={() => setShowAjustes(false)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
-              </div>
-
-              <button onClick={() => { setShowAjustes(false); setShowTutorial(true); }} className="btn-press-soft" style={{ width: "100%", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.TEAL}`, background: C.TEAL + "10", color: C.TEAL, fontWeight: 700, fontSize: 14, cursor: "pointer", marginBottom: 18, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                <HelpCircle size={18} /> Ver tutorial de nuevo
-              </button>
-
-              <div style={{ fontSize: 13, fontWeight: 700, color: C.MUTED, marginBottom: 10, letterSpacing: 0.3 }}>NOTIFICACIONES PUSH</div>
-              {tokenFCM ? (
-                <div style={{ width: "100%", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.GREEN}`, background: C.GREEN + "10", marginBottom: 18, display: "flex", alignItems: "center", gap: 10 }}>
-                  <BellRing size={18} color={C.GREEN} />
-                  <span style={{ fontSize: 13.5, fontWeight: 600, color: C.GREEN }}>✅ Notificaciones activadas</span>
-                </div>
-              ) : (
-                          <button onClick={async () => {
-                  try {
-                    const token = await obtenerTokenFCM();
-                    if (token) {
-                      setTokenFCM(token);
-                      if (codigo) await guardarTokenEnFirestore(codigo, token, "cuidador");
-                      alert("¡Notificaciones activadas!");
-                    } else {
-                      alert("No se pudieron activar las notificaciones. Revisa los permisos del navegador.");
-                    }
-                  } catch (e) {
-                    alert("Error al activar notificaciones: " + e.message);
-                  }
-                }} className="btn-press" style={{ width: "100%", padding: "14px 16px", borderRadius: 16, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer", marginBottom: 18, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                  <BellRing size={18} /> Activar notificaciones push
-                </button>
-              )}
-
-              <div style={{ fontSize: 13, fontWeight: 700, color: C.MUTED, marginBottom: 10, letterSpacing: 0.3 }}>TAMAÑO DE LETRA</div>
-              <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
-                {[{ v: "normal", l: "Normal" }, { v: "grande", l: "Grande" }, { v: "muy_grande", l: "Muy grande" }].map((op) => (
-                  <button key={op.v} onClick={() => { actualizarSettings({ fontSize: op.v }); registrarEvento(codigo, "ajuste_fontSize", op.v, { cuidador: nombreCuidadorInput }); }} className="btn-press-soft" style={{ flex: 1, padding: "12px 8px", borderRadius: 14, border: settings.fontSize === op.v ? `2px solid ${C.TEAL}` : `1.5px solid ${C.LINE}`, background: C.PAPER, color: settings.fontSize === op.v ? C.TEAL : C.INK, fontWeight: 700, cursor: "pointer", transition: "all 0.15s ease" }}>{op.l}</button>
-                ))}
-              </div>
-
-              <div style={{ fontSize: 13, fontWeight: 700, color: C.MUTED, marginBottom: 10, letterSpacing: 0.3 }}>ALERTAS DEL ADULTO MAYOR</div>
-              <button onClick={() => { actualizarSettings({ sonidoActivo: settings.sonidoActivo === false ? true : false }); registrarEvento(codigo, "toggle_sonido", settings.sonidoActivo === false ? "activado" : "desactivado", { cuidador: nombreCuidadorInput }); }} className="btn-press-soft" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 10, boxShadow: C.SHADOW }}>
-                <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 10 }}>{settings.sonidoActivo !== false ? <Volume2 size={18} color={C.TEAL} /> : <VolumeX size={18} color={C.MUTED} />} Alerta con sonido</span>
-                <span style={{ width: 46, height: 26, borderRadius: 999, background: settings.sonidoActivo !== false ? C.TEAL : C.LINE, position: "relative", transition: "all 0.2s ease" }}><span style={{ position: "absolute", top: 3, left: settings.sonidoActivo !== false ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
-              </button>
-              <button onClick={() => { actualizarSettings({ vibracionActiva: settings.vibracionActiva === false ? true : false }); registrarEvento(codigo, "toggle_vibracion", settings.vibracionActiva === false ? "activado" : "desactivado", { cuidador: nombreCuidadorInput }); }} className="btn-press-soft" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 18, boxShadow: C.SHADOW }}>
-                <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 10 }}><Vibrate size={18} color={settings.vibracionActiva !== false ? C.TEAL : C.MUTED} /> Alerta con vibración</span>
-                <span style={{ width: 46, height: 26, borderRadius: 999, background: settings.vibracionActiva !== false ? C.TEAL : C.LINE, position: "relative", transition: "all 0.2s ease" }}><span style={{ position: "absolute", top: 3, left: settings.vibracionActiva !== false ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
-              </button>
-
-                          <div style={{ fontSize: 13, fontWeight: 700, color: C.MUTED, marginBottom: 10, letterSpacing: 0.3 }}>PREFERENCIAS VISUALES</div>
-              <button onClick={() => { actualizarSettings({ darkMode: !oscuro }); registrarEvento(codigo, "toggle_dark_mode", !oscuro ? "activado" : "desactivado", { cuidador: nombreCuidadorInput }); }} className="btn-press-soft" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 10, boxShadow: C.SHADOW }}>
-                <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 10 }}>{oscuro ? <Sun size={18} color={C.AMBER} /> : <Moon size={18} color={C.MUTED} />} Modo oscuro</span>
-                <span style={{ width: 46, height: 26, borderRadius: 999, background: oscuro ? C.TEAL : C.LINE, position: "relative", transition: "all 0.2s ease" }}><span style={{ position: "absolute", top: 3, left: oscuro ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
-              </button>
-              <button onClick={() => { actualizarSettings({ daltonico: !settings.daltonico }); registrarEvento(codigo, "toggle_daltonico", !settings.daltonico ? "activado" : "desactivado", { cuidador: nombreCuidadorInput }); }} className="btn-press-soft" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 20, boxShadow: C.SHADOW }}>
-                <span style={{ fontSize: 14, fontWeight: 600 }}>Modo daltonismo</span>
-                <span style={{ width: 46, height: 26, borderRadius: 999, background: settings.daltonico ? C.TEAL : C.LINE, position: "relative", transition: "all 0.2s ease" }}><span style={{ position: "absolute", top: 3, left: settings.daltonico ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
-                          </button>
-              
-                    {showAjustes && (
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.55)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 27 }}>
             <div className="modal-slide" style={{ width: "100%", maxWidth: 420, background: C.CREAM, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 -8px 30px rgba(0,0,0,0.25)" }}>
               <div style={{ width: 40, height: 4, background: C.LINE, borderRadius: 999, margin: "0 auto 16px" }} />
@@ -2568,6 +2394,7 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
