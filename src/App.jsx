@@ -587,7 +587,7 @@ function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
     zIndex: 9998,
   };
 
-  const tooltipStyle = { bottom: 20 };
+   const tooltipStyle = rect && rect.top > window.innerHeight / 2 ? { top: rect.top - 220 } : { bottom: 100 };
 
   return (
     <>
