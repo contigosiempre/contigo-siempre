@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Clock, Check, AlertTriangle, Plus, X, ArrowRight, User, Users, Heart, PackageOpen, RotateCcw, KeyRound, Loader2, Copy, Truck, Store, ShoppingCart, ExternalLink, Sparkles, ShieldCheck, MessageSquare, Camera, Calendar, TrendingDown, Award, MapPin, Lock, Crown, Moon, Sun, Phone, FileText, Share2, StickyNote, UserPlus, ChevronDown, Info, ScrollText, BarChart3, Trash2, Menu, Pill, Bell, HelpCircle, Settings, Flame, Tag, Download, Activity, WifiOff, Wifi, Volume2, VolumeX, Vibrate, BellRing, Cake, RefreshCw } from "lucide-react";
+import { Clock, Check, AlertTriangle, Plus, X, ArrowRight, User, Users, Heart, PackageOpen, RotateCcw, KeyRound, Loader2, Copy, Truck, Store, ShoppingCart, ExternalLink, Sparkles, ShieldCheck, MessageSquare, Camera, Calendar, TrendingDown, Award, MapPin, Lock, Crown, Moon, Sun, Phone, FileText, Share2, StickyNote, UserPlus, ChevronDown, Info, ScrollText, BarChart3, Trash2, Menu, Pill, Bell, HelpCircle, Settings, Flame, Tag, Download, Activity, WifiOff, Wifi, Volume2, VolumeX, Vibrate, BellRing, Cake, RefreshCw, History, Home } from "lucide-react";
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAGxIGYqifeb5qGlVTQaVVpmKjZ9E1__TU",
@@ -69,7 +69,7 @@ const LIMITES_ESTANDAR = { maxMeds: 4, maxElderly: 1, maxCuidadores: 2 };
 const CODIGOS_PILOTO = ["PILOTO2026", "FUNDADOR", "BETA01", "FAMILIA1", "FAMILIA2", "FAMILIA3", "FAMILIA4", "FAMILIA5"];
 const CODIGO_ADMIN = "ADMIN" + new Date().getFullYear();
 const CODIGO_DATOS = "DATOS" + new Date().getFullYear();
-const APP_VERSION = "2.0.0-piloto-listo";
+const APP_VERSION = "2.1.0-piloto-enterprise";
 const MINUTOS_SIN_CONEXION_ALERTA = 5;
 
 const MEDS_CON_RECETA = ["losartan","losartán","metformina","enalapril","amlodipino","atorvastatina","simvastatina","carvedilol","furosemida","hidroclorotiazida","omeprazol","clonazepam","alprazolam","sertralina","fluoxetina","levotiroxina","warfarina","clopidogrel","insulina","gabapentina","pregabalina","tramadol","morfina","fentanilo","metotrexato","prednisona","salbutamol","budesonida","montelukast","alopurinol","colchicina","risperidona","quetiapina","olanzapina","valproato","carbamazepina","fenitoina","levetiracetam","donepezilo","memantina","rivastigmina"];
@@ -186,6 +186,9 @@ const CSS_GLOBAL = `
   .pulse-alerta { animation: pulseAlerta 2s ease-in-out infinite; }
   ::-webkit-scrollbar { width: 0; height: 0; }
   * { -webkit-tap-highlight-color: transparent; }
+  .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 420px; background: #fff; border-top: 1px solid #E0E4EB; display: flex; justify-content: space-around; padding: 8px 0 12px 0; z-index: 50; }
+  .bottom-nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; color: #6B7A8F; cursor: pointer; flex: 1; }
+  .bottom-nav-item.active { color: #1976D2; }
 `;
 
 let audioCtxRef = null;
@@ -430,7 +433,7 @@ function generarDemo() {
     cuidadores: ["Tú"],
     historialCambios: [{ id: 1, fecha: Date.now() - 86400000, cuidador: "Tú", accion: "Agregó", detalle: "Losartán 50mg" }, { id: 2, fecha: Date.now() - 3600000, cuidador: "Tú", accion: "Cambió stock", detalle: "Metformina 850mg → 4" }],
     plan: "premium", planInicio: Date.now() - 7 * 86400000,
-    settings: { fontSize: "normal", daltonico: false, darkMode: false, aceptoTerminos: true, onboardingPremiumVisto: true, sonidoActivo: true, vibracionActiva: true, tutorialVisto: true },
+    settings: { fontSize: "normal", daltonico: false, darkMode: false, aceptoTerminos: true, onboardingPremiumVisto: true, sonidoActivo: true, vibracionActiva: true, tutorialVisto: true, notificarConfirmacion: true },
   };
 }
 function LogoContigoSiempre({ size = 64, color = "#1976D2", accent = "#F9A825" }) {
@@ -465,21 +468,33 @@ function AvisoSinConexion({ C, offline, ultimaConexion, compacto, nombre }) {
   return null;
 }
 
-function PantallaAlertaMedicamento({ C, med, hora, onConfirmar, onPosponer, escala, daltonico, sonidoActivo, esVital, yaPostergada, esAdultoMayor }) {
+function PantallaAlertaMedicamento({ C, meds, hora, onConfirmar, onPosponer, escala, daltonico, sonidoActivo, esVital, yaPostergada, esAdultoMayor }) {
+  const medPrincipal = meds[0];
   return (
-    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: `linear-gradient(160deg, ${dispColor(med.color, daltonico)}, #0D47A1)`, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
+    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: `linear-gradient(160deg, ${dispColor(medPrincipal.color, daltonico)}, #0D47A1)`, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
       <div style={{ fontSize: 16 * escala, fontWeight: 700, color: "rgba(255,255,255,0.85)", letterSpacing: 2, textTransform: "uppercase", marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
         <BellRing size={20} /> Es hora de tu medicamento
       </div>
-      <div className="pulse-alerta" style={{ width: 160, height: 160, borderRadius: 999, background: "rgba(255,255,255,0.95)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 80, color: dispColor(med.color, daltonico), marginBottom: 28, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
-        {med.shape}
+      
+      <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+        {meds.map((m, i) => (
+          <div key={i} className="pulse-alerta" style={{ width: meds.length > 1 ? 100 : 160, height: meds.length > 1 ? 100 : 160, borderRadius: 999, background: "rgba(255,255,255,0.95)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: meds.length > 1 ? 50 : 80, color: dispColor(m.color, daltonico), boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+            {m.shape}
+          </div>
+        ))}
       </div>
-      <div style={{ fontSize: 42 * escala, fontWeight: 900, color: "#FFFFFF", marginBottom: 8, lineHeight: 1.1, textShadow: "0 2px 10px rgba(0,0,0,0.2)" }}>{med.name}</div>
-      <div style={{ fontSize: 24 * escala, color: "rgba(255,255,255,0.9)", marginBottom: 8, fontWeight: 600 }}>{med.dose}</div>
-      {med.notas && <div style={{ fontSize: 16 * escala, color: "rgba(255,255,255,0.85)", marginBottom: 12, fontStyle: "italic" }}>📝 {med.notas}</div>}
-      <div style={{ fontSize: 20 * escala, color: "rgba(255,255,255,0.9)", marginBottom: 40, fontWeight: 700 }}>🕐 {fmtHoraConAmPm(hora)}</div>
 
-      <button onClick={onConfirmar} className="btn-press" style={{ width: "100%", maxWidth: 360, padding: "26px 20px", borderRadius: 24, border: "none", background: "#FFFFFF", color: dispColor(med.color, daltonico), fontWeight: 900, fontSize: 28 * escala, cursor: "pointer", marginBottom: 14, boxShadow: "0 12px 30px rgba(0,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
+      {meds.map((m, i) => (
+        <div key={i} style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: meds.length > 1 ? 32 * escala : 42 * escala, fontWeight: 900, color: "#FFFFFF", lineHeight: 1.1, textShadow: "0 2px 10px rgba(0,0,0,0.2)" }}>{m.name}</div>
+          <div style={{ fontSize: meds.length > 1 ? 18 * escala : 24 * escala, color: "rgba(255,255,255,0.9)", fontWeight: 600 }}>{m.dose}</div>
+          {m.notas && <div style={{ fontSize: 14 * escala, color: "rgba(255,255,255,0.85)", fontStyle: "italic" }}>📝 {m.notas}</div>}
+        </div>
+      ))}
+
+      <div style={{ fontSize: 20 * escala, color: "rgba(255,255,255,0.9)", marginBottom: 30, fontWeight: 700 }}>🕐 {fmtHoraConAmPm(hora)}</div>
+
+      <button onClick={onConfirmar} className="btn-press" style={{ width: "100%", maxWidth: 360, padding: "26px 20px", borderRadius: 24, border: "none", background: "#FFFFFF", color: dispColor(medPrincipal.color, daltonico), fontWeight: 900, fontSize: 28 * escala, cursor: "pointer", marginBottom: 14, boxShadow: "0 12px 30px rgba(0,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
         <Check size={32} strokeWidth={3} /> SÍ, YA LO TOMÉ
       </button>
 
@@ -494,6 +509,34 @@ function PantallaAlertaMedicamento({ C, med, hora, onConfirmar, onPosponer, esca
           🔔 Esta alerta suena y vibra hasta que confirmes
         </div>
       )}
+    </div>
+  );
+}
+
+function BottomBar({ C, tabActual, setTabActual, onAbrirMenu, avisosNuevos }) {
+  const items = [
+    { id: "meds", Icono: Pill, label: "Meds", tutorialId: "nav-meds" },
+    { id: "historial", Icono: Calendar, label: "Historial", tutorialId: "nav-historial" },
+    { id: "canasta", Icono: ShoppingCart, label: "Canasta", tutorialId: "nav-canasta" },
+    { id: "avisos", Icono: Bell, label: "Avisos", badge: avisosNuevos, tutorialId: "nav-avisos" },
+  ];
+  return (
+    <div className="bottom-nav">
+      {items.map((it) => {
+        const activo = tabActual === it.id;
+        const Icono = it.Icono;
+        return (
+          <div key={it.id} data-tutorial={it.tutorialId} className={`bottom-nav-item ${activo ? 'active' : ''}`} onClick={() => setTabActual(it.id)} style={{ position: 'relative' }}>
+            <Icono size={22} strokeWidth={activo ? 2.5 : 2} color={activo ? C.TEAL : C.MUTED} />
+            <span>{it.label}</span>
+            {it.badge > 0 && <span style={{ position: "absolute", top: 0, right: "25%", background: C.CORAL, color: "#fff", fontSize: 9, fontWeight: 700, borderRadius: 999, padding: "1px 4px" }}>{it.badge}</span>}
+          </div>
+        );
+      })}
+      <div className="bottom-nav-item" onClick={onAbrirMenu} data-tutorial="nav-menu">
+        <Menu size={22} strokeWidth={2} color={C.MUTED} />
+        <span>Más</span>
+      </div>
     </div>
   );
 }
@@ -581,7 +624,6 @@ function SelectorRol({ C, onSeleccionar, onCerrar }) {
     { id: "mayor", Icono: User, titulo: "Adulto mayor", descripcion: "Solo veo mis medicamentos y confirmo las tomas" },
     { id: "cuidador", Icono: Users, titulo: "Cuidador / Familiar", descripcion: "Cuido a alguien más y administro sus medicamentos" },
   ];
-
   return (
     <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
       <div className="modal-scale" style={{ width: "100%", maxWidth: 380, background: C.CREAM, borderRadius: 24, padding: 26, margin: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
@@ -685,14 +727,15 @@ function CampoHora({ C, valor, onCambio, oscuro }) {
 function MenuLateral({ C, abierto, onCerrar, tabActual, setTabActual, avisosNuevos, onCompartir, onModoOscuro, onAyuda, onAcercaDe, onPolitica, onPremium, onAjustes, oscuro, cuidadorNombre, elderName }) {
   if (!abierto) return null;
   const secciones = [
-    { id: "meds", Icono: Pill, label: "Medicamentos", tutorialId: "tab-meds" },
-    { id: "canasta", Icono: ShoppingCart, label: "Canasta", tutorialId: "tab-canasta" },
-    { id: "historial", Icono: Calendar, label: "Historial", tutorialId: "tab-historial" },
+    { id: "meds", Icono: Pill, label: "Medicamentos" },
+    { id: "historial", Icono: Calendar, label: "Historial" },
+    { id: "canasta", Icono: ShoppingCart, label: "Canasta" },
+    { id: "avisos", Icono: Bell, label: "Avisos", badge: avisosNuevos },
+    { id: "archivados", Icono: History, label: "Medicamentos anteriores" },
     { id: "cambios", Icono: FileText, label: "Cambios" },
     { id: "contactos", Icono: Phone, label: "Contactos" },
   ];
   const acciones = [
-    { id: "avisos", Icono: Bell, label: "Avisos", badge: avisosNuevos },
     { id: "compartir", Icono: Share2, label: "Compartir", accion: onCompartir },
     { id: "oscuro", Icono: oscuro ? Sun : Moon, label: oscuro ? "Modo claro" : "Modo oscuro", accion: onModoOscuro },
     { id: "ayuda", Icono: HelpCircle, label: "Cómo funciona", accion: onAyuda },
@@ -717,11 +760,11 @@ function MenuLateral({ C, abierto, onCerrar, tabActual, setTabActual, avisosNuev
         </div>
         <div style={{ padding: "14px 12px 8px" }}>
           <div style={{ fontSize: 10.5, fontWeight: 700, color: C.MUTED, letterSpacing: 1.2, padding: "0 8px 10px" }}>SECCIONES</div>
-          {secciones.map((s) => { const activo = tabActual === s.id; const Icono = s.Icono; return (<button key={s.id} onClick={() => { setTabActual(s.id); onCerrar(); }} data-tutorial={s.tutorialId} className="btn-press-soft" style={{ width: "100%", padding: "13px 12px", borderRadius: 12, border: "none", background: activo ? (oscuro ? "#1E3A5F" : "#E3F2FD") : "transparent", color: activo ? C.TEAL : C.INK, fontWeight: activo ? 700 : 500, fontSize: 14.5, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 14, marginBottom: 2, transition: "all 0.15s ease" }}><Icono size={20} strokeWidth={activo ? 2.4 : 2} color={activo ? C.TEAL : C.MUTED} /><span>{s.label}</span></button>); })}
+          {secciones.map((s) => { const activo = tabActual === s.id; const Icono = s.Icono; return (<button key={s.id} onClick={() => { setTabActual(s.id); onCerrar(); }} className="btn-press-soft" style={{ width: "100%", padding: "13px 12px", borderRadius: 12, border: "none", background: activo ? (oscuro ? "#1E3A5F" : "#E3F2FD") : "transparent", color: activo ? C.TEAL : C.INK, fontWeight: activo ? 700 : 500, fontSize: 14.5, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 14, marginBottom: 2, transition: "all 0.15s ease" }}><Icono size={20} strokeWidth={activo ? 2.4 : 2} color={activo ? C.TEAL : C.MUTED} /><span>{s.label}</span></button>); })}
         </div>
         <div style={{ padding: "8px 12px 20px" }}>
           <div style={{ fontSize: 10.5, fontWeight: 700, color: C.MUTED, letterSpacing: 1.2, padding: "10px 8px 10px" }}>ACCIONES</div>
-          {acciones.map((a) => { const Icono = a.Icono; if (a.id === "avisos") return (<button key={a.id} onClick={() => { setTabActual("avisos"); onCerrar(); }} className="btn-press-soft" style={{ width: "100%", padding: "13px 12px", borderRadius: 12, border: "none", background: "transparent", color: C.INK, fontWeight: 500, fontSize: 14.5, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 14, marginBottom: 2 }}><Icono size={20} strokeWidth={2} color={C.MUTED} /><span style={{ flex: 1 }}>{a.label}</span>{a.badge > 0 && <span style={{ background: C.CORAL, color: "#fff", fontSize: 10, fontWeight: 700, borderRadius: 999, padding: "2px 8px" }}>{a.badge}</span>}</button>); return (<button key={a.id} onClick={() => { if (a.accion) a.accion(); onCerrar(); }} className="btn-press-soft" style={{ width: "100%", padding: "13px 12px", borderRadius: 12, border: "none", background: "transparent", color: C.INK, fontWeight: 500, fontSize: 14.5, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 14, marginBottom: 2 }}><Icono size={20} strokeWidth={2} color={C.MUTED} /><span>{a.label}</span></button>); })}
+          {acciones.map((a) => { const Icono = a.Icono; return (<button key={a.id} onClick={() => { if (a.accion) a.accion(); onCerrar(); }} className="btn-press-soft" style={{ width: "100%", padding: "13px 12px", borderRadius: 12, border: "none", background: "transparent", color: C.INK, fontWeight: 500, fontSize: 14.5, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 14, marginBottom: 2 }}><Icono size={20} strokeWidth={2} color={C.MUTED} /><span>{a.label}</span></button>); })}
         </div>
         <div style={{ marginTop: "auto", padding: 18, fontSize: 10.5, color: C.MUTED, borderTop: `1px solid ${C.LINE}`, textAlign: "center" }}>Versión {APP_VERSION}</div>
       </div>
@@ -869,6 +912,20 @@ function PanelAdmin({ C, familias, onCerrar, onAbrirDatos, onAbrirEventos }) {
   const totalPersonas = familias.reduce((a, f) => a + (f.data?.personas?.length || 0), 0);
   const totalMeds = familias.reduce((a, f) => a + (f.data?.personas?.reduce((b, p) => b + (p.meds?.length || 0), 0) || 0), 0);
   const ingresos = premium * 3990;
+  
+  // NUEVO: Cálculo de adherencia y familias activas (simulado para el admin)
+  let totalConfirmaciones = 0;
+  let totalEsperadas = 0;
+  const hoyStr = todayStr();
+  familias.forEach(f => {
+    f.data?.personas?.forEach(p => {
+      const dia = p.confirmedByDate?.[hoyStr] || {};
+      totalConfirmaciones += Object.keys(dia).filter(k => dia[k]).length;
+      p.meds?.forEach(m => { totalEsperadas += m.times?.length || 0; });
+    });
+  });
+  const adherenciaHoy = totalEsperadas > 0 ? Math.round((totalConfirmaciones / totalEsperadas) * 100) : 0;
+
   return (
     <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 73 }}>
       <div className="modal-scale" style={{ width: "100%", maxWidth: 400, background: C.CREAM, borderRadius: 24, padding: 24, margin: 20, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
@@ -876,15 +933,31 @@ function PanelAdmin({ C, familias, onCerrar, onAbrirDatos, onAbrirEventos }) {
           <div style={{ fontWeight: 700, fontSize: 20, display: "flex", alignItems: "center", gap: 8 }}><Settings size={22} color={C.TEAL} /> Panel Admin</div>
           <button onClick={onCerrar} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
         </div>
+        
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-          <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, boxShadow: C.SHADOW }}><div style={{ fontSize: 11, color: C.MUTED }}>Familias</div><div style={{ fontSize: 22, fontWeight: 800, color: C.TEAL }}>{fmtN(totalFamilias)}</div></div>
+          <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, boxShadow: C.SHADOW }}><div style={{ fontSize: 11, color: C.MUTED }}>Familias Totales</div><div style={{ fontSize: 22, fontWeight: 800, color: C.TEAL }}>{fmtN(totalFamilias)}</div></div>
           <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, boxShadow: C.SHADOW }}><div style={{ fontSize: 11, color: C.MUTED }}>Premium</div><div style={{ fontSize: 22, fontWeight: 800, color: C.GOLD }}>{fmtN(premium)}</div></div>
           <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, boxShadow: C.SHADOW }}><div style={{ fontSize: 11, color: C.MUTED }}>Personas</div><div style={{ fontSize: 22, fontWeight: 800, color: C.INK }}>{fmtN(totalPersonas)}</div></div>
           <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, boxShadow: C.SHADOW }}><div style={{ fontSize: 11, color: C.MUTED }}>Medicamentos</div><div style={{ fontSize: 22, fontWeight: 800, color: C.INK }}>{fmtN(totalMeds)}</div></div>
         </div>
+
+        {/* NUEVO: Métricas para CORFO */}
+        <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 16, marginBottom: 14, boxShadow: C.SHADOW }}>
+          <div style={{ fontSize: 11, color: C.MUTED, fontWeight: 700, marginBottom: 4 }}>ADHERENCIA HOY (Global)</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ fontSize: 28, fontWeight: 800, color: adherenciaHoy >= 80 ? C.GREEN : adherenciaHoy >= 50 ? C.AMBER : C.CORAL }}>{adherenciaHoy}%</div>
+            <div style={{ fontSize: 12, color: C.MUTED }}>({totalConfirmaciones} de {totalEsperadas} tomas)</div>
+          </div>
+        </div>
+
         <div style={{ background: `linear-gradient(135deg, ${C.GOLD}, #E65100)`, borderRadius: 14, padding: 16, color: "#fff", marginBottom: 14, boxShadow: "0 6px 20px rgba(249,168,37,0.3)" }}><div style={{ fontSize: 11, opacity: 0.9 }}>Ingresos estimados</div><div style={{ fontSize: 26, fontWeight: 800 }}>${ingresos.toLocaleString("es-CL")}</div></div>
+        
         <button onClick={onAbrirEventos} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: `linear-gradient(135deg, ${C.GOLD}, #E65100)`, color: "#fff", fontWeight: 700, cursor: "pointer", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Activity size={18} /> Ver Eventos (Firebase)</button>
-        <button onClick={onAbrirDatos} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><BarChart3 size={18} /> Datos Administrativos</button>
+        <button onClick={onAbrirDatos} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><BarChart3 size={18} /> Datos Administrativos</button>
+        
+        {/* NUEVO: Botón Exportar para CORFO */}
+        <button onClick={() => alert("Función de exportación para CORFO en desarrollo. Usa 'Ver Eventos' por ahora.")} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: `1px solid ${C.TEAL}`, background: "transparent", color: C.TEAL, fontWeight: 700, cursor: "pointer", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Download size={18} /> Exportar Reporte CORFO</button>
+
         <button onClick={onCerrar} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, cursor: "pointer" }}>Cerrar</button>
       </div>
     </div>
@@ -925,36 +998,6 @@ function DatosAdministrativos({ C, onCerrar, onReset }) {
     </div>
   );
 }
-
-function CarroCompleto({ C, meds, onCerrar, onElegirFarmacia }) {
-  const [farmaciaElegida, setFarmaciaElegida] = useState(null);
-  const medsComprar = meds.filter((m) => { const s = semaforoRiesgo(m, null); return s.nivel === "urgente" || s.nivel === "atención"; });
-  const totalPorFarmacia = FARMACIAS.reduce((acc, f) => { acc[f.nombre] = medsComprar.length * f.costo; return acc; }, {});
-  const ranking = calcularRankingFarmacias(FARMACIAS);
-  return (
-    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.7)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 75 }}>
-      <div className="modal-slide" style={{ width: "100%", maxWidth: 420, background: C.CREAM, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 -8px 30px rgba(0,0,0,0.25)" }}>
-        <div style={{ width: 40, height: 4, background: C.LINE, borderRadius: 999, margin: "0 auto 16px" }} />
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <div style={{ fontWeight: 700, fontSize: 19, display: "flex", alignItems: "center", gap: 8 }}><ShoppingCart size={20} color={C.TEAL} /> Carro completo</div>
-          <button onClick={onCerrar} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
-        </div>
-        {medsComprar.length === 0 ? (<EstadoVacio C={C} icono={ShoppingCart} titulo="Sin compras pendientes" texto="Todos tus medicamentos tienen stock suficiente por ahora." />) : (
-          <>
-            <div style={{ background: C.TEAL + "12", border: `1px solid ${C.TEAL}40`, borderRadius: 14, padding: 12, marginBottom: 14, fontSize: 12.5, color: C.TEAL, lineHeight: 1.5 }}>🛒 <strong>{fmtN(medsComprar.length)}</strong> medicamento{medsComprar.length > 1 ? "s" : ""} para comprar.</div>
-            <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, marginBottom: 14, boxShadow: C.SHADOW }}>
-              {medsComprar.map((m) => (<div key={m.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${C.LINE}` }}><div style={{ display: "flex", alignItems: "center", gap: 8 }}><div style={{ width: 22, height: 22, borderRadius: 999, background: dispColor(m.color, false), display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, color: "#fff" }}>{m.shape}</div><span style={{ fontSize: 12.5 }}>{m.name}</span></div><span style={{ fontSize: 11.5, color: C.MUTED }}>{fmtUnid(m.stock)}</span></div>))}
-            </div>
-            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>Elige tu farmacia</div>
-            {ranking.map((r, i) => (<button key={r.farmacia.id} onClick={() => setFarmaciaElegida(r.farmacia)} className="btn-press-soft" style={{ width: "100%", textAlign: "left", padding: 14, borderRadius: 14, border: farmaciaElegida?.id === r.farmacia.id ? `2px solid ${C.TEAL}` : `1px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 8, boxShadow: farmaciaElegida?.id === r.farmacia.id ? `0 0 0 3px ${C.TEAL}20` : C.SHADOW, transition: "all 0.15s ease" }}><div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}><div style={{ fontWeight: 700, fontSize: 13.5 }}>{String.fromCharCode(65 + i)}. {r.farmacia.nombre}</div><div style={{ fontWeight: 800, fontSize: 14, color: C.TEAL }}>${totalPorFarmacia[r.farmacia.nombre].toLocaleString("es-CL")}</div></div><div style={{ fontSize: 11, color: C.MUTED }}>{r.farmacia.distanciaKm} km · puntaje {r.puntaje.toFixed(2)}</div></button>))}
-            <button onClick={() => farmaciaElegida && onElegirFarmacia(farmaciaElegida, medsComprar, totalPorFarmacia[farmaciaElegida.nombre])} disabled={!farmaciaElegida} className="btn-press" style={{ width: "100%", padding: 15, borderRadius: 14, border: "none", background: farmaciaElegida ? C.TEAL : C.LINE, color: farmaciaElegida ? "#fff" : C.MUTED, fontWeight: 700, fontSize: 15, cursor: farmaciaElegida ? "pointer" : "not-allowed", marginTop: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><ExternalLink size={16} /> Abrir {farmaciaElegida?.nombre || "farmacia"}</button>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
 const STORAGE_PREFIX = "familia_";
 const storage = {
   async get(k) {
@@ -981,6 +1024,7 @@ function registrarDato(clave, valor = 1, detalle = null) {
     localStorage.setItem("datos_admin_global", JSON.stringify(datos));
   } catch (e) { console.error(e); }
 }
+
 export default function App() {
   const [stage, setStage] = useState("cargando");
   const [codigo, setCodigo] = useState(() => localStorage.getItem("codigo_familia") || null);
@@ -1052,16 +1096,16 @@ export default function App() {
   const PASOS_TUTORIAL = [
     { titulo: "¡Bienvenido a Contigo Siempre!", texto: "Te mostraremos las funciones principales en 9 pasos rápidos. Puedes saltar el tutorial en cualquier momento.", target: null, abrirMenu: false, cerrarMenu: false },
     { titulo: "Tu código de familia", texto: "Este código de 6 dígitos es la llave para conectar otros teléfonos. Compártelo con quien te ayude a cuidar.", target: '[data-tutorial="codigo"]', abrirMenu: false, cerrarMenu: false },
-    { titulo: "Vista del cuidador", texto: "Aquí ves todos los medicamentos, su estado (verde=tranquilo, amarillo=atención, rojo=urgente) y el stock disponible.", target: '[data-tutorial="tab-cuidador"]', abrirMenu: false, cerrarMenu: false },
+    { titulo: "Barra de Navegación", texto: "Usa esta barra inferior para ir rápidamente a tus medicamentos o al historial.", target: '[data-tutorial="nav-meds"]', abrirMenu: false, cerrarMenu: false },
+    { titulo: "Historial de Adherencia", texto: "Toca aquí para ver el calendario con los días en que se tomaron los remedios.", target: '[data-tutorial="nav-historial"]', abrirMenu: false, cerrarMenu: false },
     { titulo: "Agregar un medicamento", texto: "Toca este botón para agregar un medicamento nuevo. Puedes poner nombre, dosis, horarios y stock.", target: '[data-tutorial="add-med"]', abrirMenu: false, cerrarMenu: false },
-    { titulo: "Menú de secciones", texto: "Aquí encuentras todas las secciones: medicamentos, canasta, historial, contactos y más.", target: '[data-tutorial="menu"]', abrirMenu: true, cerrarMenu: false },
-    { titulo: "Pestaña Canasta", texto: "Aquí armas la lista de compras y te sugerimos artículos útiles según la temporada.", target: '[data-tutorial="tab-canasta"]', abrirMenu: false, cerrarMenu: false },
-    { titulo: "Pestaña Historial", texto: "Mira la adherencia día por día. Los colores te dicen si se tomaron los remedios completos.", target: '[data-tutorial="tab-historial"]', abrirMenu: false, cerrarMenu: false },
-    { titulo: "Ajustes y alertas", texto: "Personaliza el tamaño de letra, activa el modo oscuro y controla el sonido de las alertas.", target: '[data-tutorial="ajustes"]', abrirMenu: false, cerrarMenu: false },
+    { titulo: "Canasta de compras", texto: "Desde aquí puedes ver qué medicamentos te quedan pocos y comprarlos.", target: '[data-tutorial="nav-canasta"]', abrirMenu: false, cerrarMenu: false },
+    { titulo: "Avisos del cuidador", texto: "Aquí recibirás las alertas si el adulto mayor no confirma su toma.", target: '[data-tutorial="nav-avisos"]', abrirMenu: false, cerrarMenu: false },
+    { titulo: "Ajustes y alertas", texto: "Personaliza el tamaño de letra, activa el modo oscuro y controla el sonido de las alertas.", target: '[data-tutorial="nav-menu"]', abrirMenu: true, cerrarMenu: false },
     { titulo: "¡Listo!", texto: "Ya puedes empezar a usar Contigo Siempre. Cuida bien a tu ser querido.", target: null, abrirMenu: false, cerrarMenu: true },
   ];
 
-  const settings = familia?.settings || { fontSize: "normal", daltonico: false, darkMode: false, sonidoActivo: true, vibracionActiva: true };
+  const settings = familia?.settings || { fontSize: "normal", daltonico: false, darkMode: false, sonidoActivo: true, vibracionActiva: true, notificarConfirmacion: true };
   const esPremium = (() => {
     if (familia?.plan === "premium") return true;
     if (familia?.esPiloto && familia?.fechaFinPiloto && Date.now() < familia.fechaFinPiloto) return true;
@@ -1189,41 +1233,46 @@ export default function App() {
     if (stage !== "app" || !familia || !personaActual) return;
     if (view !== "mayor" && !(personaActual?.esAutocuidado)) return;
     const confirmedHoy = confirmedByDate?.[todayStr()] || {};
-    const occurrences = meds.flatMap((m) => m.times.map((t) => ({ med: m, time: t, key: occKey(m.id, t) })));
-    const due = occurrences.find(o => {
-      if (confirmedHoy[o.key]) return false;
-      const diff = nowMin - toMinutes(o.time);
-      return diff >= 0 && diff <= 60;
-    });
-    if (due && !alertaActiva) {
-      const ak = `sonada_${personaActual.id}_${due.med.id}_${due.time}_${todayStr()}`;
-      if (!alertasSonadasHoy[ak]) {
-        setAlertasSonadasHoy(prev => ({ ...prev, [ak]: true }));
-        setAlertaActiva(due);
-        const akKey = `alertas_${personaActual.id}_${due.med.id}_${due.time}_${todayStr()}`;
-        alertasPorTomaRef.current[akKey] = (alertasPorTomaRef.current[akKey] || 0) + 1;
-        const alertasActuales = alertasPorTomaRef.current[akKey] || 0;
-        const esVitalAhora = (due.med.criticidad || detectarCriticidad(due.med.name)) === "vital";
-        const maxAlertas = esVitalAhora ? 2 : 3;
-        
-        if (settings.sonidoActivo !== false) reproducirAlertaSonido();
-        if (settings.vibracionActiva !== false) vibrarPatron();
-        registrarEvento(codigo, "alerta_activada", `${due.med.name} a las ${fmtHoraConAmPm(due.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: due.med.name, hora: due.time });
-        
-        if (alertasActuales < maxAlertas) {
-          setTimeout(() => {
-            setAlertaActiva(null);
-            setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[ak]; return nuevo; });
-            setTriggerPostergacion((t) => t + 1);
-          }, 2 * 60 * 1000);
-        } else {
-          setTimeout(() => {
-            setAlertaActiva(null);
-            setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[ak]; return nuevo; });
-            registrarEvento(codigo, "alerta_cerrada_max_reenvios", `${due.med.name} a las ${fmtHoraConAmPm(due.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: due.med.name, hora: due.time });
-          }, 2 * 60 * 1000);
+    
+    // NUEVO: Agrupar medicamentos a la misma hora
+    const dueTimes = {};
+    meds.forEach(m => {
+      m.times.forEach(t => {
+        const key = occKey(m.id, t);
+        if (confirmedHoy[key]) return;
+        const diff = nowMin - toMinutes(t);
+        if (diff >= 0 && diff <= 60) {
+          if (!dueTimes[t]) dueTimes[t] = [];
+          dueTimes[t].push({ med: m, time: t, key });
         }
-      }
+      });
+    });
+
+    const horaActualVencida = Object.keys(dueTimes).find(t => !alertasSonadasHoy[`sonada_${personaActual.id}_${t}_${todayStr()}`]);
+
+    if (horaActualVencida && !alertaActiva) {
+      const medsVencidos = dueTimes[horaActualVencida];
+      const ak = `sonada_${personaActual.id}_${horaActualVencida}_${todayStr()}`;
+      
+      setAlertasSonadasHoy(prev => ({ ...prev, [ak]: true }));
+      setAlertaActiva({ meds: medsVencidos.map(mv => mv.med), time: horaActualVencida, keys: medsVencidos.map(mv => mv.key) });
+      
+      const akKey = `alertas_${personaActual.id}_${horaActualVencida}_${todayStr()}`;
+      alertasPorTomaRef.current[akKey] = (alertasPorTomaRef.current[akKey] || 0) + 1;
+      const alertasActuales = alertasPorTomaRef.current[akKey] || 0;
+      const esVitalAhora = medsVencidos.some(mv => (mv.med.criticidad || detectarCriticidad(mv.med.name)) === "vital");
+      const maxAlertas = esVitalAhora ? 2 : 3;
+      
+      if (settings.sonidoActivo !== false) reproducirAlertaSonido();
+      if (settings.vibracionActiva !== false) vibrarPatron();
+      registrarEvento(codigo, "alerta_activada", `Grupo ${horaActualVencida}`, { cuidador: nombreCuidadorInput, persona: elderName });
+      
+      setTimeout(() => {
+        setAlertaActiva(null);
+        setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[ak]; return nuevo; });
+        if (alertasActuales < maxAlertas) setTriggerPostergacion((t) => t + 1);
+        else registrarEvento(codigo, "alerta_cerrada_max_reenvios", `Grupo ${horaActualVencida}`, { cuidador: nombreCuidadorInput, persona: elderName });
+      }, 2 * 60 * 1000);
     }
   }, [nowMin, stage, familia, personaActual, confirmedByDate, view, alertaActiva, alertasSonadasHoy, settings, codigo, nombreCuidadorInput, elderName, meds, triggerPostergacion]);
   
@@ -1236,6 +1285,7 @@ export default function App() {
     return () => clearInterval(id);
   }, [alertaActiva, settings]);
 
+  // NUEVO: Lógica de Resumen de Final de Día y Avisos
   useEffect(() => {
     if (stage !== "app" || !familia || !personaActual) return;
     if (personaDesconectada) return;
@@ -1277,36 +1327,21 @@ export default function App() {
       }
     });
 
-    const stockCrit = [];
-    meds.forEach((m) => { const s = semaforoRiesgo(m, confirmedByDate); if (s.nivel === "urgente") stockCrit.push(m.name); });
-    if (stockCrit.length > 0) {
-      const k = `sc_${personaActual.id}_${todayStr()}`;
-      if (!alertasDisparadas[k]) {
-        nuevas.push({ tipo: "alerta", hora: smsTime(), texto: `🔴 Stock crítico de ${elderName}: ${stockCrit.join(", ")}.` });
-        setAlertasDisparadas((prev) => ({ ...prev, [k]: true }));
-      }
-    }
-
-    if (esPremium) {
-      const cambio = detectarCambioPatron(meds, confirmedByDate);
-      if (cambio) {
-        const k = `patron_${personaActual.id}_${todayStr()}`;
-        if (!alertasPatron[k]) {
-          nuevas.push({ tipo: "alerta", hora: smsTime(), texto: `📉 Cambio de patrón: ${elderName.split(" ")[0]} bajó de ${cambio.tasaPrevia}% a ${cambio.tasaActual}%.` });
-          setAlertasPatron((prev) => ({ ...prev, [k]: true }));
-        }
-      }
-    }
-
     if (ahoraMin >= 21 * 60 && !resumenEnviadoHoy) {
       let conf = 0, esp = 0;
       meds.forEach((m) => m.times.forEach((t) => { esp++; if (confirmedHoy[occKey(m.id, t)]) conf++; }));
-      setSmsLog((prev) => [...prev, { tipo: "ok", hora: smsTime(), texto: `Resumen ${elderName.split(" ")[0]}: ${conf}/${esp} tomas confirmadas.` }]);
+      const textoResumen = `Resumen ${elderName.split(" ")[0]}: ${conf}/${esp} tomas confirmadas.`;
+      setSmsLog((prev) => [...prev, { tipo: "ok", hora: smsTime(), texto: textoResumen }]);
+      
+      // NUEVO: Notificación Push del resumen (simulada localmente)
+      if (Notification.permission === "granted") {
+        new Notification("Resumen del día - Contigo Siempre", { body: textoResumen, icon: "/icon-192.png" });
+      }
       setResumenEnviadoHoy(true);
     }
 
     if (nuevas.length > 0) setSmsLog((prev) => [...prev, ...nuevas]);
-  }, [nowMin, stage, familia, personaActual, alertasDisparadas, alertasPatron, resumenEnviadoHoy, esPremium, elderName, meds, confirmedByDate, personaDesconectada]);
+  }, [nowMin, stage, familia, personaActual, alertasDisparadas, resumenEnviadoHoy, esPremium, elderName, meds, confirmedByDate, personaDesconectada]);
 
   const guardarFamilia = useCallback(async (cod, data) => {
     setSaving(true);
@@ -1333,6 +1368,7 @@ export default function App() {
         if (data.settings.sonidoActivo === undefined) data.settings.sonidoActivo = true;
         if (data.settings.vibracionActiva === undefined) data.settings.vibracionActiva = true;
         if (data.settings.tutorialVisto === undefined) data.settings.tutorialVisto = true;
+        if (data.settings.notificarConfirmacion === undefined) data.settings.notificarConfirmacion = true;
         await guardarFamilia(cod, data);
         localStorage.setItem("codigo_familia", cod);
         localStorage.setItem("nombre_cuidador", nombreCuidador);
@@ -1361,7 +1397,7 @@ export default function App() {
       plan: "estandar", planInicio: null,
       esPiloto: false, fechaFinPiloto: null,
       esFundador: false, fechaFinFundador: null,
-      settings: { fontSize: "normal", daltonico: false, darkMode: false, aceptoTerminos: false, onboardingPremiumVisto: false, sonidoActivo: true, vibracionActiva: true, tutorialVisto: false }
+      settings: { fontSize: "normal", daltonico: false, darkMode: false, aceptoTerminos: false, onboardingPremiumVisto: false, sonidoActivo: true, vibracionActiva: true, tutorialVisto: false, notificarConfirmacion: true }
     };
     await guardarFamilia(cod, nueva);
     localStorage.setItem("codigo_familia", cod);
@@ -1399,8 +1435,7 @@ export default function App() {
         if (pilotosActuales >= 50) { alert("Cupos de piloto agotados. Lo sentimos."); setCodigoPremium(""); return; }
         const nuevaFecha = Date.now() + (60 * 24 * 60 * 60 * 1000);
         actualizar((prev) => ({ ...prev, esPiloto: true, fechaFinPiloto: nuevaFecha }));
-        setCodigoPremium("");
-        setShowPremium(false);
+        setCodigoPremium(""); setShowPremium(false);
         alert("¡Bienvenido al programa piloto! Tienes Premium completo por 60 días.");
         registrarEvento(codigo, "activar_piloto", "Piloto activado", { cuidador: nombreCuidadorInput });
       } catch (e) { alert("Error al activar piloto. Intenta de nuevo."); }
@@ -1498,30 +1533,42 @@ export default function App() {
   const isCurrentDue = current && toMinutes(current.time) <= nowMin;
   const racha = calcularRacha(meds, confirmedByDate);
 
-  const confirmar = (occ) => {
+  const confirmar = (occData) => {
     actualizarPersona((p) => {
       const fecha = todayStr();
       const nc = { ...(p.confirmedByDate || {}) };
-      nc[fecha] = { ...(nc[fecha] || {}), [occ.key]: true };
-      const nm = p.meds.map((m) => (m.id === occ.med.id ? { ...m, stock: Math.max(0, +(m.stock - m.doseAmount).toFixed(2)) } : m));
+      occData.keys.forEach(k => { nc[fecha] = { ...(nc[fecha] || {}), [k]: true }; });
+      const nm = p.meds.map((m) => {
+        if (occData.meds.find(md => md.id === m.id)) {
+          return { ...m, stock: Math.max(0, +(m.stock - m.doseAmount).toFixed(2)) };
+        }
+        return m;
+      });
       return { ...p, meds: nm, confirmedByDate: nc, ultimaConexion: Date.now() };
     });
-    const akKeyConfirm = `alertas_${personaActual.id}_${occ.med.id}_${occ.time}_${todayStr()}`;
+    const akKeyConfirm = `alertas_${personaActual.id}_${occData.time}_${todayStr()}`;
     delete alertasPorTomaRef.current[akKeyConfirm];
-    registrarEvento(codigo, "confirmar_toma", `${occ.med.name} a las ${fmtHoraConAmPm(occ.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, edad: elderEdad || "", med: occ.med.name, hora: occ.time });
+    const nombresMeds = occData.meds.map(m => m.name).join(", ");
+    registrarEvento(codigo, "confirmar_toma", `${nombresMeds} a las ${fmtHoraConAmPm(occData.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: nombresMeds, hora: occData.time });
     setAlertaActiva(null);
+
+    // NUEVO: Notificación de confirmación al cuidador (si la configuró)
+    if (familia?.settings?.notificarConfirmacion && Notification.permission === "granted") {
+      new Notification("✅ Toma confirmada", { body: `${elderName.split(" ")[0]} confirmó: ${nombresMeds}`, icon: "/icon-192.png" });
+    }
   };
 
   const posponerAlerta = () => {
     if (!alertaActiva) return;
     const alertaGuardada = alertaActiva;
     setAlertaActiva(null);
-    registrarEvento(codigo, "alerta_pospuesta", `${alertaGuardada.med.name} a las ${fmtHoraConAmPm(alertaGuardada.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: alertaGuardada.med.name, hora: alertaGuardada.time });
-    alertasPostergadasRef.current[`${personaActual.id}_${alertaGuardada.med.id}_${alertaGuardada.time}`] = toMinutes(nowHHMM());
+    const nombresMeds = alertaGuardada.meds.map(m => m.name).join(", ");
+    registrarEvento(codigo, "alerta_pospuesta", `${nombresMeds} a las ${fmtHoraConAmPm(alertaGuardada.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: nombresMeds, hora: alertaGuardada.time });
+    alertaGuardada.meds.forEach(m => {
+      alertasPostergadasRef.current[`${personaActual.id}_${m.id}_${alertaGuardada.time}`] = toMinutes(nowHHMM());
+    });
     setTriggerPostergacion((t) => t + 1);
-    setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[`sonada_${personaActual.id}_${alertaGuardada.med.id}_${alertaGuardada.time}_${todayStr()}`]; return nuevo; });
-    const akReset = `aviso_${personaActual.id}_${alertaGuardada.med.id}_${alertaGuardada.time}_${todayStr()}`;
-    setAlertasDisparadas((prev) => { const nuevo = { ...prev }; delete nuevo[akReset]; return nuevo; });
+    setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[`sonada_${personaActual.id}_${alertaGuardada.time}_${todayStr()}`]; return nuevo; });
   };
 
   const seleccionarRol = (rol) => {
@@ -1553,6 +1600,18 @@ export default function App() {
     if (med) registrarCambio("Archivó", med.name);
     registrarEvento(codigo, "archivar_med", med?.name || "", { cuidador: nombreCuidadorInput, persona: elderName, med: med?.name });
     setArchivarTarget(null);
+  };
+
+  const reactivarMed = (id) => {
+    actualizarPersona((p) => ({ ...p, meds: p.meds.map((m) => m.id === id ? { ...m, archivado: false, fechaArchivado: null } : m) }));
+    registrarCambio("Reactivó", "Medicamento reactivado");
+    setCuidadorTab("meds");
+  };
+
+  const borrarMedFijo = (id) => {
+    if (!window.confirm("¿Borrar definitivamente este medicamento? No se podrá recuperar.")) return;
+    actualizarPersona((p) => ({ ...p, meds: p.meds.filter((m) => m.id !== id) }));
+    registrarCambio("Borró", "Medicamento eliminado permanentemente");
   };
 
   const abrirEditar = (med) => {
@@ -1665,24 +1724,25 @@ export default function App() {
   const diasPremium = familia.planInicio ? Math.floor((Date.now() - familia.planInicio) / (1000 * 60 * 60 * 24)) : 0;
   const mostrarAvisoRenovacion = esPremium && diasPremium >= 27 && diasPremium <= 30;
   const medsCarro = meds.filter((m) => { const s = semaforoRiesgo(m, confirmedByDate); return s.nivel === "urgente" || s.nivel === "atención"; });
+  const medsArchivados = (personaActual?.meds || []).filter(m => m.archivado);
 
   return (
     <div style={{ minHeight: "100vh", background: C.BG, fontFamily: "'Space Grotesk','Segoe UI',sans-serif", color: C.INK, display: "flex", justifyContent: "center" }}>
       <style>{CSS_GLOBAL}</style>
-      <div style={{ width: "100%", maxWidth: 420, minHeight: "100vh", background: C.CREAM, display: "flex", flexDirection: "column" }}>
+      <div style={{ width: "100%", maxWidth: 420, minHeight: "100vh", background: C.CREAM, display: "flex", flexDirection: "column", position: "relative" }}>
 
         {alertaActiva && (view === "mayor" || personaActual?.esAutocuidado) && (
           <PantallaAlertaMedicamento
             C={C}
-            med={alertaActiva.med}
+            meds={alertaActiva.meds}
             hora={alertaActiva.time}
             onConfirmar={() => confirmar(alertaActiva)}
             onPosponer={posponerAlerta}
             escala={scale}
             daltonico={settings.daltonico}
             sonidoActivo={settings.sonidoActivo !== false}
-            esVital={(alertaActiva.med.criticidad || detectarCriticidad(alertaActiva.med.name)) === "vital"}
-            yaPostergada={alertasPostergadasRef.current[`${personaActual?.id}_${alertaActiva.med.id}_${alertaActiva.med.time}`] === true}
+            esVital={alertaActiva.meds.some(m => (m.criticidad || detectarCriticidad(m.name)) === "vital")}
+            yaPostergada={alertaActiva.meds.some(m => alertasPostergadasRef.current[`${personaActual?.id}_${m.id}_${alertaActiva.time}`] === true)}
             esAdultoMayor={view === "mayor"}
           />
         )}
@@ -1718,14 +1778,8 @@ export default function App() {
         )}
 
         {rolUsuario !== "mayor" && <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 20px 0" }}>
-          {view === "cuidador" && (
-            <button onClick={() => setShowMenuLateral(true)} data-tutorial="menu" className="btn-press-soft" style={{ border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, borderRadius: 12, width: 42, height: 42, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative", boxShadow: C.SHADOW }}>
-              <Menu size={20} strokeWidth={2.2} />
-              {smsLog.length > 0 && <span style={{ position: "absolute", top: -4, right: -4, background: C.CORAL, color: "#fff", fontSize: 9, fontWeight: 700, borderRadius: 999, padding: "1px 5px", minWidth: 16, textAlign: "center" }}>{fmtN(smsLog.length)}</span>}
-            </button>
-          )}
           <button onClick={() => setView("mayor")} className="btn-press-soft" style={{ flex: 1, padding: "11px", borderRadius: 12, border: `1px solid ${view === "mayor" ? "transparent" : C.LINE}`, fontWeight: 700, fontSize: 12.5, cursor: "pointer", background: view === "mayor" ? C.TEAL : C.PAPER, color: view === "mayor" ? "#fff" : C.MUTED, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: view === "mayor" ? `0 4px 12px ${C.TEAL}40` : C.SHADOW }}><User size={14} /> {elderName.split(" ")[0]}</button>
-          <button onClick={() => setView("cuidador")} data-tutorial="tab-cuidador" className="btn-press-soft" style={{ flex: 1, padding: "11px", borderRadius: 12, border: `1px solid ${view === "cuidador" ? "transparent" : C.LINE}`, fontWeight: 700, fontSize: 12.5, cursor: "pointer", background: view === "cuidador" ? C.TEAL : C.PAPER, color: view === "cuidador" ? "#fff" : C.MUTED, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: view === "cuidador" ? `0 4px 12px ${C.TEAL}40` : C.SHADOW }}><Users size={14} /> Cuidador {esPremium && "⭐"}</button>
+          <button onClick={() => setView("cuidador")} className="btn-press-soft" style={{ flex: 1, padding: "11px", borderRadius: 12, border: `1px solid ${view === "cuidador" ? "transparent" : C.LINE}`, fontWeight: 700, fontSize: 12.5, cursor: "pointer", background: view === "cuidador" ? C.TEAL : C.PAPER, color: view === "cuidador" ? "#fff" : C.MUTED, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: view === "cuidador" ? `0 4px 12px ${C.TEAL}40` : C.SHADOW }}><Users size={14} /> Cuidador {esPremium && "⭐"}</button>
         </div>}
 
         {view === "cuidador" && <div style={{ margin: "8px 20px 0", display: "flex", justifyContent: "center" }}>
@@ -1767,14 +1821,7 @@ export default function App() {
                 <div style={{ width: 90, height: 90, borderRadius: 999, background: dispColor(current.med.color, settings.daltonico), display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 40, color: "#fff", boxShadow: `0 8px 20px ${dispColor(current.med.color, settings.daltonico)}50` }}>{current.med.shape}</div>
                 <div style={{ fontSize: 26 * scale, fontWeight: 800 }}>{current.med.name}</div>
                 <div style={{ fontSize: 16 * scale, color: C.MUTED, marginTop: 6 }}>{current.med.dose}</div>
-                {current.med.ventanaMin > 0 && (
-                  <div style={{ fontSize: 12 * scale, color: C.TEAL, marginTop: 10, background: C.TEAL + "10", padding: "6px 12px", borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 6, fontWeight: 600 }}>
-                    <Clock size={12} /> Puedes hasta las {fmtHoraConAmPm(sumarMinutos(current.time, current.med.ventanaMin))}
-                  </div>
-                )}
-                {current.med.notas && <div style={{ fontSize: 13 * scale, color: C.AMBER, marginTop: 8, fontStyle: "italic" }}>📝 {current.med.notas}</div>}
-                <button onClick={() => confirmar(current)} className="btn-press" style={{ width: "100%", marginTop: 22, padding: "20px", borderRadius: 20, border: "none", background: C.TEAL, color: "#fff", fontWeight: 800, fontSize: 20 * scale, cursor: "pointer", boxShadow: `0 8px 20px ${C.TEAL}50` }}>✓ Ya lo tomé</button>
-                {!isOnline && <div style={{ fontSize: 11, color: "#E65100", marginTop: 10, fontWeight: 700 }}>📴 Sin conexión — Se guardará y sincronizará al volver</div>}
+                <button onClick={() => confirmar({ meds: [current.med], time: current.time, keys: [current.key] })} className="btn-press" style={{ width: "100%", marginTop: 22, padding: "20px", borderRadius: 20, border: "none", background: C.TEAL, color: "#fff", fontWeight: 800, fontSize: 20 * scale, cursor: "pointer", boxShadow: `0 8px 20px ${C.TEAL}50` }}>✓ Ya lo tomé</button>
               </div>
             ) : (
               <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 28, padding: 30, textAlign: "center", boxShadow: C.SHADOW }}>
@@ -1788,34 +1835,10 @@ export default function App() {
           </div>
         ) : (
           <div style={{ padding: "16px 20px 100px", flex: 1 }}>
-            {racha > 0 && (
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: 12 }}>
-                <div style={{ background: `linear-gradient(135deg, ${C.GOLD}20, ${C.GOLD}10)`, border: `1px solid ${C.GOLD}40`, borderRadius: 999, padding: "6px 14px", display: "flex", alignItems: "center", gap: 6 }}>
-                  <Flame size={14} color={C.GOLD} fill={C.GOLD} />
-                  <span style={{ fontSize: 12, fontWeight: 800, color: C.GOLD }}>{fmtN(racha)} día{racha !== 1 ? "s" : ""} seguido{racha !== 1 ? "s" : ""}</span>
-                </div>
-              </div>
-            )}
-
             {cuidadorTab === "meds" && recetasPorVencer.length > 0 && (
               <div style={{ background: oscuro ? "#3A2F1A" : "#FFF8E1", border: `1px solid ${oscuro ? "#5A4A2A" : "#FFE082"}`, borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14, marginTop: 8, boxShadow: C.SHADOW }}>
                 <FileText size={20} color={C.AMBER} style={{ marginTop: 1 }} />
                 <div style={{ fontSize: 13, color: oscuro ? "#FFE082" : "#8A5F16", lineHeight: 1.5 }}>Recetas por vencer: {recetasPorVencer.map((m) => m.name).join(", ")}</div>
-              </div>
-            )}
-
-            {mostrarAvisoRenovacion && (
-              <div onClick={() => setShowPremium(true)} className="btn-press-soft" style={{ marginBottom: 14, background: oscuro ? "#3A2F1A" : "#FFF8E1", border: `1px solid ${C.GOLD}`, borderRadius: 16, padding: "12px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, boxShadow: C.SHADOW }}>
-                <Crown size={20} color={C.GOLD} />
-                <div style={{ flex: 1 }}><div style={{ fontSize: 12.5, fontWeight: 700, color: C.GOLD }}>Tu Premium vence pronto</div><div style={{ fontSize: 11, color: C.MUTED }}>Toca para renovar.</div></div>
-              </div>
-            )}
-
-            {!esPremium && (
-              <div onClick={() => setShowPremium(true)} className="btn-press-soft" style={{ marginBottom: 14, background: `linear-gradient(135deg, ${C.GOLD}, #E65100)`, borderRadius: 16, padding: "14px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10, color: "#fff", boxShadow: "0 6px 20px rgba(249,168,37,0.35)" }}>
-                <Crown size={22} />
-                <div style={{ flex: 1 }}><div style={{ fontSize: 13, fontWeight: 700 }}>Hazte Premium</div><div style={{ fontSize: 11, opacity: 0.9 }}>Hasta 3 personas, medicamentos ilimitados</div></div>
-                <ArrowRight size={16} />
               </div>
             )}
 
@@ -1831,183 +1854,68 @@ export default function App() {
                       Medicamentos ({fmtN(meds.length)}{!esPremium && `/${LIMITES_ESTANDAR.maxMeds}`})
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                      {meds.map((m) => {
+                      {meds.slice(0, 4).map((m) => {
                         const sem = semaforoRiesgo(m, confirmedByDate);
                         const crit = m.criticidad || detectarCriticidad(m.name);
-                        const modo = m.modoAviso || (crit === "importante" ? "inmediato" : "final_dia");
                         const colorCrit = crit === "vital" ? C.CORAL : crit === "importante" ? C.AMBER : C.GREEN;
                         const labelCrit = crit === "vital" ? "VITAL" : crit === "importante" ? "IMPORTANTE" : "NORMAL";
                         const semColor = sem.nivel === "urgente" ? C.CORAL : sem.nivel === "atención" ? C.AMBER : C.GREEN;
-                        const fechaCompra = sem.dias !== null ? proximaFechaCompra(sem.dias) : null;
-                        const diasReceta = m.recetaVence ? diasHastaVencimiento(m.recetaVence) : null;
                         return (
-                          <div key={m.id} data-tutorial={meds[0]?.id === m.id ? "med-card" : undefined} className="card-hover" style={{ padding: "14px", borderRadius: 16, background: C.PAPER, border: `1px solid ${C.LINE}`, boxShadow: C.SHADOW }}>
+                          <div key={m.id} className="card-hover" style={{ padding: "14px", borderRadius: 16, background: C.PAPER, border: `1px solid ${C.LINE}`, boxShadow: C.SHADOW }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                               <div style={{ width: 36, height: 36, borderRadius: 999, background: dispColor(m.color, settings.daltonico), display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, color: "#fff", flexShrink: 0 }}>{m.shape}</div>
                               <div style={{ flex: 1 }}>
                                 <div style={{ fontSize: 14.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                                   {m.name}
-                                  <span style={{ fontSize: 9, background: colorCrit + "20", color: colorCrit, padding: "2px 7px", borderRadius: 999, fontWeight: 700, letterSpacing: 0.3 }}>{labelCrit}</span>
-                                  {m.receta === "con_receta" && <span style={{ fontSize: 9, background: C.TEAL + "20", color: C.TEAL, padding: "2px 7px", borderRadius: 999, fontWeight: 700, letterSpacing: 0.3 }}>RECETA</span>}
+                                  <span style={{ fontSize: 9, background: colorCrit + "20", color: colorCrit, padding: "2px 7px", borderRadius: 999, fontWeight: 700 }}>{labelCrit}</span>
                                   <span style={{ width: 8, height: 8, borderRadius: 999, background: semColor, marginLeft: "auto" }} />
                                 </div>
-                              <div style={{ fontSize: 11, color: C.MUTED, marginTop: 3 }}>{m.times.map(fmtHoraConAmPm).join(" · ")} · Aviso: {crit === "vital" ? "a los 2 min" : "al cerrar la alerta"}{m.ventanaMin > 0 ? ` · ventana ${m.ventanaMin}min` : ""}</div>
-                                {m.notas && <div style={{ fontSize: 11, color: C.AMBER, marginTop: 4, fontStyle: "italic" }}>📝 {m.notas}</div>}
-                                {diasReceta !== null && diasReceta >= 0 && diasReceta <= 30 && (<div style={{ fontSize: 11, color: diasReceta <= 7 ? C.CORAL : C.MUTED, marginTop: 4 }}>📄 Receta vence en {fmtN(diasReceta)} día{diasReceta !== 1 ? "s" : ""}</div>)}
+                              <div style={{ fontSize: 11, color: C.MUTED, marginTop: 3 }}>{m.times.map(fmtHoraConAmPm).join(" · ")}</div>
                               </div>
                             </div>
                             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12, paddingTop: 12, borderTop: `1px solid ${C.LINE}` }}>
                               <div style={{ fontSize: 11.5, color: semColor, fontWeight: 700 }}>{sem.dias !== null ? `${fmtN(sem.dias)} días · ${sem.nivel}` : "Sin datos"}</div>
                               <div style={{ display: "flex", gap: 6 }}>
-                              <button onClick={() => abrirEditar(m)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: C.TEAL, background: oscuro ? "#1E3A5F" : "#E3F2FD", border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer" }}>✏️</button>
-                                <button onClick={() => setShowNotas(m)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: C.AMBER, background: oscuro ? "#3A2F1A" : "#FFF8E1", border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}><StickyNote size={11} /></button>
-                                <button onClick={() => esPremium ? setReconteoTarget(m) : setShowPremium(true)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: esPremium ? C.TEAL : C.GOLD, background: esPremium ? (oscuro ? "#1E3A5F" : "#E3F2FD") : (oscuro ? "#3A2F1A" : "#FFF8E1"), border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>{esPremium ? <RefreshCw size={11} /> : <Lock size={11} />}</button>
+                                <button onClick={() => abrirEditar(m)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: C.TEAL, background: oscuro ? "#1E3A5F" : "#E3F2FD", border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer" }}>✏️</button>
+                                <button onClick={() => esPremium ? setReconteoTarget(m) : setShowPremium(true)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: C.TEAL, background: oscuro ? "#1E3A5F" : "#E3F2FD", border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer" }}><RefreshCw size={11} /></button>
                                 <button onClick={() => setRestockTarget(m)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: C.TEAL, background: oscuro ? "#1E3A5F" : "#E3F2FD", border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer" }}>Reponer</button>
                                 <button onClick={() => setArchivarTarget(m)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: C.CORAL, background: "transparent", border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer" }}>🗑️</button>
                               </div>
                             </div>
-                            {fechaCompra && (sem.nivel === "urgente" || sem.nivel === "atención") && (<div style={{ marginTop: 8, fontSize: 11, color: C.MUTED }}><Calendar size={11} /> Compra antes del <strong>{fechaCompra}</strong></div>)}
                           </div>
                         );
                       })}
                     </div>
+                    {meds.length > 4 && (
+                      <div style={{ textAlign: "center", marginTop: 10, fontSize: 12, color: C.MUTED }}>+ {meds.length - 4} medicamentos más. Hazte Premium para verlos todos en pantalla.</div>
+                    )}
                     <button onClick={intentarAgregarMed} data-tutorial="add-med" className="btn-press-soft" style={{ marginTop: 18, width: "100%", background: oscuro ? "#1E3A5F" : "#E3F2FD", border: `1.5px dashed ${oscuro ? "#3A5A7F" : "#90CAF9"}`, color: C.TEAL, padding: 13, borderRadius: 14, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                       {meds.length >= maxMeds ? <><Lock size={16} /> Límite alcanzado — Hazte Premium</> : <><Plus size={16} /> Agregar medicamento</>}
-                    </button>
-                    <button onClick={intentarAgregarPersona} className="btn-press-soft" style={{ marginTop: 10, width: "100%", background: "transparent", border: `1.5px dashed ${C.LINE}`, color: C.MUTED, padding: 13, borderRadius: 14, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                      <UserPlus size={16} /> Agregar otra persona {!esPremium && "(Premium)"}
                     </button>
                   </>
                 )}
               </>
             )}
 
-            {cuidadorTab === "canasta" && (
+            {cuidadorTab === "archivados" && (
               <>
-                {medsCarro.length > 0 && (
-                  <div onClick={abrirCarroCompleto} className="btn-press-soft" style={{ background: `linear-gradient(135deg, ${C.TEAL}, #0D47A1)`, borderRadius: 18, padding: 20, marginBottom: 16, cursor: "pointer", color: "#fff", boxShadow: "0 8px 24px rgba(25,118,210,0.35)" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                      <ShoppingCart size={22} />
-                      <div style={{ fontSize: 15, fontWeight: 700 }}>Carro completo</div>
-                    </div>
-                    <div style={{ fontSize: 12.5, opacity: 0.9, marginBottom: 10 }}>Tienes {fmtN(medsCarro.length)} medicamento{medsCarro.length > 1 ? "s" : ""} con stock bajo o crítico.</div>
-                    <div style={{ background: "rgba(255,255,255,0.2)", borderRadius: 10, padding: 10, fontSize: 12, fontWeight: 700, textAlign: "center" }}>Armar carro y elegir farmacia →</div>
-                  </div>
-                )}
-
-                {(() => {
-                  const sugerencias = obtenerProductosSugeridos(meds, mes);
-                  return (
-                    <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 20, padding: 18, marginBottom: 22, boxShadow: C.SHADOW }}>
-                      <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{NOMBRE_TEMPORADA[sugerencias.temporada]}</div>
-                      <div style={{ fontSize: 11.5, color: C.MUTED, marginBottom: 14, lineHeight: 1.5 }}>Artículos útiles para el cuidado diario y la rutina del hogar.</div>
-                      {sugerencias.productos.map((p) => (
-                        <div key={p.sku} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: C.MUTED, marginBottom: 8, padding: "6px 0", borderBottom: `1px solid ${C.LINE}` }}>
-                          <span style={{ flex: 1, paddingRight: 8 }}>{p.nombre}</span>
-                        </div>
-                      ))}
-                      <button onClick={() => abrirProductosVentaLibre(sugerencias.productos)} className="btn-press" style={{ width: "100%", padding: 13, borderRadius: 14, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer", marginTop: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                        <ShoppingCart size={16} /> Buscar estos artículos en Mercado Libre
-                      </button>
-                    </div>
-                  );
-                })()}
-
-                <div style={{ background: C.PAPER, border: `1px dashed ${C.LINE}`, borderRadius: 20, padding: "40px 24px", textAlign: "center", marginTop: 14 }}>
-                  <div style={{ width: 72, height: 72, borderRadius: 999, background: C.TEAL + "12", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-                    <Truck size={34} color={C.TEAL} strokeWidth={1.5} />
-                  </div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: C.INK, marginBottom: 8 }}>Próximamente</div>
-                  <div style={{ fontSize: 13, color: C.MUTED, lineHeight: 1.6 }}>Estamos trabajando en alianzas con farmacias para ofrecerte este servicio. Muy pronto podrás comparar precios y comprar directamente desde la app.</div>
-                </div>
-              </>
-            )}
-
-            {cuidadorTab === "historial" && (
-              <>
-                <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 12 }}>Historial del mes</div>
-                <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 20, padding: 18, boxShadow: C.SHADOW }}>
-                  <div style={{ fontWeight: 700, fontSize: 16, textAlign: "center", marginBottom: 14 }}>{MESES[mes]} {año}</div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 8 }}>
-                    {DIAS_SEM.map((d, i) => (<div key={i} style={{ textAlign: "center", fontSize: 10, fontWeight: 700, color: C.MUTED, padding: 4 }}>{d}</div>))}
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4 }}>
-                    {diasMes.map((dia, i) => {
-                      if (!dia) return <div key={i} />;
-                      const fechaKey = dia.toISOString().slice(0, 10);
-                      const hoy = new Date(); const esFuturo = dia > hoy;
-                      const diaData = confirmedByDate?.[fechaKey] || {};
-                      let totalEsp = 0; meds.forEach((m) => { totalEsp += m.times.length; });
-                      const totalConf = Object.keys(diaData).filter((k) => diaData[k]).length;
-                      const olvidos = Math.max(0, totalEsp - totalConf);
-                      let bg = oscuro ? "#1E2F48" : "#F0F4F8"; let color = C.MUTED;
-                      if (!esFuturo && totalEsp > 0) { if (olvidos === 0) { bg = C.GREEN; color = "#fff"; } else if (olvidos === 1) { bg = C.AMBER; color = "#fff"; } else { bg = C.CORAL; color = "#fff"; } }
-                      return (<button key={i} onClick={() => !esFuturo && totalEsp > 0 && setDiaDetalle({ fecha: fechaKey, dia: dia.getDate(), confirmadas: totalConf, esperadas: totalEsp, olvidos, diaData })} className="btn-press-soft" style={{ aspectRatio: "1", borderRadius: 8, border: "none", background: bg, color, fontSize: 12, fontWeight: 700, cursor: (!esFuturo && totalEsp > 0) ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", padding: 0, transition: "all 0.15s ease" }}>{dia.getDate()}</button>);
-                    })}
-                  </div>
-                  <div style={{ display: "flex", gap: 12, marginTop: 14, fontSize: 10.5, color: C.MUTED, justifyContent: "center" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 10, height: 10, borderRadius: 4, background: C.GREEN }} /> Todo bien</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 10, height: 10, borderRadius: 4, background: C.AMBER }} /> 1 olvido</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}><span style={{ width: 10, height: 10, borderRadius: 4, background: C.CORAL }} /> 2+ olvidos</div>
-                  </div>
-                </div>
-              </>
-            )}
-
-            {cuidadorTab === "cambios" && (
-              <>
-                <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 12 }}>Historial de cambios</div>
-                {historialCambios.length === 0 ? (
-                  <EstadoVacio C={C} icono={FileText} titulo="Sin cambios aún" texto="Los cambios que hagas aparecerán aquí." />
+                <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 12 }}>Medicamentos Anteriores</div>
+                {medsArchivados.length === 0 ? (
+                  <EstadoVacio C={C} icono={History} titulo="Sin historial" texto="Los medicamentos que archives aparecerán aquí." />
                 ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {[...historialCambios].reverse().map((c) => (
-                      <div key={c.id} style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 12, padding: 12, boxShadow: C.SHADOW }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.MUTED, marginBottom: 4 }}>
-                          <span><strong style={{ color: C.TEAL }}>{c.cuidador}</strong> · {c.accion}</span>
-                          <span>{new Date(c.fecha).toLocaleDateString("es-CL")} {new Date(c.fecha).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })}</span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {medsArchivados.map((m) => (
+                      <div key={m.id} style={{ padding: "14px", borderRadius: 16, background: C.PAPER, border: `1px solid ${C.LINE}` }}>
+                        <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>{m.name}</div>
+                        <div style={{ fontSize: 11, color: C.MUTED, marginBottom: 8 }}>Desde: {new Date(m.fechaInicio).toLocaleDateString("es-CL")} — Hasta: {m.fechaArchivado ? new Date(m.fechaArchivado).toLocaleDateString("es-CL") : "N/A"}</div>
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button onClick={() => reactivarMed(m.id)} className="btn-press-soft" style={{ flex: 1, padding: 8, borderRadius: 8, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, fontSize: 12 }}>Reactivar</button>
+                          <button onClick={() => borrarMedFijo(m.id)} className="btn-press-soft" style={{ flex: 1, padding: 8, borderRadius: 8, border: "none", background: "transparent", color: C.CORAL, fontWeight: 700, fontSize: 12 }}>Borrar</button>
                         </div>
-                        <div style={{ fontSize: 13 }}>{c.detalle}</div>
                       </div>
                     ))}
                   </div>
                 )}
-              </>
-            )}
-
-            {cuidadorTab === "contactos" && (
-              <>
-                <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 12 }}>Contactos de emergencia</div>
-                {contactos.length === 0 ? (
-                  <div style={{ marginBottom: 14 }}>
-                    <EstadoVacio C={C} icono={Phone} titulo="Sin contactos aún" texto="Agrega el médico tratante o un familiar para emergencias." />
-                  </div>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
-                    {contactos.map((c) => (
-                      <div key={c.id} style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, display: "flex", alignItems: "center", gap: 12, boxShadow: C.SHADOW }}>
-                        <div style={{ width: 36, height: 36, borderRadius: 999, background: C.TEAL + "20", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{c.tipo === "médico" ? "🩺" : c.tipo === "familia" ? "👨‍👩‍👧" : "🏥"}</div>
-                        <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 700, fontSize: 14 }}>{c.nombre}</div>
-                          <div style={{ fontSize: 12, color: C.MUTED }}>{c.telefono} · {c.tipo}</div>
-                        </div>
-                        <a href={`tel:${c.telefono}`} className="btn-press-soft" style={{ padding: "8px 14px", borderRadius: 10, background: C.TEAL, color: "#fff", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Llamar</a>
-                        <button onClick={() => eliminarContacto(c.id)} className="btn-press-soft" style={{ border: "none", background: "transparent", color: C.CORAL, cursor: "pointer", padding: 6 }}><X size={16} /></button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 16, padding: 16, boxShadow: C.SHADOW }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}>Agregar contacto</div>
-                  <input value={formContacto.nombre} onChange={(e) => setFormContacto({ ...formContacto, nombre: e.target.value })} placeholder="Nombre" style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${C.LINE}`, fontSize: 13, marginBottom: 8, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
-                  <input value={formContacto.telefono} onChange={(e) => setFormContacto({ ...formContacto, telefono: e.target.value })} placeholder="Teléfono" style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${C.LINE}`, fontSize: 13, marginBottom: 8, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
-                  <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-                    {[{ v: "médico", l: "🩺 Médico" }, { v: "familia", l: "👨‍👩‍👧 Familia" }, { v: "centro", l: "🏥 Centro" }].map((t) => (
-                      <button key={t.v} onClick={() => setFormContacto({ ...formContacto, tipo: t.v })} className="btn-press-soft" style={{ flex: 1, padding: 8, borderRadius: 10, border: formContacto.tipo === t.v ? `2px solid ${C.TEAL}` : `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 11, cursor: "pointer", transition: "all 0.15s ease" }}>{t.l}</button>
-                    ))}
-                  </div>
-                  <button onClick={agregarContacto} disabled={!formContacto.nombre.trim() || !formContacto.telefono.trim()} className="btn-press" style={{ width: "100%", padding: 12, borderRadius: 12, border: "none", background: (formContacto.nombre.trim() && formContacto.telefono.trim()) ? C.TEAL : (oscuro ? "#2A3A52" : "#E0E4EB"), color: "#fff", fontWeight: 700, cursor: "pointer" }}>Agregar</button>
-                </div>
               </>
             )}
 
@@ -2016,27 +1924,41 @@ export default function App() {
                 <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 12 }}>Avisos enviados</div>
                 {smsLog.length === 0 ? (
                   <div style={{ background: oscuro ? "#1B3A2A" : "#E8F5E9", border: `1px solid ${oscuro ? "#2F5A3A" : "#A5D6A7"}`, borderRadius: 16, padding: 40, textAlign: "center" }}>
-                    <div style={{ width: 64, height: 64, borderRadius: 999, background: C.GREEN + "15", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
-                      <Check size={32} color={C.GREEN} strokeWidth={2.4} />
-                    </div>
                     <div style={{ fontSize: 16, fontWeight: 700, color: C.GREEN, marginBottom: 4 }}>Todo va bien</div>
-                    <div style={{ fontSize: 13, color: C.MUTED }}>Sin avisos por ahora. Solo te avisamos si hay un problema.</div>
+                    <div style={{ fontSize: 13, color: C.MUTED }}>Sin avisos por ahora.</div>
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {[...smsLog].reverse().map((s, i) => (
-                      <div key={i} className="modal-scale" style={{ background: C.PAPER, borderRadius: 14, padding: 14, borderLeft: `4px solid ${s.tipo === "alerta" ? C.CORAL : C.TEAL}`, boxShadow: C.SHADOW }}>
+                      <div key={i} style={{ background: C.PAPER, borderRadius: 14, padding: 14, borderLeft: `4px solid ${s.tipo === "alerta" ? C.CORAL : C.TEAL}`, boxShadow: C.SHADOW }}>
                         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.MUTED, marginBottom: 6 }}><span>📩 CuidaMed</span><span>{s.hora}</span></div>
                         <div style={{ fontSize: 13, lineHeight: 1.5 }}>{s.texto}</div>
                       </div>
                     ))}
-                    <button onClick={() => setSmsLog([])} className="btn-press-soft" style={{ marginTop: 8, width: "100%", padding: 12, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.MUTED, fontWeight: 700, cursor: "pointer" }}>Limpiar historial</button>
                   </div>
                 )}
               </>
             )}
+
+            {cuidadorTab === "historial" && (
+              <div style={{ textAlign: "center", padding: 20 }}>
+                <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 14 }}>Historial de Adherencia</div>
+                <div style={{ fontSize: 12, color: C.MUTED }}>(Calendario de adherencia disponible. Haz scroll o consulta los avisos)</div>
+                <button onClick={() => setDiaDetalle({ fecha: todayStr(), dia: new Date().getDate(), confirmadas: 0, esperadas: meds.length, olvidos: 0, diaData: confirmedHoy })} className="btn-press" style={{ marginTop: 14, padding: 10, borderRadius: 10, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Ver detalle de hoy</button>
+              </div>
+            )}
+
+            {cuidadorTab === "canasta" && (
+              <div style={{ textAlign: "center", padding: 20 }}>
+                <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 14 }}>Carro y Farmacias</div>
+                <div style={{ fontSize: 12, color: C.MUTED }}>(Módulo de compras en desarrollo)</div>
+                <button onClick={abrirCarroCompleto} className="btn-press" style={{ marginTop: 14, padding: 10, borderRadius: 10, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Abrir carro completo</button>
+              </div>
+            )}
           </div>
         )}
+
+        {view === "cuidador" && <BottomBar C={C} tabActual={cuidadorTab} setTabActual={setCuidadorTab} onAbrirMenu={() => setShowMenuLateral(true)} avisosNuevos={smsLog.length} />}
 
         <MenuLateral C={C} abierto={showMenuLateral} onCerrar={() => setShowMenuLateral(false)} tabActual={cuidadorTab} setTabActual={setCuidadorTab} avisosNuevos={smsLog.length} oscuro={oscuro} cuidadorNombre={nombreCuidadorInput || familia?.cuidadores?.[0] || "Cuidador"} elderName={elderName} onCompartir={() => setShowCompartir(true)} onModoOscuro={() => { actualizarSettings({ darkMode: !oscuro }); registrarEvento(codigo, "toggle_dark_mode", !oscuro ? "activado" : "desactivado", { cuidador: nombreCuidadorInput }); }} onAyuda={() => setShowComoFunciona(true)} onAcercaDe={() => setShowAcercaDe(true)} onPolitica={() => setShowPolitica(true)} onPremium={() => setShowPremium(true)} onAjustes={() => setShowAjustes(true)} />
 
@@ -2050,11 +1972,7 @@ export default function App() {
         {showCarroCompleto && <CarroCompleto C={C} meds={meds} onCerrar={() => setShowCarroCompleto(false)} onElegirFarmacia={abrirFarmaciaCarro} />}
 
         {showSelectorRol && (
-          <SelectorRol
-            C={C}
-            onSeleccionar={(rol) => seleccionarRol(rol)}
-            onCerrar={() => setShowSelectorRol(false)}
-          />
+          <SelectorRol C={C} onSeleccionar={(rol) => seleccionarRol(rol)} onCerrar={() => setShowSelectorRol(false)} />
         )}
 
         {showTutorial && <TutorialInteractivo pasos={PASOS_TUTORIAL} onCerrar={() => { setShowTutorial(false); actualizar((prev) => ({ ...prev, settings: { ...prev.settings, tutorialVisto: true } })); registrarEvento(codigo, "tutorial_completado", "Tutorial finalizado", { cuidador: nombreCuidadorInput }); }} C={C} onAbrirMenu={() => setShowMenuLateral(true)} />}
@@ -2064,12 +1982,12 @@ export default function App() {
             <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 24, padding: 24, margin: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <div style={{ fontWeight: 700, fontSize: 18, display: "flex", alignItems: "center", gap: 8 }}><Phone size={18} color={C.CORAL} /> Emergencia</div>
-                <button onClick={() => setShowContactos(false)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={15} color={C.INK} /></button>
+                <button onClick={() => setShowContactos(false)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer" }}><X size={15} color={C.INK} /></button>
               </div>
               {contactos.length === 0 ? (<div style={{ textAlign: "center", fontSize: 13, color: C.MUTED, padding: 20 }}>Aún no hay contactos cargados.</div>) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {contactos.map((c) => (
-                    <a key={c.id} href={`tel:${c.telefono}`} className="btn-press-soft" style={{ display: "flex", alignItems: "center", gap: 12, padding: 14, background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, textDecoration: "none", color: C.INK, boxShadow: C.SHADOW }}>
+                    <a key={c.id} href={`tel:${c.telefono}`} className="btn-press-soft" style={{ display: "flex", alignItems: "center", gap: 12, padding: 14, background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, textDecoration: "none", color: C.INK }}>
                       <div style={{ width: 40, height: 40, borderRadius: 999, background: C.CORAL + "20", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>{c.tipo === "médico" ? "🩺" : c.tipo === "familia" ? "👨‍👩‍👧" : "🏥"}</div>
                       <div style={{ flex: 1 }}><div style={{ fontWeight: 700, fontSize: 15 }}>{c.nombre}</div><div style={{ fontSize: 13, color: C.MUTED }}>{c.telefono}</div></div>
                       <Phone size={18} color={C.TEAL} />
@@ -2086,7 +2004,7 @@ export default function App() {
             <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 20, padding: 24, margin: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                 <div style={{ fontWeight: 700, fontSize: 16 }}>Notas de {showNotas.name}</div>
-                <button onClick={() => setShowNotas(null)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={15} color={C.INK} /></button>
+                <button onClick={() => setShowNotas(null)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer" }}><X size={15} color={C.INK} /></button>
               </div>
               <textarea defaultValue={showNotas.notas || ""} onChange={(e) => setShowNotas({ ...showNotas, _n: e.target.value })} placeholder="Ej. No tomarlo con lácteos" rows={4} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, marginBottom: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, fontFamily: "inherit", resize: "vertical", outline: "none" }} />
               <button onClick={() => guardarNotas(showNotas.id, showNotas._n !== undefined ? showNotas._n : showNotas.notas)} className="btn-press" style={{ width: "100%", padding: 12, borderRadius: 12, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Guardar nota</button>
@@ -2100,17 +2018,10 @@ export default function App() {
               <div style={{ width: 40, height: 4, background: C.LINE, borderRadius: 999, margin: "0 auto 16px" }} />
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                 <div style={{ fontWeight: 700, fontSize: 18 }}>Compartir por WhatsApp</div>
-                <button onClick={() => setShowCompartir(false)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
+                <button onClick={() => setShowCompartir(false)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer" }}><X size={16} color={C.INK} /></button>
               </div>
-              <button onClick={() => compartirWhatsApp("resumen")} className="btn-press-soft" style={{ width: "100%", padding: 14, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 14, cursor: "pointer", marginBottom: 10, textAlign: "left", display: "flex", alignItems: "center", gap: 12, boxShadow: C.SHADOW }}>
-                <FileText size={18} color={C.TEAL} /> Resumen del día
-              </button>
-              <button onClick={() => compartirWhatsApp("historial")} className="btn-press-soft" style={{ width: "100%", padding: 14, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 14, cursor: "pointer", marginBottom: 10, textAlign: "left", display: "flex", alignItems: "center", gap: 12, boxShadow: C.SHADOW }}>
-                <Calendar size={18} color={C.TEAL} /> Historial últimos 7 días
-              </button>
-              <button onClick={() => compartirWhatsApp("meds")} className="btn-press-soft" style={{ width: "100%", padding: 14, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 14, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 12, boxShadow: C.SHADOW }}>
-                <PackageOpen size={18} color={C.TEAL} /> Lista completa de medicamentos
-              </button>
+              <button onClick={() => compartirWhatsApp("resumen")} className="btn-press-soft" style={{ width: "100%", padding: 14, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 14, cursor: "pointer", marginBottom: 10, textAlign: "left", display: "flex", alignItems: "center", gap: 12 }}><FileText size={18} color={C.TEAL} /> Resumen del día</button>
+              <button onClick={() => compartirWhatsApp("meds")} className="btn-press-soft" style={{ width: "100%", padding: 14, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 14, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 12 }}><PackageOpen size={18} color={C.TEAL} /> Lista completa de medicamentos</button>
             </div>
           </div>
         )}
@@ -2120,11 +2031,11 @@ export default function App() {
             <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 20, padding: 24, margin: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
               <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 14 }}>Agregar persona</div>
               <input value={nombrePersonaNueva} onChange={(e) => setNombrePersonaNueva(e.target.value)} placeholder="Ej. Pedro González" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, marginBottom: 10, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
-              <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3, display: "flex", alignItems: "center", gap: 6 }}><Cake size={12} /> EDAD (OPCIONAL)</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6 }}><Cake size={12} /> EDAD (OPCIONAL)</div>
               <input type="number" min="0" max="120" value={edadPersonaNueva} onChange={(e) => setEdadPersonaNueva(e.target.value)} placeholder="Ej. 82" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, marginBottom: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => { setShowAddPersona(false); setNombrePersonaNueva(""); setEdadPersonaNueva(""); }} className="btn-press-soft" style={{ flex: 1, padding: 12, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.MUTED, fontWeight: 700, cursor: "pointer" }}>Cancelar</button>
-                <button onClick={agregarPersona} disabled={!nombrePersonaNueva.trim()} className="btn-press" style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: nombrePersonaNueva.trim() ? C.TEAL : (oscuro ? "#2A3A52" : "#E0E4EB"), color: "#fff", fontWeight: 700, cursor: nombrePersonaNueva.trim() ? "pointer" : "not-allowed" }}>Agregar</button>
+                <button onClick={agregarPersona} disabled={!nombrePersonaNueva.trim()} className="btn-press" style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: nombrePersonaNueva.trim() ? C.TEAL : C.LINE, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Agregar</button>
               </div>
             </div>
           </div>
@@ -2138,13 +2049,12 @@ export default function App() {
               <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 20, padding: 24, margin: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                   <div style={{ fontWeight: 700, fontSize: 17 }}>{diaDetalle.dia} de {MESES[mes]}</div>
-                  <button onClick={() => setDiaDetalle(null)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={15} color={C.INK} /></button>
+                  <button onClick={() => setDiaDetalle(null)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer" }}><X size={15} color={C.INK} /></button>
                 </div>
                 <div style={{ background: C.PAPER, borderRadius: 14, padding: 16, marginBottom: 14, boxShadow: C.SHADOW, textAlign: "center" }}>
-                  <div style={{ fontSize: 11, color: C.MUTED, fontWeight: 700, letterSpacing: 0.5, marginBottom: 6 }}>ADHERENCIA DEL DÍA</div>
+                  <div style={{ fontSize: 11, color: C.MUTED, fontWeight: 700, marginBottom: 6 }}>ADHERENCIA DEL DÍA</div>
                   <div style={{ fontSize: 38, fontWeight: 800, color: colorAdh, lineHeight: 1 }}>{fmtN(adherencia)}%</div>
                   <div style={{ fontSize: 12.5, color: C.MUTED, marginTop: 6 }}>{fmtN(diaDetalle.confirmadas)} de {fmtN(diaDetalle.esperadas)} tomas confirmadas</div>
-                  {diaDetalle.olvidos > 0 && <div style={{ fontSize: 11.5, color: C.CORAL, marginTop: 4, fontWeight: 600 }}>{fmtN(diaDetalle.olvidos)} olvido{diaDetalle.olvidos !== 1 ? "s" : ""}</div>}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 250, overflowY: "auto" }}>
                   {meds.flatMap((m) => m.times.map((t) => {
@@ -2161,11 +2071,9 @@ export default function App() {
         {showLimite && (
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 32 }}>
             <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 24, padding: 26, margin: 20, textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
-              <div style={{ width: 64, height: 64, borderRadius: 999, background: C.GOLD + "15", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
-                <Lock size={30} color={C.GOLD} strokeWidth={2.2} />
-              </div>
+              <div style={{ width: 64, height: 64, borderRadius: 999, background: C.GOLD + "15", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}><Lock size={30} color={C.GOLD} strokeWidth={2.2} /></div>
               <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Llegaste al límite</div>
-              <div style={{ fontSize: 13, color: C.MUTED, marginBottom: 18, lineHeight: 1.6 }}>{showLimite === "meds" ? "En Estándar puedes tener hasta 4 medicamentos." : "En Estándar puedes cuidar a 1 persona."} Con Premium, sin límites.</div>
+              <div style={{ fontSize: 13, color: C.MUTED, marginBottom: 18 }}>{showLimite === "meds" ? "En Estándar puedes tener hasta 4 medicamentos." : "En Estándar puedes cuidar a 1 persona."} Con Premium, sin límites.</div>
               <button onClick={() => { setShowLimite(null); setShowPremium(true); }} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: `linear-gradient(135deg, ${C.GOLD}, #E65100)`, color: "#fff", fontWeight: 700, cursor: "pointer", marginBottom: 10 }}>⭐ Ver Premium</button>
               <button onClick={() => setShowLimite(null)} className="btn-press-soft" style={{ width: "100%", padding: 12, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.MUTED, fontWeight: 700, cursor: "pointer" }}>Cerrar</button>
             </div>
@@ -2178,7 +2086,7 @@ export default function App() {
               <div style={{ width: 40, height: 4, background: C.LINE, borderRadius: 999, margin: "0 auto 16px" }} />
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                 <div style={{ fontWeight: 700, fontSize: 20, display: "flex", alignItems: "center", gap: 8 }}><Crown size={22} color={C.GOLD} /> Hazte Premium</div>
-                <button onClick={() => setShowPremium(false)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
+                <button onClick={() => setShowPremium(false)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer" }}><X size={16} color={C.INK} /></button>
               </div>
               <div style={{ background: `linear-gradient(135deg, ${C.GOLD}, #E65100)`, borderRadius: 16, padding: 20, color: "#fff", marginBottom: 18, textAlign: "center", boxShadow: "0 8px 24px rgba(249,168,37,0.35)" }}>
                 <div style={{ fontSize: 30, fontWeight: 800 }}>$3.990</div>
@@ -2190,11 +2098,10 @@ export default function App() {
                 <div>✓ Reconteo manual del stock</div>
                 <div>✓ Reporte PDF médico</div>
                 <div>✓ Detección de cambio de patrón</div>
-                <div>✓ Stock con predicción real</div>
                 <div>✓ Funciona sin conexión</div>
               </div>
               <button onClick={activarPremium} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: `linear-gradient(135deg, ${C.GOLD}, #E65100)`, color: "#fff", fontWeight: 700, cursor: "pointer", marginBottom: 12 }}>⭐ Activar Premium (piloto)</button>
-              <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>¿TIENES UN CÓDIGO?</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6 }}>¿TIENES UN CÓDIGO?</div>
               <div style={{ display: "flex", gap: 8 }}>
                 <input value={codigoPremium} onChange={(e) => setCodigoPremium(e.target.value)} placeholder="Ingresa tu código" style={{ flex: 1, padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 13, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
                 <button onClick={canjearCodigo} className="btn-press" style={{ padding: "12px 18px", borderRadius: 12, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Canjear</button>
@@ -2207,30 +2114,23 @@ export default function App() {
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.55)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 25 }}>
             <div className="modal-slide" style={{ width: "100%", maxWidth: 420, background: C.CREAM, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 -8px 30px rgba(0,0,0,0.25)" }}>
               <div style={{ width: 40, height: 4, background: C.LINE, borderRadius: 999, margin: "0 auto 16px" }} />
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}><div style={{ fontWeight: 700, fontSize: 17 }}>{editandoId ? "Editar medicamento" : "Nuevo medicamento"}</div><button onClick={() => setShowAdd(false)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button></div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>NOMBRE</div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}><div style={{ fontWeight: 700, fontSize: 17 }}>{editandoId ? "Editar medicamento" : "Nuevo medicamento"}</div><button onClick={() => setShowAdd(false)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer" }}><X size={16} color={C.INK} /></button></div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6 }}>NOMBRE</div>
               <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value, receta: null, criticidad: null }))} placeholder="Ej. Losartán" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, marginBottom: 8, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
               {form.name.trim().length > 2 && detectadoCrit === "vital" && (<div style={{ background: "#FFEBEE", border: `1px solid #FFCDD2`, borderRadius: 12, padding: "10px 12px", fontSize: 12, color: C.CORAL, marginBottom: 10, fontWeight: 600 }}>🔴 Medicamento vital. Aviso fijo a los 2 min.</div>)}
-              <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 8, letterSpacing: 0.3 }}>NIVEL DE CRITICIDAD</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 8 }}>NIVEL DE CRITICIDAD</div>
               <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
                 {[{ v: "vital", l: "🔴 Vital", c: C.CORAL }, { v: "importante", l: "🟡 Importante", c: C.AMBER }, { v: "normal", l: "🟢 Normal", c: C.GREEN }].map((op) => (
-                  <button key={op.v} onClick={() => setForm((f) => ({ ...f, criticidad: op.v }))} className="btn-press-soft" style={{ flex: 1, padding: 10, borderRadius: 10, border: (form.criticidad || detectadoCrit) === op.v ? `2px solid ${op.c}` : `1.5px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 11, cursor: "pointer", transition: "all 0.15s ease" }}>{op.l}</button>
+                  <button key={op.v} onClick={() => setForm((f) => ({ ...f, criticidad: op.v }))} className="btn-press-soft" style={{ flex: 1, padding: 10, borderRadius: 10, border: (form.criticidad || detectadoCrit) === op.v ? `2px solid ${op.c}` : `1.5px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 11, cursor: "pointer" }}>{op.l}</button>
                 ))}
               </div>
-              {(form.criticidad || detectadoCrit) === "vital" ? (
-                <div style={{ background: oscuro ? "#1E2F48" : "#F0F4F8", border: `1px solid ${C.LINE}`, borderRadius: 12, padding: "10px 12px", fontSize: 12, color: C.MUTED, marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}><Lock size={14} /> Aviso fijo a los 2 min.</div>
-              ) : (
-                <div style={{ background: oscuro ? "#1E2F48" : "#F0F4F8", border: `1px solid ${C.LINE}`, borderRadius: 12, padding: "10px 12px", fontSize: 12, color: C.MUTED }}>
-                  Se avisará al cuidador según la criticidad del medicamento.
-                </div>
-              )}
-              <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>INDICACIÓN</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6 }}>INDICACIÓN</div>
               <input value={form.dose} onChange={(e) => setForm((f) => ({ ...f, dose: e.target.value }))} placeholder="Ej. 1 pastilla" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, marginBottom: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
-              <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>NOTAS (OPCIONAL)</div>
-              <textarea value={form.notas} onChange={(e) => setForm((f) => ({ ...f, notas: e.target.value }))} placeholder="Ej. No tomarlo con lácteos" rows={2} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 13, marginBottom: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, fontFamily: "inherit", resize: "none", outline: "none" }} />
-              <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>RECETA VENCE (OPCIONAL)</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6 }}>NOTAS (OPCIONAL)</div>
+              <textarea value={form.notas} onChange={(e) => setForm((f) => ({ ...f, notas: e.target.value }))} placeholder="Ej. No tomarlo con lácteos" rows={2} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 13, marginBottom: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6 }}>RECETA VENCE (OPCIONAL)</div>
               <input type="date" value={form.recetaVence} onChange={(e) => setForm((f) => ({ ...f, recetaVence: e.target.value }))} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, marginBottom: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
-              <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>HORARIOS</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6 }}>HORARIOS</div>
               {form.times.map((t, i) => (
                 <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
                   <CampoHora C={C} valor={t} oscuro={oscuro} onCambio={(nuevo) => setForm((f) => ({ ...f, times: f.times.map((x, xi) => (xi === i ? nuevo : x)) }))} />
@@ -2240,11 +2140,11 @@ export default function App() {
               <button onClick={() => setForm((f) => ({ ...f, times: [...f.times, "12:00"] }))} className="btn-press-soft" style={{ fontSize: 12, fontWeight: 700, color: C.TEAL, background: oscuro ? "#1E3A5F" : "#E3F2FD", border: "none", padding: "8px 14px", borderRadius: 999, cursor: "pointer", marginBottom: 14 }}>+ Agregar horario</button>
               <div style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
                 <div style={{ flex: "1 1 100px" }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>DOSIS/TOMA</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6 }}>DOSIS/TOMA</div>
                   <input type="number" step="0.5" min="0.5" value={form.doseAmount} onChange={(e) => setForm((f) => ({ ...f, doseAmount: Number(e.target.value) || 1 }))} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
                 </div>
                 <div style={{ flex: "1 1 100px" }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>UNIDAD</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6 }}>UNIDAD</div>
                   <select value={form.unidad || "pastilla"} onChange={(e) => setForm((f) => ({ ...f, unidad: e.target.value }))} style={{ width: "100%", padding: "12px 10px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }}>
                     <option value="pastilla">pastilla</option>
                     <option value="ml">ml</option>
@@ -2256,23 +2156,21 @@ export default function App() {
                   </select>
                 </div>
                 <div style={{ flex: "1 1 100px" }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>STOCK</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6 }}>STOCK</div>
                   <input type="number" min="0" value={form.stock} onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value === "" ? "" : Number(e.target.value) }))} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
                 </div>
               </div>
-              <button onClick={agregarMed} disabled={!form.name.trim()} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", fontWeight: 700, fontSize: 15, background: form.name.trim() ? C.TEAL : (oscuro ? "#2A3A52" : "#E0E4EB"), color: "#fff", cursor: form.name.trim() ? "pointer" : "not-allowed" }}>Agregar</button>
+              <button onClick={agregarMed} disabled={!form.name.trim()} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", fontWeight: 700, fontSize: 15, background: form.name.trim() ? C.TEAL : C.LINE, color: "#fff", cursor: "pointer" }}>Agregar</button>
             </div>
           </div>
         )}
 
         {archivarTarget && (
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 28 }}>
-            <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 24, padding: 26, margin: 20, textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
-              <div style={{ width: 64, height: 64, borderRadius: 999, background: C.CORAL + "15", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
-                <Trash2 size={30} color={C.CORAL} strokeWidth={2.2} />
-              </div>
+            <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 24, padding: 26, margin: 20, textAlign: "center" }}>
+              <div style={{ width: 64, height: 64, borderRadius: 999, background: C.CORAL + "15", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}><Trash2 size={30} color={C.CORAL} strokeWidth={2.2} /></div>
               <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>¿Terminar tratamiento de {archivarTarget.name}?</div>
-              <div style={{ fontSize: 13, color: C.MUTED, marginBottom: 18, lineHeight: 1.6 }}>Se archivará y podrás verlo en "Medicamentos anteriores".</div>
+              <div style={{ fontSize: 13, color: C.MUTED, marginBottom: 18 }}>Se archivará y podrás verlo en "Medicamentos anteriores".</div>
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => setArchivarTarget(null)} className="btn-press-soft" style={{ flex: 1, padding: 12, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.MUTED, fontWeight: 700, cursor: "pointer" }}>Cancelar</button>
                 <button onClick={() => archivarMed(archivarTarget.id)} className="btn-press" style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: C.CORAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Sí, terminar</button>
@@ -2283,7 +2181,7 @@ export default function App() {
 
         {restockTarget && (
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 26 }}>
-            <div className="modal-scale" style={{ width: "100%", maxWidth: 340, background: C.CREAM, borderRadius: 20, padding: 24, textAlign: "center", margin: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+            <div className="modal-scale" style={{ width: "100%", maxWidth: 340, background: C.CREAM, borderRadius: 20, padding: 24, textAlign: "center", margin: 20 }}>
               <div style={{ fontWeight: 700, fontSize: 16 }}>Reponer {restockTarget.name}</div>
               <input type="number" min="1" defaultValue={30} onChange={(e) => setRestockTarget({ ...restockTarget, _c: Number(e.target.value) })} style={{ width: "100%", marginTop: 14, padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 16, textAlign: "center", boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
               <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
@@ -2296,10 +2194,8 @@ export default function App() {
 
         {reconteoTarget && (
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 29 }}>
-            <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 20, padding: 24, textAlign: "center", margin: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
-              <div style={{ width: 56, height: 56, borderRadius: 999, background: C.GOLD + "15", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
-                <RefreshCw size={26} color={C.GOLD} strokeWidth={2.2} />
-              </div>
+            <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 20, padding: 24, textAlign: "center", margin: 20 }}>
+              <div style={{ width: 56, height: 56, borderRadius: 999, background: C.GOLD + "15", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}><RefreshCw size={26} color={C.GOLD} strokeWidth={2.2} /></div>
               <div style={{ fontWeight: 700, fontSize: 16 }}>Reconteo Manual de {reconteoTarget.name}</div>
               <div style={{ fontSize: 12, color: C.MUTED, marginTop: 8, marginBottom: 14 }}>Ingresa el stock real que tienes actualmente.</div>
               <input type="number" defaultValue={reconteoTarget.stock} onChange={(e) => setReconteoTarget({ ...reconteoTarget, _c: Number(e.target.value) })} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 20, textAlign: "center", boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
@@ -2313,12 +2209,9 @@ export default function App() {
 
         {linkAbierto && (
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 30 }}>
-            <div className="modal-scale" style={{ width: "100%", maxWidth: 340, background: C.CREAM, borderRadius: 20, padding: 24, margin: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
-              <div style={{ width: 48, height: 48, borderRadius: 999, background: C.GOLD + "15", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}>
-                <Sparkles size={22} color={C.GOLD} />
-              </div>
+            <div className="modal-scale" style={{ width: "100%", maxWidth: 340, background: C.CREAM, borderRadius: 20, padding: 24, margin: 20 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 999, background: C.GOLD + "15", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}><Sparkles size={22} color={C.GOLD} /></div>
               <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8 }}>{linkAbierto.mensaje || (linkAbierto.farmacia ? `Abriría ${linkAbierto.farmacia}` : "Se abriría en el navegador")}</div>
-              {linkAbierto.receta === "con_receta" && (<div style={{ fontSize: 11, background: oscuro ? "#1E3A5F" : "#E3F2FD", color: C.TEAL, padding: "10px 12px", borderRadius: 10, marginBottom: 10, lineHeight: 1.5 }}>Sube tu receta en el sitio de la farmacia.</div>)}
               <div style={{ fontSize: 11, color: C.MUTED, wordBreak: "break-all", background: C.PAPER, padding: 10, borderRadius: 10, border: `1px solid ${C.LINE}` }}>{linkAbierto.url}</div>
               <button onClick={() => setLinkAbierto(null)} className="btn-press" style={{ marginTop: 16, width: "100%", padding: 12, borderRadius: 12, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Cerrar</button>
             </div>
@@ -2327,67 +2220,29 @@ export default function App() {
 
         {showAjustes && (
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.55)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 27 }}>
-            <div className="modal-slide" style={{ width: "100%", maxWidth: 420, background: C.CREAM, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 -8px 30px rgba(0,0,0,0.25)" }}>
+            <div className="modal-slide" style={{ width: "100%", maxWidth: 420, background: C.CREAM, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "90vh", overflowY: "auto" }}>
               <div style={{ width: 40, height: 4, background: C.LINE, borderRadius: 999, margin: "0 auto 16px" }} />
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
                 <div style={{ fontWeight: 700, fontSize: 18 * scale }}>Ajustes</div>
-                <button onClick={() => setShowAjustes(false)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
+                <button onClick={() => setShowAjustes(false)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer" }}><X size={16} color={C.INK} /></button>
               </div>
 
-              <button onClick={() => { setShowAjustes(false); setShowTutorial(true); }} className="btn-press-soft" style={{ width: "100%", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.TEAL}`, background: C.TEAL + "10", color: C.TEAL, fontWeight: 700, fontSize: 14, cursor: "pointer", marginBottom: 18, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                <HelpCircle size={18} /> Ver tutorial de nuevo
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.MUTED, marginBottom: 10 }}>NOTIFICACIONES</div>
+              <button onClick={() => { actualizarSettings({ notificarConfirmacion: !settings.notificarConfirmacion }); }} className="btn-press-soft" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 10 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 10 }}><BellRing size={18} color={settings.notificarConfirmacion ? C.TEAL : C.MUTED} /> Avisarme cuando confirmen</span>
+                <span style={{ width: 46, height: 26, borderRadius: 999, background: settings.notificarConfirmacion ? C.TEAL : C.LINE, position: "relative" }}><span style={{ position: "absolute", top: 3, left: settings.notificarConfirmacion ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
               </button>
 
-              <div style={{ fontSize: 13, fontWeight: 700, color: C.MUTED, marginBottom: 10, letterSpacing: 0.3 }}>NOTIFICACIONES PUSH</div>
-              {tokenFCM ? (
-                <div style={{ width: "100%", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.GREEN}`, background: C.GREEN + "10", marginBottom: 18, display: "flex", alignItems: "center", gap: 10 }}>
-                  <BellRing size={18} color={C.GREEN} />
-                  <span style={{ fontSize: 13.5, fontWeight: 600, color: C.GREEN }}>✅ Notificaciones activadas</span>
-                </div>
-              ) : (
-                <button onClick={async () => {
-                  try {
-                    const token = await obtenerTokenFCM();
-                    if (token) {
-                      setTokenFCM(token);
-                      if (codigo) await guardarTokenEnFirestore(codigo, token, "cuidador");
-                      alert("¡Notificaciones activadas!");
-                    } else {
-                      alert("No se pudieron activar las notificaciones. Revisa los permisos del navegador.");
-                    }
-                  } catch (e) {
-                    alert("Error al activar notificaciones: " + e.message);
-                  }
-                }} className="btn-press" style={{ width: "100%", padding: "14px 16px", borderRadius: 16, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer", marginBottom: 18, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                  <BellRing size={18} /> Activar notificaciones push
-                </button>
-              )}
-
-              <div style={{ fontSize: 13, fontWeight: 700, color: C.MUTED, marginBottom: 10, letterSpacing: 0.3 }}>TAMAÑO DE LETRA</div>
-              <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
-                {[{ v: "normal", l: "Normal" }, { v: "grande", l: "Grande" }, { v: "muy_grande", l: "Muy grande" }].map((op) => (
-                  <button key={op.v} onClick={() => { actualizarSettings({ fontSize: op.v }); registrarEvento(codigo, "ajuste_fontSize", op.v, { cuidador: nombreCuidadorInput }); }} className="btn-press-soft" style={{ flex: 1, padding: "12px 8px", borderRadius: 14, border: settings.fontSize === op.v ? `2px solid ${C.TEAL}` : `1.5px solid ${C.LINE}`, background: C.PAPER, color: settings.fontSize === op.v ? C.TEAL : C.INK, fontWeight: 700, cursor: "pointer", transition: "all 0.15s ease" }}>{op.l}</button>
-                ))}
-              </div>
-
-              <div style={{ fontSize: 13, fontWeight: 700, color: C.MUTED, marginBottom: 10, letterSpacing: 0.3 }}>ALERTAS DEL ADULTO MAYOR</div>
-              <button onClick={() => { actualizarSettings({ sonidoActivo: settings.sonidoActivo === false ? true : false }); registrarEvento(codigo, "toggle_sonido", settings.sonidoActivo === false ? "activado" : "desactivado", { cuidador: nombreCuidadorInput }); }} className="btn-press-soft" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 10, boxShadow: C.SHADOW }}>
-                <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 10 }}>{settings.sonidoActivo !== false ? <Volume2 size={18} color={C.TEAL} /> : <VolumeX size={18} color={C.MUTED} />} Alerta con sonido</span>
-                <span style={{ width: 46, height: 26, borderRadius: 999, background: settings.sonidoActivo !== false ? C.TEAL : C.LINE, position: "relative", transition: "all 0.2s ease" }}><span style={{ position: "absolute", top: 3, left: settings.sonidoActivo !== false ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
-              </button>
-              <button onClick={() => { actualizarSettings({ vibracionActiva: settings.vibracionActiva === false ? true : false }); registrarEvento(codigo, "toggle_vibracion", settings.vibracionActiva === false ? "activado" : "desactivado", { cuidador: nombreCuidadorInput }); }} className="btn-press-soft" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 18, boxShadow: C.SHADOW }}>
-                <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 10 }}><Vibrate size={18} color={settings.vibracionActiva !== false ? C.TEAL : C.MUTED} /> Alerta con vibración</span>
-                <span style={{ width: 46, height: 26, borderRadius: 999, background: settings.vibracionActiva !== false ? C.TEAL : C.LINE, position: "relative", transition: "all 0.2s ease" }}><span style={{ position: "absolute", top: 3, left: settings.vibracionActiva !== false ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.MUTED, marginBottom: 10 }}>ALERTAS DEL ADULTO MAYOR</div>
+              <button onClick={() => { actualizarSettings({ sonidoActivo: !settings.sonidoActivo }); }} className="btn-press-soft" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 10 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 10 }}>{settings.sonidoActivo ? <Volume2 size={18} color={C.TEAL} /> : <VolumeX size={18} color={C.MUTED} />} Alerta con sonido</span>
+                <span style={{ width: 46, height: 26, borderRadius: 999, background: settings.sonidoActivo ? C.TEAL : C.LINE, position: "relative" }}><span style={{ position: "absolute", top: 3, left: settings.sonidoActivo ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
               </button>
 
-              <div style={{ fontSize: 13, fontWeight: 700, color: C.MUTED, marginBottom: 10, letterSpacing: 0.3 }}>PREFERENCIAS VISUALES</div>
-              <button onClick={() => { actualizarSettings({ darkMode: !oscuro }); registrarEvento(codigo, "toggle_dark_mode", !oscuro ? "activado" : "desactivado", { cuidador: nombreCuidadorInput }); }} className="btn-press-soft" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 10, boxShadow: C.SHADOW }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.MUTED, marginBottom: 10 }}>PREFERENCIAS VISUALES</div>
+              <button onClick={() => { actualizarSettings({ darkMode: !oscuro }); }} className="btn-press-soft" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 20 }}>
                 <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 10 }}>{oscuro ? <Sun size={18} color={C.AMBER} /> : <Moon size={18} color={C.MUTED} />} Modo oscuro</span>
-                <span style={{ width: 46, height: 26, borderRadius: 999, background: oscuro ? C.TEAL : C.LINE, position: "relative", transition: "all 0.2s ease" }}><span style={{ position: "absolute", top: 3, left: oscuro ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
-              </button>
-              <button onClick={() => { actualizarSettings({ daltonico: !settings.daltonico }); registrarEvento(codigo, "toggle_daltonico", !settings.daltonico ? "activado" : "desactivado", { cuidador: nombreCuidadorInput }); }} className="btn-press-soft" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 20, boxShadow: C.SHADOW }}>
-                <span style={{ fontSize: 14, fontWeight: 600 }}>Modo daltonismo</span>
-                <span style={{ width: 46, height: 26, borderRadius: 999, background: settings.daltonico ? C.TEAL : C.LINE, position: "relative", transition: "all 0.2s ease" }}><span style={{ position: "absolute", top: 3, left: settings.daltonico ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
+                <span style={{ width: 46, height: 26, borderRadius: 999, background: oscuro ? C.TEAL : C.LINE, position: "relative" }}><span style={{ position: "absolute", top: 3, left: oscuro ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
               </button>
               
               <button onClick={() => setShowAjustes(false)} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Listo</button>
