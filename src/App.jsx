@@ -2499,10 +2499,74 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
                 <span style={{ width: 46, height: 26, borderRadius: 999, background: settings.daltonico ? C.TEAL : C.LINE, position: "relative", transition: "all 0.2s ease" }}><span style={{ position: "absolute", top: 3, left: settings.daltonico ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
                           </button>
               
+                    {showAjustes && (
+          <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.55)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 27 }}>
+            <div className="modal-slide" style={{ width: "100%", maxWidth: 420, background: C.CREAM, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 -8px 30px rgba(0,0,0,0.25)" }}>
+              <div style={{ width: 40, height: 4, background: C.LINE, borderRadius: 999, margin: "0 auto 16px" }} />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+                <div style={{ fontWeight: 700, fontSize: 18 * scale }}>Ajustes</div>
+                <button onClick={() => setShowAjustes(false)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
+              </div>
+
+              <button onClick={() => { setShowAjustes(false); setShowTutorial(true); }} className="btn-press-soft" style={{ width: "100%", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.TEAL}`, background: C.TEAL + "10", color: C.TEAL, fontWeight: 700, fontSize: 14, cursor: "pointer", marginBottom: 18, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                <HelpCircle size={18} /> Ver tutorial de nuevo
+              </button>
+
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.MUTED, marginBottom: 10, letterSpacing: 0.3 }}>NOTIFICACIONES PUSH</div>
+              {tokenFCM ? (
+                <div style={{ width: "100%", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.GREEN}`, background: C.GREEN + "10", marginBottom: 18, display: "flex", alignItems: "center", gap: 10 }}>
+                  <BellRing size={18} color={C.GREEN} />
+                  <span style={{ fontSize: 13.5, fontWeight: 600, color: C.GREEN }}>✅ Notificaciones activadas</span>
+                </div>
+              ) : (
+                <button onClick={async () => {
+                  try {
+                    const token = await obtenerTokenFCM();
+                    if (token) {
+                      setTokenFCM(token);
+                      if (codigo) await guardarTokenEnFirestore(codigo, token, "cuidador");
+                      alert("¡Notificaciones activadas!");
+                    } else {
+                      alert("No se pudieron activar las notificaciones. Revisa los permisos del navegador.");
+                    }
+                  } catch (e) {
+                    alert("Error al activar notificaciones: " + e.message);
+                  }
+                }} className="btn-press" style={{ width: "100%", padding: "14px 16px", borderRadius: 16, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer", marginBottom: 18, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                  <BellRing size={18} /> Activar notificaciones push
+                </button>
+              )}
+
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.MUTED, marginBottom: 10, letterSpacing: 0.3 }}>TAMAÑO DE LETRA</div>
+              <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
+                {[{ v: "normal", l: "Normal" }, { v: "grande", l: "Grande" }, { v: "muy_grande", l: "Muy grande" }].map((op) => (
+                  <button key={op.v} onClick={() => { actualizarSettings({ fontSize: op.v }); registrarEvento(codigo, "ajuste_fontSize", op.v, { cuidador: nombreCuidadorInput }); }} className="btn-press-soft" style={{ flex: 1, padding: "12px 8px", borderRadius: 14, border: settings.fontSize === op.v ? `2px solid ${C.TEAL}` : `1.5px solid ${C.LINE}`, background: C.PAPER, color: settings.fontSize === op.v ? C.TEAL : C.INK, fontWeight: 700, cursor: "pointer", transition: "all 0.15s ease" }}>{op.l}</button>
+                ))}
+              </div>
+
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.MUTED, marginBottom: 10, letterSpacing: 0.3 }}>ALERTAS DEL ADULTO MAYOR</div>
+              <button onClick={() => { actualizarSettings({ sonidoActivo: settings.sonidoActivo === false ? true : false }); registrarEvento(codigo, "toggle_sonido", settings.sonidoActivo === false ? "activado" : "desactivado", { cuidador: nombreCuidadorInput }); }} className="btn-press-soft" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 10, boxShadow: C.SHADOW }}>
+                <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 10 }}>{settings.sonidoActivo !== false ? <Volume2 size={18} color={C.TEAL} /> : <VolumeX size={18} color={C.MUTED} />} Alerta con sonido</span>
+                <span style={{ width: 46, height: 26, borderRadius: 999, background: settings.sonidoActivo !== false ? C.TEAL : C.LINE, position: "relative", transition: "all 0.2s ease" }}><span style={{ position: "absolute", top: 3, left: settings.sonidoActivo !== false ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
+              </button>
+              <button onClick={() => { actualizarSettings({ vibracionActiva: settings.vibracionActiva === false ? true : false }); registrarEvento(codigo, "toggle_vibracion", settings.vibracionActiva === false ? "activado" : "desactivado", { cuidador: nombreCuidadorInput }); }} className="btn-press-soft" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 18, boxShadow: C.SHADOW }}>
+                <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 10 }}><Vibrate size={18} color={settings.vibracionActiva !== false ? C.TEAL : C.MUTED} /> Alerta con vibración</span>
+                <span style={{ width: 46, height: 26, borderRadius: 999, background: settings.vibracionActiva !== false ? C.TEAL : C.LINE, position: "relative", transition: "all 0.2s ease" }}><span style={{ position: "absolute", top: 3, left: settings.vibracionActiva !== false ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
+              </button>
+
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.MUTED, marginBottom: 10, letterSpacing: 0.3 }}>PREFERENCIAS VISUALES</div>
+              <button onClick={() => { actualizarSettings({ darkMode: !oscuro }); registrarEvento(codigo, "toggle_dark_mode", !oscuro ? "activado" : "desactivado", { cuidador: nombreCuidadorInput }); }} className="btn-press-soft" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 10, boxShadow: C.SHADOW }}>
+                <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 10 }}>{oscuro ? <Sun size={18} color={C.AMBER} /> : <Moon size={18} color={C.MUTED} />} Modo oscuro</span>
+                <span style={{ width: 46, height: 26, borderRadius: 999, background: oscuro ? C.TEAL : C.LINE, position: "relative", transition: "all 0.2s ease" }}><span style={{ position: "absolute", top: 3, left: oscuro ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
+              </button>
+              <button onClick={() => { actualizarSettings({ daltonico: !settings.daltonico }); registrarEvento(codigo, "toggle_daltonico", !settings.daltonico ? "activado" : "desactivado", { cuidador: nombreCuidadorInput }); }} className="btn-press-soft" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 20, boxShadow: C.SHADOW }}>
+                <span style={{ fontSize: 14, fontWeight: 600 }}>Modo daltonismo</span>
+                <span style={{ width: 46, height: 26, borderRadius: 999, background: settings.daltonico ? C.TEAL : C.LINE, position: "relative", transition: "all 0.2s ease" }}><span style={{ position: "absolute", top: 3, left: settings.daltonico ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
+              </button>
+              
               <button onClick={() => setShowAjustes(false)} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Listo</button>
             </div>
           </div>
-        </div>
         )}
       </div>
     </div>
