@@ -1870,7 +1870,7 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
             daltonico={settings.daltonico}
             sonidoActivo={settings.sonidoActivo !== false}
                               esVital={(alertaActiva.med.criticidad || detectarCriticidad(alertaActiva.med.name)) === "vital"}
-                            yaPostergada={(() => { void triggerPostergacion; return !!alertasPostergadasRef.current[`${personaActual?.id}_${alertaActiva.med.id}_${alertaActiva.time}`]; })()}
+                            yaPostergada={alertasPostergadasRef.current[`${personaActual?.id}_${alertaActiva.med.id}_${alertaActiva.med.time}`] === true}
                esAdultoMayor={view === "mayor"}
             />
         )}
