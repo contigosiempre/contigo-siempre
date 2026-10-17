@@ -1101,7 +1101,7 @@ export default function App() {
     { titulo: "Agregar un medicamento", texto: "Toca este botón para agregar un medicamento nuevo. Puedes poner nombre, dosis, horarios y stock.", target: '[data-tutorial="add-med"]', abrirMenu: false, cerrarMenu: false },
     { titulo: "Canasta de compras", texto: "Desde aquí puedes ver qué medicamentos te quedan pocos y comprarlos.", target: '[data-tutorial="nav-canasta"]', abrirMenu: false, cerrarMenu: false },
     { titulo: "Avisos del cuidador", texto: "Aquí recibirás las alertas si el adulto mayor no confirma su toma.", target: '[data-tutorial="nav-avisos"]', abrirMenu: false, cerrarMenu: false },
-    { titulo: "Ajustes y alertas", texto: "Personaliza el tamaño de letra, activa el modo oscuro y controla el sonido de las alertas.", target: '[data-tutorial="nav-menu"]', abrirMenu: true, cerrarMenu: false },
+    { titulo: "Ajustes y alertas", texto: "Toca el botón 'Más' para abrir el menú lateral y encontrar los ajustes de sonido y modo oscuro.", target: '[data-tutorial="nav-menu"]', abrirMenu: false, cerrarMenu: false },
     { titulo: "¡Listo!", texto: "Ya puedes empezar a usar Contigo Siempre. Cuida bien a tu ser querido.", target: null, abrirMenu: false, cerrarMenu: true },
   ];
 
