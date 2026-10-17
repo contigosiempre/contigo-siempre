@@ -2582,8 +2582,9 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
               <button onClick={() => { actualizarSettings({ daltonico: !settings.daltonico }); registrarEvento(codigo, "toggle_daltonico", !settings.daltonico ? "activado" : "desactivado", { cuidador: nombreCuidadorInput }); }} className="btn-press-soft" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 20, boxShadow: C.SHADOW }}>
                 <span style={{ fontSize: 14, fontWeight: 600 }}>Modo daltonismo</span>
                 <span style={{ width: 46, height: 26, borderRadius: 999, background: settings.daltonico ? C.TEAL : C.LINE, position: "relative", transition: "all 0.2s ease" }}><span style={{ position: "absolute", top: 3, left: settings.daltonico ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
-              </button>
-                                     <button onClick={() => setShowAjustes(false)} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Listo</button>
+                          </button>
+              
+              <button onClick={() => setShowAjustes(false)} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Listo</button>
             </div>
           </div>
         </div>
