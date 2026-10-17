@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Clock, Check, AlertTriangle, Plus, X, ArrowRight, User, Users, Heart, PackageOpen, RotateCcw, KeyRound, Loader2, Copy, Truck, Store, ShoppingCart, ExternalLink, Sparkles, ShieldCheck, MessageSquare, Camera, Calendar, TrendingDown, Award, MapPin, Lock, Crown, Moon, Sun, Phone, FileText, Share2, StickyNote, UserPlus, ChevronDown, Info, ScrollText, BarChart3, Trash2, Menu, Pill, Bell, HelpCircle, Settings, Flame, Tag, Download, Activity, WifiOff, Wifi, Volume2, VolumeX, Vibrate, BellRing, Cake } from "lucide-react";
+import { Clock, Check, AlertTriangle, Plus, X, ArrowRight, User, Users, Heart, PackageOpen, RotateCcw, KeyRound, Loader2, Copy, Truck, Store, ShoppingCart, ExternalLink, Sparkles, ShieldCheck, MessageSquare, Camera, Calendar, TrendingDown, Award, MapPin, Lock, Crown, Moon, Sun, Phone, FileText, Share2, StickyNote, UserPlus, ChevronDown, Info, ScrollText, BarChart3, Trash2, Menu, Pill, Bell, HelpCircle, Settings, Flame, Tag, Download, Activity, WifiOff, Wifi, Volume2, VolumeX, Vibrate, BellRing, Cake, RefreshCw } from "lucide-react";
 
-// ================== FIREBASE ==================
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAGxIGYqifeb5qGlVTQaVVpmKjZ9E1__TU",
   authDomain: "contigo-siempre-79017.firebaseapp.com",
@@ -11,7 +10,6 @@ const FIREBASE_CONFIG = {
   appId: "1:373374322978:web:05fc428462d73d4f197d7b"
 };
 
-// ================== VAPID KEY (FCM) ==================
 const VAPID_KEY = "BFPDPH02Oa44BflTPgU8Z7VbkqGL7rG3ZDLOAp9EKlkGYZWmoslFktvQtSl29HJR1gO4ESs2lBElRTEwWMAPwz0";
 
 let db = null;
@@ -42,7 +40,6 @@ function cuandoDbListo(cb) {
         db.enablePersistence({ synchronizeTabs: true }).catch((err) => {
           console.warn("Persistencia offline no disponible:", err.code);
         });
-        console.log("Firebase conectado con persistencia offline");
       }
     } catch (e) { console.error("Firebase no disponible:", e); }
     dbCallbacks.forEach((cb) => cb(db));
@@ -50,19 +47,12 @@ function cuandoDbListo(cb) {
   });
 }
 
-// ================== CARGAR FIREBASE MESSAGING (FCM) ==================
 function cargarMessaging() {
   return new Promise((resolve, reject) => {
     const s = document.createElement("script");
     s.src = "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js";
-    s.onload = () => {
-      console.log("Librería de FCM messaging cargada");
-      resolve();
-    };
-    s.onerror = (err) => {
-      console.error("Error al cargar librería de FCM messaging:", err);
-      reject(err);
-    };
+    s.onload = () => resolve();
+    s.onerror = (err) => reject(err);
     document.head.appendChild(s);
   });
 }
@@ -79,7 +69,7 @@ const LIMITES_ESTANDAR = { maxMeds: 4, maxElderly: 1, maxCuidadores: 2 };
 const CODIGOS_PILOTO = ["PILOTO2026", "FUNDADOR", "BETA01", "FAMILIA1", "FAMILIA2", "FAMILIA3", "FAMILIA4", "FAMILIA5"];
 const CODIGO_ADMIN = "ADMIN" + new Date().getFullYear();
 const CODIGO_DATOS = "DATOS" + new Date().getFullYear();
-const APP_VERSION = "1.10.0-tutorial-interactivo";
+const APP_VERSION = "2.0.0-piloto-listo";
 const MINUTOS_SIN_CONEXION_ALERTA = 5;
 
 const MEDS_CON_RECETA = ["losartan","losartán","metformina","enalapril","amlodipino","atorvastatina","simvastatina","carvedilol","furosemida","hidroclorotiazida","omeprazol","clonazepam","alprazolam","sertralina","fluoxetina","levotiroxina","warfarina","clopidogrel","insulina","gabapentina","pregabalina","tramadol","morfina","fentanilo","metotrexato","prednisona","salbutamol","budesonida","montelukast","alopurinol","colchicina","risperidona","quetiapina","olanzapina","valproato","carbamazepina","fenitoina","levetiracetam","donepezilo","memantina","rivastigmina"];
@@ -95,59 +85,59 @@ const FARMACIAS = [
 
 const PRODUCTOS_POR_TEMPORADA = {
   invierno: [
-    { nombre: "Vitamina C 500mg (30 comp.)", sku: "vitamina-c-30", precio: 4990 },
-    { nombre: "Pañuelos desechables (caja 100)", sku: "panuelos-100", precio: 2990 },
-    { nombre: "Suero oral (sobres x10)", sku: "suero-10", precio: 3990 },
-    { nombre: "Humidificador ultrasónico", sku: "humidificador", precio: 24990 },
+    { nombre: "Vitamina C 500mg", sku: "vitamina-c-30" },
+    { nombre: "Pañuelos desechables", sku: "panuelos-100" },
+    { nombre: "Suero oral", sku: "suero-10" },
+    { nombre: "Humidificador ultrasónico", sku: "humidificador" },
   ],
   verano: [
-    { nombre: "Protector solar FPS 50+", sku: "protector-solar", precio: 8990 },
-    { nombre: "Sales de rehidratación (x10)", sku: "sales-10", precio: 3490 },
-    { nombre: "Gorro con protección UV", sku: "gorro-uv", precio: 6990 },
-    { nombre: "Repelente de insectos", sku: "repelente", precio: 5490 },
+    { nombre: "Protector solar FPS 50+", sku: "protector-solar" },
+    { nombre: "Sales de rehidratación", sku: "sales-10" },
+    { nombre: "Gorro con protección UV", sku: "gorro-uv" },
+    { nombre: "Repelente de insectos", sku: "repelente" },
   ],
   otono: [
-    { nombre: "Vitamina D 1000 UI", sku: "vitamina-d", precio: 5990 },
-    { nombre: "Miel de abeja pura 500g", sku: "miel-500", precio: 7990 },
-    { nombre: "Pañuelos desechables (caja 100)", sku: "panuelos-100", precio: 2990 },
+    { nombre: "Vitamina D 1000 UI", sku: "vitamina-d" },
+    { nombre: "Miel de abeja pura 500g", sku: "miel-500" },
+    { nombre: "Pañuelos desechables", sku: "panuelos-100" },
   ],
   primavera: [
-    { nombre: "Antialérgico loratadina (10 comp.)", sku: "loratadina-10", precio: 3990 },
-    { nombre: "Pañuelos desechables (caja 100)", sku: "panuelos-100", precio: 2990 },
-    { nombre: "Purificador de aire pequeño", sku: "purificador", precio: 34990 },
+    { nombre: "Antialérgico loratadina", sku: "loratadina-10" },
+    { nombre: "Pañuelos desechables", sku: "panuelos-100" },
+    { nombre: "Purificador de aire", sku: "purificador" },
   ],
 };
 
 const PRODUCTOS_POR_MEDICAMENTO = [
   { keywords: ["insulina", "inyectable", "inyección"], productos: [
-    { nombre: "Bolso térmico para insulina", sku: "bolso-insulina", precio: 12990 },
-    { nombre: "Contenedor de agujas (bioseguridad)", sku: "contenedor-agujas", precio: 6990 },
+    { nombre: "Bolso térmico para insulina", sku: "bolso-insulina" },
+    { nombre: "Contenedor de agujas", sku: "contenedor-agujas" },
   ]},
   { keywords: ["warfarina", "clopidogrel", "rivaroxaban", "apixaban", "dabigatran"], productos: [
-    { nombre: "Cepillo dental cerdas suaves", sku: "cepillo-suave", precio: 2490 },
-    { nombre: "Rasuradora eléctrica", sku: "rasuradora", precio: 15990 },
+    { nombre: "Cepillo dental cerdas suaves", sku: "cepillo-suave" },
+    { nombre: "Rasuradora eléctrica", sku: "rasuradora" },
   ]},
   { keywords: ["furosemida", "hidroclorotiazida"], productos: [
-    { nombre: "Calcetines de compresión", sku: "calcetines-comp", precio: 8990 },
-    { nombre: "Crema para piernas cansadas", sku: "crema-piernas", precio: 5990 },
+    { nombre: "Calcetines de compresión", sku: "calcetines-comp" },
+    { nombre: "Crema para piernas cansadas", sku: "crema-piernas" },
   ]},
   { keywords: ["metformina", "glibenclamida", "insulina"], productos: [
-    { nombre: "Pastillero semanal", sku: "pastillero-semanal", precio: 3990 },
-    { nombre: "Glucómetro digital", sku: "glucometro", precio: 19990 },
+    { nombre: "Pastillero semanal", sku: "pastillero-semanal" },
+    { nombre: "Glucómetro digital", sku: "glucometro" },
   ]},
   { keywords: ["losartán", "losartan", "enalapril", "amlodipino", "carvedilol"], productos: [
-    { nombre: "Salero bajo en sodio", sku: "salero-sodio", precio: 3490 },
-    { nombre: "Pastillero semanal", sku: "pastillero-semanal", precio: 3990 },
+    { nombre: "Salero bajo en sodio", sku: "salero-sodio" },
+    { nombre: "Pastillero semanal", sku: "pastillero-semanal" },
   ]},
   { keywords: ["omeprazol", "esomeprazol"], productos: [
-    { nombre: "Vaso medidor de agua", sku: "vaso-medidor", precio: 2990 },
+    { nombre: "Vaso medidor de agua", sku: "vaso-medidor" },
   ]},
   { keywords: ["donepezilo", "memantina", "rivastigmina"], productos: [
-    { nombre: "Pastillero semanal", sku: "pastillero-semanal", precio: 3990 },
-    { nombre: "Pizarra de rutinas diarias", sku: "pizarra-rutinas", precio: 7990 },
+    { nombre: "Pastillero semanal", sku: "pastillero-semanal" },
+    { nombre: "Pizarra de rutinas diarias", sku: "pizarra-rutinas" },
   ]},
   { keywords: ["levotiroxina"], productos: [
-    { nombre: "Pastillero semanal", sku: "pastillero-semanal", precio: 3990 },
+    { nombre: "Pastillero semanal", sku: "pastillero-semanal" },
   ]},
 ];
 function obtenerProductosSugeridos(meds, mesActual) {
@@ -164,8 +154,7 @@ function obtenerProductosSugeridos(meds, mesActual) {
     const match = nombresMeds.some((n) => cat.keywords.some((k) => n.includes(k)));
     if (match) { cat.productos.forEach((p) => { if (!skusAgregados.has(p.sku)) { porMeds.push(p); skusAgregados.add(p.sku); } }); }
   });
-  const todos = [...porMeds, ...porTemporada];
-  return { temporada, productos: todos.slice(0, 5) };
+  return { temporada, productos: [...porMeds, ...porTemporada].slice(0, 5) };
 }
 
 const NOMBRE_TEMPORADA = {
@@ -200,9 +189,7 @@ const CSS_GLOBAL = `
   * { -webkit-tap-highlight-color: transparent; }
 `;
 
-// ================== NOTIFICACIONES ==================
 let audioCtxRef = null;
-
 function reproducirAlertaSonido(volumen = 1) {
   try {
     if (!audioCtxRef) {
@@ -213,8 +200,7 @@ function reproducirAlertaSonido(volumen = 1) {
     const ctx = audioCtxRef;
     if (ctx.state === "suspended") ctx.resume();
     const now = ctx.currentTime;
-    const frecuencias = [880, 1046, 1318];
-    frecuencias.forEach((freq, i) => {
+    [880, 1046, 1318].forEach((freq, i) => {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = "sine";
@@ -235,52 +221,18 @@ function vibrarPatron() {
   catch (e) { console.warn("Vibración no disponible:", e); }
 }
 
-// ================== NOTIFICACIONES PUSH (FCM) ==================
 async function obtenerTokenFCM() {
   return new Promise(async (resolve, reject) => {
     try {
-      // 1. Cargar la librería de messaging
       await cargarMessaging();
-      
-      // 2. Verificar que Firebase esté listo
-      if (!window.firebase || !window.firebase.messaging) {
-        console.warn("Firebase Messaging no está disponible.");
-        resolve(null);
-        return;
-      }
-      
+      if (!window.firebase || !window.firebase.messaging) { resolve(null); return; }
       const messaging = window.firebase.messaging();
-      
-      // 3. Pedir permiso de notificaciones
       const permiso = await Notification.requestPermission();
-      if (permiso !== "granted") {
-        console.log("Permiso de notificaciones denegado");
-        resolve(null);
-        return;
-      }
-      console.log("Permiso de notificaciones concedido");
-      
-      // 4. Usar el Service Worker existente (el de la PWA)
+      if (permiso !== "granted") { resolve(null); return; }
       const registration = await navigator.serviceWorker.ready;
-      console.log("Service Worker listo para Firebase");
-      
-      // 5. Obtener el token con la clave VAPID
-      const currentToken = await messaging.getToken({
-        vapidKey: VAPID_KEY,
-        serviceWorkerRegistration: registration
-      });
-      
-      if (currentToken) {
-        console.log("Token FCM obtenido:", currentToken);
-        resolve(currentToken);
-      } else {
-        console.log("No se pudo obtener el token.");
-        resolve(null);
-      }
-    } catch (err) {
-      console.error("Error al obtener el token:", err);
-      reject(err);
-    }
+      const currentToken = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: registration });
+      resolve(currentToken || null);
+    } catch (err) { reject(err); }
   });
 }
 
@@ -288,34 +240,22 @@ async function guardarTokenEnFirestore(codigoFamilia, token, rol = "paciente") {
     if (!codigoFamilia || !token || !db) return;
     try {
       const campo = rol === "cuidador" ? "tokenCuidador" : "tokenNotificaciones";
-      await db.collection("familias").doc(STORAGE_PREFIX + codigoFamilia).set({
-        [campo]: token,
-        fechaToken: Date.now()
-      }, { merge: true });
-      console.log(`Token guardado en Firestore (${rol}) para la familia:`, codigoFamilia);
-    } catch (error) {
-      console.error("Error al guardar el token en Firestore:", error);
-    }
-  }
+      await db.collection("familias").doc(STORAGE_PREFIX + codigoFamilia).set({ [campo]: token, fechaToken: Date.now() }, { merge: true });
+    } catch (error) { console.error("Error al guardar el token:", error); }
+}
 
-// ================== EVENTOS EN FIREBASE ==================
 const EVENTOS_COLLECTION = "eventos";
-
 async function registrarEvento(codigoFamilia, tipo, detalle, extra = {}) {
   if (!codigoFamilia) return;
-  const evento = {
-    codigo: String(codigoFamilia), tipo: tipo || "desconocido", detalle: detalle || "",
-    timestamp: Date.now(), fecha: new Date().toISOString(), appVersion: APP_VERSION, ...extra,
-  };
+  const evento = { codigo: String(codigoFamilia), tipo: tipo || "desconocido", detalle: detalle || "", timestamp: Date.now(), fecha: new Date().toISOString(), appVersion: APP_VERSION, ...extra };
   try { if (db) await db.collection(EVENTOS_COLLECTION).add(evento); }
   catch (e) {
-    console.error("Error registrando evento:", e);
     try {
       const raw = localStorage.getItem("eventos_pendientes");
       const pendientes = raw ? JSON.parse(raw) : [];
       pendientes.push(evento);
       localStorage.setItem("eventos_pendientes", JSON.stringify(pendientes));
-    } catch (e2) { console.error(e2); }
+    } catch (e2) {}
   }
 }
 
@@ -325,9 +265,9 @@ async function enviarEventosPendientes() {
     if (!raw) return;
     const pendientes = JSON.parse(raw);
     if (!pendientes.length || !db) return;
-    for (const ev of pendientes) { try { await db.collection(EVENTOS_COLLECTION).add(ev); } catch (e) { console.error(e); } }
+    for (const ev of pendientes) { try { await db.collection(EVENTOS_COLLECTION).add(ev); } catch (e) {} }
     localStorage.removeItem("eventos_pendientes");
-  } catch (e) { console.error(e); }
+  } catch (e) {}
 }
 
 async function obtenerEventos(limite = 500) {
@@ -338,7 +278,7 @@ async function obtenerEventos(limite = 500) {
       snapshot.forEach((doc) => { out.push({ id: doc.id, ...doc.data() }); });
       return out;
     }
-  } catch (e) { console.error("Error obteniendo eventos:", e); }
+  } catch (e) {}
   return [];
 }
 
@@ -346,7 +286,7 @@ function exportarCSV(eventos) {
   const headers = ["Fecha", "Hora", "Familia", "Tipo", "Detalle", "Persona", "Edad", "Cuidador", "Versión"];
   const rows = eventos.map(e => {
     const d = new Date(e.timestamp);
-    return [d.toLocaleDateString("es-CL"), d.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", second: "2-digit" }), e.codigo || "", e.tipo || "", e.detalle || "", e.persona || "", e.edad || "", e.cuidador || "", e.appVersion || ""];
+    return [d.toLocaleDateString("es-CL"), d.toLocaleTimeString("es-CL"), e.codigo || "", e.tipo || "", e.detalle || "", e.persona || "", e.edad || "", e.cuidador || "", e.appVersion || ""];
   });
   const csv = [headers.join(","), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
   const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
@@ -354,10 +294,7 @@ function exportarCSV(eventos) {
   const a = document.createElement("a");
   a.href = url;
   a.download = `contigo_siempre_eventos_${new Date().toISOString().slice(0,10)}.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
 }
 
 function clasificarMedicamento(n) { if (!n) return null; const x = n.toLowerCase().trim(); if (MEDS_CON_RECETA.some((m) => x.includes(m))) return "con_receta"; if (MEDS_SIN_RECETA.some((m) => x.includes(m))) return "sin_receta"; return null; }
@@ -372,7 +309,6 @@ function calcularRankingFarmacias(fs) {
 
 function nowHHMM() { const d = new Date(); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; }
 function toMinutes(t) { const [h, m] = t.split(":").map(Number); return h * 60 + m; }
-
 function fmtHoraConAmPm(t) {
   if (!t || !t.includes(":")) return "";
   const [h, m] = t.split(":").map(Number);
@@ -563,14 +499,11 @@ function PantallaAlertaMedicamento({ C, med, hora, onConfirmar, onPosponer, esca
   );
 }
 
-// ================== TUTORIAL INTERACTIVO ==================
 function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
   const [paso, setPaso] = useState(0);
   const [rect, setRect] = useState(null);
     const pasoActual = pasos[paso];
 
-  // NUEVO: Si el paso apunta al menú, abrirlo automáticamente
-  // Abrir o cerrar el menú según el paso
   useEffect(() => {
     if (pasoActual.abrirMenu && onAbrirMenu) {
       onAbrirMenu();
@@ -852,7 +785,7 @@ function OnboardingPremium({ C, onCerrar }) {
     { Icono: Pill, titulo: "Medicamentos ilimitados", texto: "Sin el tope de 4 del plan Estándar." },
     { Icono: Users, titulo: "Hasta 3 personas mayores", texto: "Cuida a mamá y papá al mismo tiempo." },
     { Icono: BellRing, titulo: "Alerta a pantalla completa", texto: "Suena y vibra hasta que confirmen la toma." },
-    { Icono: Camera, titulo: "Reconteo por foto", texto: "Saca foto al blíster y ajusta el stock real." },
+    { Icono: RefreshCw, titulo: "Reconteo manual", texto: "Ajusta el stock real cuando lo necesites." },
     { Icono: FileText, titulo: "Reporte PDF para el médico", texto: "Adherencia del último mes lista para imprimir." },
     { Icono: TrendingDown, titulo: "Detección de cambio de patrón", texto: "La IA te avisa si la adherencia bajó." },
   ];
@@ -1075,7 +1008,6 @@ function registrarDato(clave, valor = 1, detalle = null) {
     localStorage.setItem("datos_admin_global", JSON.stringify(datos));
   } catch (e) { console.error(e); }
 }
-
 export default function App() {
   const [stage, setStage] = useState("cargando");
     const [codigo, setCodigo] = useState(() => {
@@ -1143,7 +1075,7 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
   const alertasPostergadasRef = useRef({});
   const [triggerPostergacion, setTriggerPostergacion] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
-  const [tokenFCM, setTokenFCM] = useState(null); // NUEVO: Token de notificaciones push
+  const [tokenFCM, setTokenFCM] = useState(null); 
   
   const appAbiertaRef = useRef(false);
   const addStartRef = useRef(null);
@@ -1209,17 +1141,13 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
   useEffect(() => { cuandoDbListo((d) => { setFirebaseEstado(d ? "conectado" : "local"); }); }, []);
   useEffect(() => { if (familia && !personaActualId && familia.personas && familia.personas.length > 0) setPersonaActualId(familia.personas[0].id); }, [familia, personaActualId]);
 
-  // ================== NUEVO: CARGAR MESSAGING Y OBTENER TOKEN FCM ==================
   useEffect(() => {
     cuandoDbListo(async (d) => {
       if (!d) return;
-      
-      // Cargar messaging y obtener token
       try {
         const token = await obtenerTokenFCM();
         if (token) {
           setTokenFCM(token);
-          // Si ya hay una familia activa, guardar el token
           if (codigo) {
             await guardarTokenEnFirestore(codigo, token);
           }
@@ -1230,7 +1158,6 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
     });
   }, [codigo]);
   
-    // NUEVO: Escuchar mensajes del Service Worker (botones de notificación)
   useEffect(() => {
     if (!navigator.serviceWorker) return;
     const handler = (event) => {
@@ -1250,7 +1177,6 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
     const enviarHeartbeat = async () => {
       if (!isOnline) return;
       try {
-      
         const ref = db.collection("familias").doc(STORAGE_PREFIX + codigo);
         const doc = await ref.get();
         if (doc.exists) {
@@ -1295,13 +1221,13 @@ const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: 
   const minutosSinConexion = minutosDesde(ultimaConexionPersona);
   const personaDesconectada = !isOnline || (minutosSinConexion !== null && minutosSinConexion > MINUTOS_SIN_CONEXION_ALERTA);
 
- // Detectar cuándo mostrar el tutorial automáticamente
 useEffect(() => {
     if (stage === "app" && familia && familia.settings && familia.settings.aceptoTerminos === true && familia.settings.tutorialVisto === false && !showSelectorRol && rolUsuario !== "mayor") {
     setShowTutorial(true);
     actualizar((prev) => ({ ...prev, settings: { ...prev.settings, tutorialVisto: true } }));
   }
 }, [stage, familia, showSelectorRol]);
+
   useEffect(() => {
     if (stage !== "app" || !familia || !personaActual) return;
    if (view !== "mayor" && !(personaActual?.esAutocuidado)) return;
@@ -1455,8 +1381,7 @@ const diff = ahoraMin - baseTiempo;
         setNombreCuidadorInput(nombreCuidador);
         setStage(data.settings?.aceptoTerminos ? "app" : "consentimiento");
         registrarEvento(cod, "unirse_familia", `Cuidador ${nombreCuidador} se unió`, { cuidador: nombreCuidador, persona: data.personas[0]?.nombre || "", edad: data.personas[0]?.edad || "" });
-        // NUEVO: Guardar token FCM al unirse a una familia
-              if (tokenFCM) await guardarTokenEnFirestore(cod, tokenFCM, "cuidador");
+        if (tokenFCM) await guardarTokenEnFirestore(cod, tokenFCM, "cuidador");
       } else setError("No encontramos ese código.");
     } catch (e) { setError("No encontramos ese código."); }
   };
@@ -1484,7 +1409,6 @@ const diff = ahoraMin - baseTiempo;
         localStorage.setItem("nombre_cuidador", nombreCuidadorInput.trim());
     setStage("app"); setFamilia(nueva); setCodigo(cod); setPersonaActualId(personaId); setShowSelectorRol(true);
     registrarEvento(cod, "crear_familia", `Familia creada para ${nombreInput.trim()}${edadNum ? ` (${edadNum} años)` : ""}`, { cuidador: nombreCuidadorInput, persona: nombreInput.trim(), edad: edadNum || "" });
-    // NUEVO: Guardar token FCM al crear la familia
        if (tokenFCM) await guardarTokenEnFirestore(cod, tokenFCM, "cuidador");
   };
 
@@ -1528,8 +1452,7 @@ const canjearCodigo = async () => {
   else if (CODIGOS_PILOTO.includes(up)) { activarPremium(); setCodigoPremium(""); }
   else alert("Código no válido");
 };
-
-  if (stage === "cargando") return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: LIGHT.TEAL }}><Loader2 size={30} color="#fff" /></div>;
+    if (stage === "cargando") return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: LIGHT.TEAL }}><Loader2 size={30} color="#fff" /></div>;
 
   if (stage === "entrada") {
     return (
@@ -1543,7 +1466,6 @@ const canjearCodigo = async () => {
             <div style={{ fontSize: 10.5, color: LIGHT.MUTED, padding: "4px 10px", background: firebaseEstado === "conectado" ? LIGHT.GREEN + "15" : firebaseEstado === "local" ? LIGHT.AMBER + "15" : LIGHT.LINE, borderRadius: 999, display: "inline-block", fontWeight: 600 }}>{firebaseEstado === "conectado" ? "☁️ Nube conectada" : firebaseEstado === "local" ? "📱 Modo local" : "⏳ Conectando..."}</div>
             {!isOnline && <div className="offline-pulse" style={{ fontSize: 10.5, color: "#E65100", padding: "4px 10px", background: "#FFF3E0", border: "1px solid #FFB74D", borderRadius: 999, display: "inline-flex", alignItems: "center", gap: 4, fontWeight: 700 }}><WifiOff size={11} /> Sin conexión</div>}
           </div>
-          {/* NUEVO: Aviso de notificaciones activadas */}
           {tokenFCM && (
             <div style={{ fontSize: 11, color: LIGHT.GREEN, background: LIGHT.GREEN + "15", padding: "8px 12px", borderRadius: 10, marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontWeight: 600 }}>
               <BellRing size={14} /> Notificaciones activadas
@@ -1748,13 +1670,11 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
     };
     const duracionSeg = addStartRef.current ? Math.round((Date.now() - addStartRef.current) / 1000) : 0;
     if (editandoId) {
-      // MODO EDICIÓN
-    actualizarPersona((p) => ({ ...p, meds: p.meds.map((m) => m.id === editandoId ? { ...m, ...nuevo, fechaInicio: m.fechaInicio || nuevo.fechaInicio, archivado: m.archivado || false, fechaArchivado: m.fechaArchivado || null } : m) }));
+      actualizarPersona((p) => ({ ...p, meds: p.meds.map((m) => m.id === editandoId ? { ...m, ...nuevo, fechaInicio: m.fechaInicio || nuevo.fechaInicio, archivado: m.archivado || false, fechaArchivado: m.fechaArchivado || null } : m) }));
       registrarCambio("Editó", nuevo.name);
       registrarEvento(codigo, "editar_med", nuevo.name, { cuidador: nombreCuidadorInput, persona: elderName, edad: elderEdad || "", med: nuevo.name, criticidad: critF, duracion_seg: duracionSeg });
       setEditandoId(null);
     } else {
-      // MODO CREACIÓN
       actualizarPersona((p) => ({ ...p, meds: [...p.meds, nuevo] }));
       registrarCambio("Agregó", nuevo.name);
       registrarEvento(codigo, "agregar_med", nuevo.name, { cuidador: nombreCuidadorInput, persona: elderName, edad: elderEdad || "", med: nuevo.name, criticidad: critF, duracion_seg: duracionSeg });
@@ -1869,9 +1789,9 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
             escala={scale}
             daltonico={settings.daltonico}
             sonidoActivo={settings.sonidoActivo !== false}
-                              esVital={(alertaActiva.med.criticidad || detectarCriticidad(alertaActiva.med.name)) === "vital"}
-                            yaPostergada={alertasPostergadasRef.current[`${personaActual?.id}_${alertaActiva.med.id}_${alertaActiva.med.time}`] === true}
-               esAdultoMayor={view === "mayor"}
+            esVital={(alertaActiva.med.criticidad || detectarCriticidad(alertaActiva.med.name)) === "vital"}
+            yaPostergada={alertasPostergadasRef.current[`${personaActual?.id}_${alertaActiva.med.id}_${alertaActiva.med.time}`] === true}
+            esAdultoMayor={view === "mayor"}
             />
         )}
 
@@ -2049,7 +1969,7 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
                               <div style={{ display: "flex", gap: 6 }}>
                               <button onClick={() => abrirEditar(m)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: C.TEAL, background: oscuro ? "#1E3A5F" : "#E3F2FD", border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer" }}>✏️</button>
                                 <button onClick={() => setShowNotas(m)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: C.AMBER, background: oscuro ? "#3A2F1A" : "#FFF8E1", border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}><StickyNote size={11} /></button>
-                                <button onClick={() => esPremium ? setReconteoTarget(m) : setShowPremium(true)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: esPremium ? C.TEAL : C.GOLD, background: esPremium ? (oscuro ? "#1E3A5F" : "#E3F2FD") : (oscuro ? "#3A2F1A" : "#FFF8E1"), border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>{esPremium ? <Camera size={11} /> : <Lock size={11} />}</button>
+                                <button onClick={() => esPremium ? setReconteoTarget(m) : setShowPremium(true)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: esPremium ? C.TEAL : C.GOLD, background: esPremium ? (oscuro ? "#1E3A5F" : "#E3F2FD") : (oscuro ? "#3A2F1A" : "#FFF8E1"), border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>{esPremium ? <RefreshCw size={11} /> : <Lock size={11} />}</button>
                                 <button onClick={() => setRestockTarget(m)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: C.TEAL, background: oscuro ? "#1E3A5F" : "#E3F2FD", border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer" }}>Reponer</button>
                                                 <button onClick={() => setArchivarTarget(m)} className="btn-press-soft" style={{ fontSize: 10.5, fontWeight: 700, color: C.CORAL, background: "transparent", border: "none", padding: "6px 9px", borderRadius: 999, cursor: "pointer" }}>🗑️</button>
                               </div>
@@ -2092,13 +2012,11 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
                       {sugerencias.productos.map((p) => (
                         <div key={p.sku} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: C.MUTED, marginBottom: 8, padding: "6px 0", borderBottom: `1px solid ${C.LINE}` }}>
                           <span style={{ flex: 1, paddingRight: 8 }}>{p.nombre}</span>
-                          <strong style={{ color: C.INK, whiteSpace: "nowrap" }}>${p.precio.toLocaleString("es-CL")}</strong>
                         </div>
                       ))}
                       <button onClick={() => abrirProductosVentaLibre(sugerencias.productos)} className="btn-press" style={{ width: "100%", padding: 13, borderRadius: 14, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer", marginTop: 12, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                        <ShoppingCart size={16} /> Ver artículos sugeridos
+                        <ShoppingCart size={16} /> Buscar estos artículos en Mercado Libre
                       </button>
-                      <div style={{ fontSize: 10.5, color: C.MUTED, textAlign: "center", marginTop: 8, lineHeight: 1.5 }}>Al comprar por aquí, apoyas a que la app siga siendo gratis.</div>
                     </div>
                   );
                 })()}
@@ -2247,8 +2165,6 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
   />
 )}
 
-        
-        
         {showTutorial && <TutorialInteractivo pasos={PASOS_TUTORIAL} onCerrar={() => { setShowTutorial(false); actualizar((prev) => ({ ...prev, settings: { ...prev.settings, tutorialVisto: true } })); registrarEvento(codigo, "tutorial_completado", "Tutorial finalizado", { cuidador: nombreCuidadorInput }); }} C={C} onAbrirMenu={() => setShowMenuLateral(true)} />}
 
         {showContactos && (
@@ -2379,7 +2295,7 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
               <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, marginBottom: 16, fontSize: 12.5, lineHeight: 1.8, boxShadow: C.SHADOW }}>
                 <div>✓ Medicamentos ilimitados</div>
                 <div>✓ Hasta 3 personas mayores</div>
-                <div>✓ Reconteo por foto</div>
+                <div>✓ Reconteo manual del stock</div>
                 <div>✓ Reporte PDF médico</div>
                 <div>✓ Detección de cambio de patrón</div>
                 <div>✓ Stock con predicción real</div>
@@ -2388,7 +2304,7 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
               <button onClick={activarPremium} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: `linear-gradient(135deg, ${C.GOLD}, #E65100)`, color: "#fff", fontWeight: 700, cursor: "pointer", marginBottom: 12 }}>⭐ Activar Premium (piloto)</button>
               <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>¿TIENES UN CÓDIGO?</div>
               <div style={{ display: "flex", gap: 8 }}>
-                <input value={codigoPremium} onChange={(e) => setCodigoPremium(e.target.value)} placeholder="Ej. FAMILIA1" style={{ flex: 1, padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 13, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
+                <input value={codigoPremium} onChange={(e) => setCodigoPremium(e.target.value)} placeholder="Ingresa tu código" style={{ flex: 1, padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 13, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
                 <button onClick={canjearCodigo} className="btn-press" style={{ padding: "12px 18px", borderRadius: 12, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Canjear</button>
               </div>
             </div>
@@ -2491,10 +2407,10 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 29 }}>
             <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 20, padding: 24, textAlign: "center", margin: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
               <div style={{ width: 56, height: 56, borderRadius: 999, background: C.GOLD + "15", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
-                <Camera size={26} color={C.GOLD} strokeWidth={2.2} />
+                <RefreshCw size={26} color={C.GOLD} strokeWidth={2.2} />
               </div>
-              <div style={{ fontWeight: 700, fontSize: 16 }}>Recontar {reconteoTarget.name}</div>
-              <div style={{ fontSize: 12, color: C.MUTED, marginTop: 8, marginBottom: 14 }}>Función Premium. Simulación.</div>
+              <div style={{ fontWeight: 700, fontSize: 16 }}>Reconteo Manual de {reconteoTarget.name}</div>
+              <div style={{ fontSize: 12, color: C.MUTED, marginTop: 8, marginBottom: 14 }}>Ingresa el stock real que tienes actualmente.</div>
               <input type="number" defaultValue={reconteoTarget.stock} onChange={(e) => setReconteoTarget({ ...reconteoTarget, _c: Number(e.target.value) })} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 20, textAlign: "center", boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
               <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
                 <button onClick={() => setReconteoTarget(null)} className="btn-press-soft" style={{ flex: 1, padding: 12, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.MUTED, fontWeight: 700, cursor: "pointer" }}>Cancelar</button>
@@ -2531,7 +2447,6 @@ unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmoun
                 <HelpCircle size={18} /> Ver tutorial de nuevo
               </button>
 
-              {/* NUEVO: Botón de activar notificaciones */}
               <div style={{ fontSize: 13, fontWeight: 700, color: C.MUTED, marginBottom: 10, letterSpacing: 0.3 }}>NOTIFICACIONES PUSH</div>
               {tokenFCM ? (
                 <div style={{ width: "100%", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.GREEN}`, background: C.GREEN + "10", marginBottom: 18, display: "flex", alignItems: "center", gap: 10 }}>
