@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Clock, Check, AlertTriangle, Plus, X, ArrowRight, User, Users, Heart, PackageOpen, RotateCcw, KeyRound, Loader2, Copy, Truck, Store, ShoppingCart, ExternalLink, Sparkles, ShieldCheck, MessageSquare, Camera, Calendar, TrendingDown, Award, MapPin, Lock, Crown, Moon, Sun, Phone, FileText, Share2, StickyNote, UserPlus, ChevronDown, Info, ScrollText, BarChart3, Trash2, Menu, Pill, Bell, HelpCircle, Settings, Flame, Tag, Download, Activity, WifiOff, Wifi, Volume2, VolumeX, Vibrate, BellRing, Cake, RefreshCw, History } from "lucide-react";
+import { Clock, Check, AlertTriangle, Plus, X, ArrowRight, User, Users, Heart, PackageOpen, RotateCcw, KeyRound, Loader2, Copy, Truck, Store, ShoppingCart, ExternalLink, Sparkles, ShieldCheck, MessageSquare, Camera, Calendar, TrendingDown, Award, MapPin, Lock, Crown, Moon, Sun, Phone, FileText, Share2, StickyNote, UserPlus, ChevronDown, Info, ScrollText, BarChart3, Trash2, Menu, Pill, Bell, HelpCircle, Settings, Flame, Tag, Download, Activity, WifiOff, Wifi, Volume2, VolumeX, Vibrate, BellRing, Cake, RefreshCw, History, ClipboardCheck, Send } from "lucide-react";
+
+// ==================== CONSTANTES GLOBALES ====================
+const STORAGE_PREFIX = "familia_";
+const EVENTOS_COLLECTION = "eventos";
+const APP_VERSION = "2.2.2-estable";
+const MINUTOS_SIN_CONEXION_ALERTA = 5;
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAGxIGYqifeb5qGlVTQaVVpmKjZ9E1__TU",
@@ -12,9 +18,54 @@ const FIREBASE_CONFIG = {
 
 const VAPID_KEY = "BFPDPH02Oa44BflTPgU8Z7VbkqGL7rG3ZDLOAp9EKlkGYZWmoslFktvQtSl29HJR1gO4ESs2lBElRTEwWMAPwz0";
 
+const CODIGO_ADMIN = (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_ADMIN_CODE) || "ADMIN" + new Date().getFullYear();
+const CODIGO_DATOS = "DATOS" + new Date().getFullYear();
+const CODIGOS_PILOTO = ["FUNDADOR", "BETA01", "FAMILIA1", "FAMILIA2", "FAMILIA3", "FAMILIA4", "FAMILIA5"];
+
+const PILL_COLORS = ["#E0654A", "#1F6E63", "#3A6EA5", "#D98F2B", "#8A5FA8"];
+const PILL_COLORS_CB = ["#D55E00", "#0072B2", "#009E73", "#E69F00", "#CC79A7"];
+const PILL_SHAPES = ["●", "◆", "▲", "■", "⬤"];
+const FONT_SCALE = { normal: 1, grande: 1.2, muy_grande: 1.45 };
+const UMBRAL_MIN = { vital: 2, importante: 10, normal: 30 };
+const LIMITES_ESTANDAR = { maxMeds: 4, maxElderly: 1, maxCuidadores: 2 };
+
+const MEDS_CON_RECETA = ["losartan","losartán","metformina","enalapril","amlodipino","atorvastatina","simvastatina","carvedilol","furosemida","hidroclorotiazida","omeprazol","clonazepam","alprazolam","sertralina","fluoxetina","levotiroxina","warfarina","clopidogrel","insulina","gabapentina","pregabalina","tramadol","morfina","fentanilo","metotrexato","prednisona","salbutamol","budesonida","montelukast","alopurinol","colchicina","risperidona","quetiapina","olanzapina","valproato","carbamazepina","fenitoina","levetiracetam","donepezilo","memantina","rivastigmina"];
+const MEDS_SIN_RECETA = ["paracetamol","ibuprofeno","aspirina","naproxeno","diclofenaco","loratadina","cetirizina","clorfenamina","vitamina","multivitaminico","calcio","hierro","omega","magnesio","zinc","complejo b","sales de rehidratacion","suero","carbon activado"];
+const MEDS_VITALES = ["insulina","warfarina","clopidogrel","digoxina","amiodarona","fenitoina","fenitoína","carbamazepina","valproato","levetiracetam","metotrexato","ciclosporina","tacrolimus","rivaroxaban","rivaroxabán","apixaban","apixabán","dabigatran","dabigatrán"];
+
+const LIGHT = { INK: "#1A237E", TEAL: "#1976D2", CORAL: "#D32F2F", CREAM: "#FFFFFF", PAPER: "#FFFFFF", LINE: "#E0E4EB", MUTED: "#6B7A8F", AMBER: "#F9A825", GREEN: "#43A047", GOLD: "#F9A825", BG: "#F0F4F8", SHADOW: "0 2px 8px rgba(25,118,210,0.08)" };
+const DARK = { INK: "#F5F7FA", TEAL: "#64B5F6", CORAL: "#EF5350", CREAM: "#0F1B2E", PAPER: "#16243A", LINE: "#2A3A52", MUTED: "#90A4BE", AMBER: "#FFB74D", GREEN: "#66BB6A", GOLD: "#FFB74D", BG: "#0A1626", SHADOW: "0 2px 8px rgba(0,0,0,0.3)" };
+
+const CSS_GLOBAL = `
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+  @keyframes pulseFlame { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+  @keyframes pulseOffline { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+  @keyframes shakeAlerta { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+  @keyframes pulseAlerta { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(25,118,210,0.7); } 50% { transform: scale(1.02); box-shadow: 0 0 0 20px rgba(25,118,210,0); } }
+  .modal-fade { animation: fadeIn 0.18s ease-out; }
+  .modal-slide { animation: fadeInUp 0.22s cubic-bezier(0.16, 1, 0.3, 1); }
+  .modal-scale { animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+  .btn-press { transition: transform 0.12s ease, opacity 0.12s ease; }
+  .btn-press:active { transform: scale(0.97); opacity: 0.85; }
+  .btn-press-soft { transition: transform 0.12s ease, opacity 0.12s ease; }
+  .btn-press-soft:active { transform: scale(0.98); opacity: 0.9; }
+  .card-hover { transition: box-shadow 0.2s ease, transform 0.2s ease; }
+  .card-hover:active { transform: scale(0.99); }
+  .flame-pulse { animation: pulseFlame 1.2s ease-in-out infinite; }
+  .offline-pulse { animation: pulseOffline 1.5s ease-in-out infinite; }
+  .shake-alerta { animation: shakeAlerta 0.5s ease-in-out infinite; }
+  .pulse-alerta { animation: pulseAlerta 2s ease-in-out infinite; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+  * { -webkit-tap-highlight-color: transparent; }
+`;
+
+// ==================== FIREBASE Y STORAGE ====================
 let db = null;
 let dbIniciando = false;
 let dbCallbacks = [];
+
 function cuandoDbListo(cb) {
   if (db) { cb(db); return; }
   dbCallbacks.push(cb);
@@ -47,103 +98,114 @@ function cuandoDbListo(cb) {
   });
 }
 
-function cargarMessaging() {
-  return new Promise((resolve, reject) => {
-    const s = document.createElement("script");
-    s.src = "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js";
-    s.onload = () => resolve();
-    s.onerror = (err) => reject(err);
-    document.head.appendChild(s);
-  });
-}
-
-const LIGHT = { INK: "#1A237E", TEAL: "#1976D2", CORAL: "#D32F2F", CREAM: "#FFFFFF", PAPER: "#FFFFFF", LINE: "#E0E4EB", MUTED: "#6B7A8F", AMBER: "#F9A825", GREEN: "#43A047", GOLD: "#F9A825", BG: "#F0F4F8", SHADOW: "0 2px 8px rgba(25,118,210,0.08)" };
-const DARK = { INK: "#F5F7FA", TEAL: "#64B5F6", CORAL: "#EF5350", CREAM: "#0F1B2E", PAPER: "#16243A", LINE: "#2A3A52", MUTED: "#90A4BE", AMBER: "#FFB74D", GREEN: "#66BB6A", GOLD: "#FFB74D", BG: "#0A1626", SHADOW: "0 2px 8px rgba(0,0,0,0.3)" };
-
-const PILL_COLORS = ["#E0654A", "#1F6E63", "#3A6EA5", "#D98F2B", "#8A5FA8"];
-const PILL_COLORS_CB = ["#D55E00", "#0072B2", "#009E73", "#E69F00", "#CC79A7"];
-const PILL_SHAPES = ["●", "◆", "▲", "■", "⬤"];
-const FONT_SCALE = { normal: 1, grande: 1.2, muy_grande: 1.45 };
-const UMBRAL_MIN = { vital: 2, importante: 10, normal: 30 };
-const LIMITES_ESTANDAR = { maxMeds: 4, maxElderly: 1, maxCuidadores: 2 };
-const CODIGOS_PILOTO = ["PILOTO2026", "FUNDADOR", "BETA01", "FAMILIA1", "FAMILIA2", "FAMILIA3", "FAMILIA4", "FAMILIA5"];
-const CODIGO_ADMIN = "ADMIN" + new Date().getFullYear();
-const CODIGO_DATOS = "DATOS" + new Date().getFullYear();
-const APP_VERSION = "2.2.1-estable";
-const MINUTOS_SIN_CONEXION_ALERTA = 5;
-
-const MEDS_CON_RECETA = ["losartan","losartán","metformina","enalapril","amlodipino","atorvastatina","simvastatina","carvedilol","furosemida","hidroclorotiazida","omeprazol","clonazepam","alprazolam","sertralina","fluoxetina","levotiroxina","warfarina","clopidogrel","insulina","gabapentina","pregabalina","tramadol","morfina","fentanilo","metotrexato","prednisona","salbutamol","budesonida","montelukast","alopurinol","colchicina","risperidona","quetiapina","olanzapina","valproato","carbamazepina","fenitoina","levetiracetam","donepezilo","memantina","rivastigmina"];
-const MEDS_SIN_RECETA = ["paracetamol","ibuprofeno","aspirina","naproxeno","diclofenaco","loratadina","cetirizina","clorfenamina","vitamina","multivitaminico","calcio","hierro","omega","magnesio","zinc","complejo b","sales de rehidratacion","suero","carbon activado"];
-const MEDS_VITALES = ["insulina","warfarina","clopidogrel","digoxina","amiodarona","fenitoina","fenitoína","carbamazepina","valproato","levetiracetam","metotrexato","ciclosporina","tacrolimus","rivaroxaban","rivaroxabán","apixaban","apixabán","dabigatran","dabigatrán"];
-
-const FARMACIAS = [
-  { id: "f1", nombre: "Cruz Verde", costo: 8990, distanciaKm: 1.2, url: "https://www.cruzverde.cl" },
-  { id: "f2", nombre: "Salcobrand", costo: 9490, distanciaKm: 2.1, url: "https://www.salcobrand.cl" },
-  { id: "f3", nombre: "Farmacias Ahumada", costo: 9690, distanciaKm: 1.8, url: "https://www.farmaciasahumada.cl" },
-  { id: "f4", nombre: "Búho (comparador)", costo: 7490, distanciaKm: 4.1, url: "https://www.buho.cl" },
-];
-
-const PRODUCTOS_POR_TEMPORADA = {
-  invierno: [{ nombre: "Vitamina C 500mg", sku: "vitamina-c-30" }, { nombre: "Pañuelos desechables", sku: "panuelos-100" }, { nombre: "Suero oral", sku: "suero-10" }, { nombre: "Humidificador ultrasónico", sku: "humidificador" }],
-  verano: [{ nombre: "Protector solar FPS 50+", sku: "protector-solar" }, { nombre: "Sales de rehidratación", sku: "sales-10" }, { nombre: "Gorro con protección UV", sku: "gorro-uv" }, { nombre: "Repelente de insectos", sku: "repelente" }],
-  otono: [{ nombre: "Vitamina D 1000 UI", sku: "vitamina-d" }, { nombre: "Miel de abeja pura 500g", sku: "miel-500" }, { nombre: "Pañuelos desechables", sku: "panuelos-100" }],
-  primavera: [{ nombre: "Antialérgico loratadina", sku: "loratadina-10" }, { nombre: "Pañuelos desechables", sku: "panuelos-100" }, { nombre: "Purificador de aire", sku: "purificador" }],
+const storage = {
+  async get(k) {
+    try { if (db) { const doc = await db.collection("familias").doc(k).get(); if (doc.exists) return { value: JSON.stringify(doc.data()) }; return null; } const v = localStorage.getItem(k); return v ? { value: v } : null; }
+    catch (e) { console.error("Firestore get error:", e); const v = localStorage.getItem(k); return v ? { value: v } : null; }
+  },
+  async set(k, v) {
+    try { if (db) { const data = JSON.parse(v); await db.collection("familias").doc(k).set(data); localStorage.setItem(k, v); return; } localStorage.setItem(k, v); }
+    catch (e) { console.error("Firestore set error:", e); localStorage.setItem(k, v); }
+  },
+  async listAll() {
+    try { if (db) { const snapshot = await db.collection("familias").get(); const out = []; snapshot.forEach((doc) => { out.push({ codigo: doc.id, data: doc.data() }); }); return out; } const out = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(STORAGE_PREFIX)) { const v = localStorage.getItem(k); try { out.push({ codigo: k.replace(STORAGE_PREFIX, ""), data: JSON.parse(v) }); } catch (e) {} } } return out; }
+    catch (e) { return []; }
+  },
 };
 
-const PRODUCTOS_POR_MEDICAMENTO = [
-  { keywords: ["insulina", "inyectable", "inyección"], productos: [{ nombre: "Bolso térmico para insulina", sku: "bolso-insulina" }, { nombre: "Contenedor de agujas", sku: "contenedor-agujas" }] },
-  { keywords: ["warfarina", "clopidogrel", "rivaroxaban", "apixaban", "dabigatran"], productos: [{ nombre: "Cepillo dental cerdas suaves", sku: "cepillo-suave" }, { nombre: "Rasuradora eléctrica", sku: "rasuradora" }] },
-  { keywords: ["furosemida", "hidroclorotiazida"], productos: [{ nombre: "Calcetines de compresión", sku: "calcetines-comp" }, { nombre: "Crema para piernas cansadas", sku: "crema-piernas" }] },
-  { keywords: ["metformina", "glibenclamida", "insulina"], productos: [{ nombre: "Pastillero semanal", sku: "pastillero-semanal" }, { nombre: "Glucómetro digital", sku: "glucometro" }] },
-  { keywords: ["losartán", "losartan", "enalapril", "amlodipino", "carvedilol"], productos: [{ nombre: "Salero bajo en sodio", sku: "salero-sodio" }, { nombre: "Pastillero semanal", sku: "pastillero-semanal" }] },
-  { keywords: ["omeprazol", "esomeprazol"], productos: [{ nombre: "Vaso medidor de agua", sku: "vaso-medidor" }] },
-  { keywords: ["donepezilo", "memantina", "rivastigmina"], productos: [{ nombre: "Pastillero semanal", sku: "pastillero-semanal" }, { nombre: "Pizarra de rutinas diarias", sku: "pizarra-rutinas" }] },
-  { keywords: ["levotiroxina"], productos: [{ nombre: "Pastillero semanal", sku: "pastillero-semanal" }] },
-];
-function obtenerProductosSugeridos(meds, mesActual) {
-  let temporada = "otono";
-  if ([11, 0, 1].includes(mesActual)) temporada = "verano";
-  else if ([2, 3, 4].includes(mesActual)) temporada = "otono";
-  else if ([5, 6, 7].includes(mesActual)) temporada = "invierno";
-  else if ([8, 9, 10].includes(mesActual)) temporada = "primavera";
-  const porTemporada = PRODUCTOS_POR_TEMPORADA[temporada] || [];
-  const porMeds = [];
-  const skusAgregados = new Set(porTemporada.map((p) => p.sku));
-  const nombresMeds = (meds || []).map((m) => (m.name || "").toLowerCase());
-  PRODUCTOS_POR_MEDICAMENTO.forEach((cat) => {
-    const match = nombresMeds.some((n) => cat.keywords.some((k) => n.includes(k)));
-    if (match) { cat.productos.forEach((p) => { if (!skusAgregados.has(p.sku)) { porMeds.push(p); skusAgregados.add(p.sku); } }); }
-  });
-  return { temporada, productos: [...porMeds, ...porTemporada].slice(0, 5) };
+// ==================== FUNCIONES DE FECHA Y UTILIDADES ====================
+// Fix Crítico: Fechas en hora local Chile (no UTC)
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function dateKeyOffset(days) {
+  const x = new Date();
+  x.setDate(x.getDate() - days);
+  return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,"0")}-${String(x.getDate()).padStart(2,"0")}`;
 }
 
-const NOMBRE_TEMPORADA = { invierno: "Artículos útiles para el invierno", verano: "Artículos útiles para el verano", otono: "Artículos útiles para el otoño", primavera: "Artículos útiles para la primavera" };
+function nowHHMM() { const d = new Date(); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; }
+function toMinutes(t) { const [h, m] = t.split(":").map(Number); return h * 60 + m; }
+function fmtHoraConAmPm(t) {
+  if (!t || !t.includes(":")) return "";
+  const [h, m] = t.split(":").map(Number);
+  const sufijo = h >= 12 ? "p. m." : "a. m.";
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return `${String(h12).padStart(2, "0")}:${String(m).padStart(2, "0")} ${sufijo}`;
+}
+function a24Horas(h12, m, sufijo) { let h = h12 % 12; if (sufijo === "p. m.") h += 12; return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`; }
+function a12Horas(t) { const [h, m] = t.split(":").map(Number); const sufijo = h >= 12 ? "p. m." : "a. m."; const h12 = h % 12 === 0 ? 12 : h % 12; return { h12, m, sufijo }; }
+function sumarMinutos(t, min) { const total = (toMinutes(t) + min) % (24 * 60); const h = Math.floor(total / 60); const m = total % 60; return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`; }
+function fmt(mins) { const h = Math.floor(mins / 60) % 24; const m = mins % 60; const sufijo = h >= 12 ? "p. m." : "a. m."; const h12 = h % 12 === 0 ? 12 : h % 12; return `${String(h12).padStart(2, "0")}:${String(m).padStart(2, "0")} ${sufijo}`; }
+function fmtN(n) { if (n === null || n === undefined) return ""; if (Number.isInteger(n)) return String(n); return String(parseFloat(n.toFixed(2))); }
+function occKey(id, t) { return `${id}__${t}`; }
+function genCode() { return String(Math.floor(100000 + Math.random() * 900000)); }
+function smsTime() { const d = new Date(); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; }
+function diasHastaVencimiento(fechaStr) { if (!fechaStr) return null; const v = new Date(fechaStr); const h = new Date(); return Math.floor((v - h) / (1000 * 60 * 60 * 24)); }
+function minutosDesde(ts) { if (!ts) return null; return Math.floor((Date.now() - ts) / 60000); }
 
-const CSS_GLOBAL = `
-  @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-  @keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-  @keyframes pulseFlame { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-  @keyframes pulseOffline { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-  @keyframes shakeAlerta { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
-  @keyframes pulseAlerta { 0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(25,118,210,0.7); } 50% { transform: scale(1.02); box-shadow: 0 0 0 20px rgba(25,118,210,0); } }
-  .modal-fade { animation: fadeIn 0.18s ease-out; }
-  .modal-slide { animation: fadeInUp 0.22s cubic-bezier(0.16, 1, 0.3, 1); }
-  .modal-scale { animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
-  .btn-press { transition: transform 0.12s ease, opacity 0.12s ease; }
-  .btn-press:active { transform: scale(0.97); opacity: 0.85; }
-  .btn-press-soft { transition: transform 0.12s ease, opacity 0.12s ease; }
-  .btn-press-soft:active { transform: scale(0.98); opacity: 0.9; }
-  .card-hover { transition: box-shadow 0.2s ease, transform 0.2s ease; }
-  .card-hover:active { transform: scale(0.99); }
-  .flame-pulse { animation: pulseFlame 1.2s ease-in-out infinite; }
-  .offline-pulse { animation: pulseOffline 1.5s ease-in-out infinite; }
-  .shake-alerta { animation: shakeAlerta 0.5s ease-in-out infinite; }
-  .pulse-alerta { animation: pulseAlerta 2s ease-in-out infinite; }
-  ::-webkit-scrollbar { width: 0; height: 0; }
-  * { -webkit-tap-highlight-color: transparent; }
-`;
+// Fix: Normalizar tildes para clasificar medicamentos
+function normalizarTexto(txt) {
+  return txt ? txt.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : "";
+}
+function clasificarMedicamento(n) { if (!n) return null; const x = normalizarTexto(n); if (MEDS_CON_RECETA.map(normalizarTexto).some((m) => x.includes(m))) return "con_receta"; if (MEDS_SIN_RECETA.map(normalizarTexto).some((m) => x.includes(m))) return "sin_receta"; return null; }
+function detectarCriticidad(n) { if (!n) return "normal"; const x = normalizarTexto(n); if (MEDS_VITALES.map(normalizarTexto).some((m) => x.includes(m))) return "vital"; if (MEDS_CON_RECETA.map(normalizarTexto).some((m) => x.includes(m))) return "importante"; return "normal"; }
+function dispColor(hex, daltonico) { const i = PILL_COLORS.indexOf(hex); return daltonico && i >= 0 ? PILL_COLORS_CB[i] : hex; }
 
+function calcularRacha(meds, cbd) {
+  if (!meds || meds.length === 0 || !cbd) return 0;
+  const totalPorDia = meds.reduce((a, m) => a + (m.times?.length || 0), 0);
+  if (totalPorDia === 0) return 0;
+  let racha = 0;
+  for (let i = 1; i <= 60; i++) { const key = dateKeyOffset(i); const dia = cbd[key]; if (!dia) break; const conf = Object.keys(dia).filter((k) => dia[k]).length; if (conf >= totalPorDia) racha++; else break; }
+  return racha;
+}
+
+function diasRestantesReales(med) {
+  if (!med.times || med.times.length === 0) return null;
+  const dosisPorToma = Number(med.doseAmount) || 1;
+  const tomasAlDia = med.times.length;
+  const consumoDiarioTotal = dosisPorToma * tomasAlDia;
+  if (consumoDiarioTotal === 0) return null;
+  const dias = med.stock / consumoDiarioTotal;
+  return Number.isInteger(dias) ? dias : Math.round(dias * 10) / 10;
+}
+
+function semaforoRiesgo(med) {
+  const d = diasRestantesReales(med);
+  if (d === null) return { color: "MUTED", nivel: "sin datos", dias: null };
+  if (d <= 3) return { color: "CORAL", nivel: "urgente", dias: d };
+  if (d <= 7) return { color: "AMBER", nivel: "atención", dias: d };
+  return { color: "GREEN", nivel: "tranquilo", dias: d };
+}
+
+function detectarCambioPatron(meds, cbd) {
+  if (!meds || meds.length === 0 || !cbd) return null;
+  const tpd = meds.reduce((a, m) => a + (m.times?.length || 0), 0);
+  if (tpd === 0) return null;
+  function tasa(a, b) { let c = 0, e = 0; for (let i = a; i < b; i++) { const dia = cbd[dateKeyOffset(i)] || {}; c += Object.keys(dia).filter((k) => dia[k]).length; e += tpd; } return e === 0 ? null : c / e; }
+  const ta = tasa(0, 7), tp = tasa(7, 14);
+  if (ta === null || tp === null || tp < 0.5) return null;
+  if (tp - ta >= 0.3) return { tasaActual: Math.round(ta * 100), tasaPrevia: Math.round(tp * 100) };
+  return null;
+}
+
+function getMesActual() {
+  const hoy = new Date();
+  const año = hoy.getFullYear();
+  const mes = hoy.getMonth();
+  const ultimoDia = new Date(año, mes + 1, 0);
+  const dias = [];
+  const primerDow = new Date(año, mes, 1).getDay() === 0 ? 6 : new Date(año, mes, 1).getDay() - 1;
+  for (let i = 0; i < primerDow; i++) dias.push(null);
+  for (let d = 1; d <= ultimoDia.getDate(); d++) dias.push(new Date(año, mes, d));
+  return { dias, mes, año };
+}
+const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const DIAS_SEM = ["L","M","M","J","V","S","D"];
+
+// ==================== SONIDO Y VIBRACIÓN ====================
 let audioCtxRef = null;
 function reproducirAlertaSonido(volumen = 1) {
   try {
@@ -176,30 +238,58 @@ function vibrarPatron() {
   catch (e) { console.warn("Vibración no disponible:", e); }
 }
 
+// ==================== NOTIFICACIONES FCM ====================
+function cargarMessaging() {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js";
+    s.onload = () => resolve();
+    s.onerror = (err) => reject(err);
+    document.head.appendChild(s);
+  });
+}
+
 async function obtenerTokenFCM() {
-  return new Promise(async (resolve, reject) => {
+  return new Promise(async (resolve) => {
     try {
+      // Fix: Timeout para evitar que se cuelgue si SW no está listo
+      const timeout = setTimeout(() => { console.warn("Timeout esperando token FCM"); resolve(null); }, 10000);
+      
+      if (!("serviceWorker" in navigator)) { clearTimeout(timeout); resolve(null); return; }
+      
+      // Registrar SW explícitamente (aunque Vercel lo haga, aseguramos)
+      try {
+        await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+      } catch (e) { console.warn("Error registrando SW:", e); }
+
       await cargarMessaging();
-      if (!window.firebase || !window.firebase.messaging) { resolve(null); return; }
+      if (!window.firebase || !window.firebase.messaging) { clearTimeout(timeout); resolve(null); return; }
+      
       const messaging = window.firebase.messaging();
       const permiso = await Notification.requestPermission();
-      if (permiso !== "granted") { resolve(null); return; }
+      if (permiso !== "granted") { clearTimeout(timeout); resolve(null); return; }
+      
       const registration = await navigator.serviceWorker.ready;
       const currentToken = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: registration });
+      
+      clearTimeout(timeout);
       resolve(currentToken || null);
-    } catch (err) { reject(err); }
+    } catch (err) { 
+      console.warn("Error obteniendo token FCM:", err);
+      resolve(null); 
+    }
   });
 }
 
 async function guardarTokenEnFirestore(codigoFamilia, token, rol = "paciente") {
-    if (!codigoFamilia || !token || !db) return;
-    try {
-      const campo = rol === "cuidador" ? "tokenCuidador" : "tokenNotificaciones";
-      await db.collection("familias").doc(STORAGE_PREFIX + codigoFamilia).set({ [campo]: token, fechaToken: Date.now() }, { merge: true });
-    } catch (error) { console.error("Error al guardar el token:", error); }
+  if (!codigoFamilia || !token || !db) return;
+  try {
+    const campo = rol === "cuidador" ? "tokenCuidador" : "tokenNotificaciones";
+    await db.collection("familias").doc(STORAGE_PREFIX + codigoFamilia).set({ [campo]: token, fechaToken: Date.now() }, { merge: true });
+  } catch (error) { console.error("Error al guardar el token:", error); }
 }
 
-const EVENTOS_COLLECTION = "eventos";
+// ==================== EVENTOS Y REPORTES ====================
 async function registrarEvento(codigoFamilia, tipo, detalle, extra = {}) {
   if (!codigoFamilia) return;
   const evento = { codigo: String(codigoFamilia), tipo: tipo || "desconocido", detalle: detalle || "", timestamp: Date.now(), fecha: new Date().toISOString(), appVersion: APP_VERSION, ...extra };
@@ -225,141 +315,56 @@ async function enviarEventosPendientes() {
   } catch (e) {}
 }
 
-async function obtenerEventos(limite = 500) {
-  try {
-    if (db) {
-      const snapshot = await db.collection(EVENTOS_COLLECTION).orderBy("timestamp", "desc").limit(limite).get();
-      const out = [];
-      snapshot.forEach((doc) => { out.push({ id: doc.id, ...doc.data() }); });
-      return out;
-    }
-  } catch (e) {}
-  return [];
-}
-
-function exportarCSV(eventos) {
-  const headers = ["Fecha", "Hora", "Familia", "Tipo", "Detalle", "Persona", "Edad", "Cuidador", "Versión"];
-  const rows = eventos.map(e => {
-    const d = new Date(e.timestamp);
-    return [d.toLocaleDateString("es-CL"), d.toLocaleTimeString("es-CL"), e.codigo || "", e.tipo || "", e.detalle || "", e.persona || "", e.edad || "", e.cuidador || "", e.appVersion || ""];
-  });
-  const csv = [headers.join(","), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
-  const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `contigo_siempre_eventos_${new Date().toISOString().slice(0,10)}.csv`;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-}
-
-function clasificarMedicamento(n) { if (!n) return null; const x = n.toLowerCase().trim(); if (MEDS_CON_RECETA.some((m) => x.includes(m))) return "con_receta"; if (MEDS_SIN_RECETA.some((m) => x.includes(m))) return "sin_receta"; return null; }
-function detectarCriticidad(n) { if (!n) return "normal"; const x = n.toLowerCase().trim(); if (MEDS_VITALES.some((m) => x.includes(m))) return "vital"; if (MEDS_CON_RECETA.some((m) => x.includes(m))) return "importante"; return "normal"; }
-function dispColor(hex, daltonico) { const i = PILL_COLORS.indexOf(hex); return daltonico && i >= 0 ? PILL_COLORS_CB[i] : hex; }
-
-function calcularRankingFarmacias(fs) {
-  const cs = fs.map((f) => f.costo), ds = fs.map((f) => f.distanciaKm);
-  const cMin = Math.min(...cs), cMax = Math.max(...cs), dMax = Math.max(...ds);
-  return fs.map((f) => { const fc = cMax === cMin ? 1 : 1 - (f.costo - cMin) / (cMax - cMin); const fd = dMax === 0 ? 1 : 1 - f.distanciaKm / dMax; return { farmacia: f, puntaje: 0.6 * fc + 0.4 * fd }; }).sort((a, b) => b.puntaje - a.puntaje);
-}
-
-function nowHHMM() { const d = new Date(); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; }
-function toMinutes(t) { const [h, m] = t.split(":").map(Number); return h * 60 + m; }
-function fmtHoraConAmPm(t) {
-  if (!t || !t.includes(":")) return "";
-  const [h, m] = t.split(":").map(Number);
-  const sufijo = h >= 12 ? "p. m." : "a. m.";
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${String(h12).padStart(2, "0")}:${String(m).padStart(2, "0")} ${sufijo}`;
-}
-function a24Horas(h12, m, sufijo) { let h = h12 % 12; if (sufijo === "p. m.") h += 12; return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`; }
-function a12Horas(t) { const [h, m] = t.split(":").map(Number); const sufijo = h >= 12 ? "p. m." : "a. m."; const h12 = h % 12 === 0 ? 12 : h % 12; return { h12, m, sufijo }; }
-function sumarMinutos(t, min) { const total = (toMinutes(t) + min) % (24 * 60); const h = Math.floor(total / 60); const m = total % 60; return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`; }
-function fmt(mins) { const h = Math.floor(mins / 60) % 24; const m = mins % 60; const sufijo = h >= 12 ? "p. m." : "a. m."; const h12 = h % 12 === 0 ? 12 : h % 12; return `${String(h12).padStart(2, "0")}:${String(m).padStart(2, "0")} ${sufijo}`; }
-function fmtN(n) { if (n === null || n === undefined) return ""; if (Number.isInteger(n)) return String(n); return String(parseFloat(n.toFixed(2))); }
-function fmtUnid(n) { return `${fmtN(n)} unid.`; }
-function occKey(id, t) { return `${id}__${t}`; }
-function genCode() { return String(Math.floor(100000 + Math.random() * 900000)); }
-function todayStr() { return new Date().toISOString().slice(0, 10); }
-function smsTime() { const d = new Date(); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; }
-function dateKeyOffset(d) { const x = new Date(); x.setDate(x.getDate() - d); return x.toISOString().slice(0, 10); }
-function proximaFechaCompra(dias) { const d = new Date(); d.setDate(d.getDate() + Math.max(0, Math.floor(dias))); const dow = d.getDay(); if (dow === 6) d.setDate(d.getDate() - 1); if (dow === 0) d.setDate(d.getDate() - 2); const s = ["domingo","lunes","martes","miércoles","jueves","viernes","sábado"]; return `${s[d.getDay()]} ${d.getDate()}`; }
-function diasHastaVencimiento(fechaStr) { if (!fechaStr) return null; const v = new Date(fechaStr); const h = new Date(); return Math.floor((v - h) / (1000 * 60 * 60 * 24)); }
-function minutosDesde(ts) { if (!ts) return null; return Math.floor((Date.now() - ts) / 60000); }
-
-function calcularRacha(meds, cbd) {
-  if (!meds || meds.length === 0 || !cbd) return 0;
-  const totalPorDia = meds.reduce((a, m) => a + (m.times?.length || 0), 0);
-  if (totalPorDia === 0) return 0;
-  let racha = 0;
-  for (let i = 1; i <= 60; i++) { const key = dateKeyOffset(i); const dia = cbd[key]; if (!dia) break; const conf = Object.keys(dia).filter((k) => dia[k]).length; if (conf >= totalPorDia) racha++; else break; }
-  return racha;
-}
-
-function diasRestantesReales(med, cbd) {
-  if (!med.times || med.times.length === 0) return null;
-  const dosisPorToma = Number(med.doseAmount) || 1;
-  const tomasAlDia = med.times.length;
-  const consumoDiarioTotal = dosisPorToma * tomasAlDia;
-  if (consumoDiarioTotal === 0) return null;
-  const dias = med.stock / consumoDiarioTotal;
-  return Number.isInteger(dias) ? dias : Math.round(dias * 10) / 10;
-}
-
-function semaforoRiesgo(med, cbd) {
-  const d = diasRestantesReales(med, cbd);
-  if (d === null) return { color: "MUTED", nivel: "sin datos", dias: null };
-  if (d <= 3) return { color: "CORAL", nivel: "urgente", dias: d };
-  if (d <= 7) return { color: "AMBER", nivel: "atención", dias: d };
-  return { color: "GREEN", nivel: "tranquilo", dias: d };
-}
-function detectarCambioPatron(meds, cbd) {
-  if (!meds || meds.length === 0 || !cbd) return null;
-  const tpd = meds.reduce((a, m) => a + (m.times?.length || 0), 0);
-  if (tpd === 0) return null;
-  function tasa(a, b) { let c = 0, e = 0; for (let i = a; i < b; i++) { const dia = cbd[dateKeyOffset(i)] || {}; c += Object.keys(dia).filter((k) => dia[k]).length; e += tpd; } return e === 0 ? null : c / e; }
-  const ta = tasa(0, 7), tp = tasa(7, 14);
-  if (ta === null || tp === null || tp < 0.5) return null;
-  if (tp - ta >= 0.3) return { tasaActual: Math.round(ta * 100), tasaPrevia: Math.round(tp * 100) };
-  return null;
-}
-function getMesActual() {
-  const hoy = new Date();
-  const año = hoy.getFullYear();
-  const mes = hoy.getMonth();
-  const ultimoDia = new Date(año, mes + 1, 0);
-  const dias = [];
-  const primerDow = new Date(año, mes, 1).getDay() === 0 ? 6 : new Date(año, mes, 1).getDay() - 1;
-  for (let i = 0; i < primerDow; i++) dias.push(null);
-  for (let d = 1; d <= ultimoDia.getDate(); d++) dias.push(new Date(año, mes, d));
-  return { dias, mes, año };
-}
-const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-const DIAS_SEM = ["L","M","M","J","V","S","D"];
-
 function generarTextoCompartir(tipo, elderName, meds, confirmedByDate) {
-  if (tipo === "resumen") {
-    const hoy = todayStr(); const dia = confirmedByDate?.[hoy] || {};
-    let conf = 0, esp = 0;
-    meds.forEach((m) => m.times.forEach((t) => { esp++; if (dia[occKey(m.id, t)]) conf++; }));
-    return `Resumen de hoy para ${elderName}:\n✓ ${conf} de ${esp} tomas confirmadas.\n\nEnviado desde Contigo Siempre.`;
+  if (tipo === "resumen" || tipo === "medico") {
+    const hoy = todayStr(); 
+    let conf = 0, esp = 0, omitidas = [];
+    
+    // Historial 7 días
+    for (let i = 0; i < 7; i++) {
+      const k = dateKeyOffset(i); 
+      const dia = confirmedByDate?.[k] || {};
+      meds.forEach((m) => m.times.forEach((t) => { 
+        esp++; 
+        if (dia[occKey(m.id, t)]) conf++; 
+        else if (i > 0) omitidas.push(`${new Date(k).getDate()}/${new Date(k).getMonth() + 1} (${fmtHoraConAmPm(t)} ${m.name})`);
+      }));
+    }
+    
+    let txt = `Resumen médico — ${elderName}\n\n📅 Últimos 7 días: ${conf} de ${esp} tomas confirmadas (${esp > 0 ? Math.round(conf/esp*100) : 0}%)\n\n💊 Medicamentos:\n`;
+    meds.forEach(m => {
+      const s = semaforoRiesgo(m);
+      txt += `• ${m.name} — ${m.times.map(fmtHoraConAmPm).join(", ")} — quedan ${s.dias !== null ? fmtN(s.dias) + ' días' : '?'}\n`;
+    });
+    
+    if (omitidas.length > 0) {
+      txt += `\n⚠️ Tomas omitidas (últimos 6 días):\n${omitidas.slice(0,5).join("\n")}${omitidas.length > 5 ? '\n...' : ''}\n`;
+    }
+    
+    txt += `\n— Enviado desde Contigo Siempre`;
+    return txt;
   }
   if (tipo === "meds") {
-    const lineas = meds.map((m) => `• ${m.name} — ${m.times.map(fmtHoraConAmPm).join(", ")} (${fmtUnid(m.stock)})`);
+    const lineas = meds.map((m) => `• ${m.name} — ${m.times.map(fmtHoraConAmPm).join(", ")} (${fmtN(m.stock)} unid.)`);
     return `Medicamentos de ${elderName}:\n\n${lineas.join("\n")}\n\nEnviado desde Contigo Siempre.`;
-  }
-  if (tipo === "historial") {
-    const lineas = [];
-    for (let i = 6; i >= 0; i--) {
-      const k = dateKeyOffset(i); const dia = confirmedByDate?.[k] || {};
-      let conf = 0, esp = 0;
-      meds.forEach((m) => m.times.forEach((t) => { esp++; if (dia[occKey(m.id, t)]) conf++; }));
-      const fecha = new Date(); fecha.setDate(fecha.getDate() - i);
-      lineas.push(`${fecha.getDate()}/${fecha.getMonth() + 1}: ${conf}/${esp}`);
-    }
-    return `Historial últimos 7 días de ${elderName}:\n\n${lineas.join("\n")}\n\nEnviado desde Contigo Siempre.`;
   }
   return "";
 }
+
+// ==================== REGISTRO DE DATOS ADMIN ====================
+function registrarDato(clave, valor = 1, detalle = null) {
+  try {
+    const raw = localStorage.getItem("datos_admin_global");
+    const datos = raw ? JSON.parse(raw) : {};
+    if (clave === "clicsFarmacia") { if (!datos[clave]) datos[clave] = {}; datos[clave][detalle] = (datos[clave][detalle] || 0) + 1; }
+    else if (clave === "medsConsultados") { if (!datos[clave]) datos[clave] = {}; if (!datos[clave][detalle]) datos[clave][detalle] = { clics: 0, precioTotal: 0 }; datos[clave][detalle].clics = (datos[clave][detalle].clics || 0) + 1; datos[clave][detalle].precioTotal = (datos[clave][detalle].precioTotal || 0) + (valor || 0); }
+    else { datos[clave] = (datos[clave] || 0) + valor; }
+    localStorage.setItem("datos_admin_global", JSON.stringify(datos));
+  } catch (e) { console.error(e); }
+}
+// ===== FIN PARTE 1 =====
+// ==================== COMPONENTES UI BASE ====================
+
 function LogoContigoSiempre({ size = 64, color = "#1976D2", accent = "#F9A825" }) {
   const s = size;
   return (
@@ -518,7 +523,7 @@ function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
   );
 }
 
-function SelectorRol({ C, onSeleccionar, onCerrar }) {
+function SelectorRol({ C, onSeleccionar }) {
   const roles = [
     { id: "mayor", Icono: User, titulo: "Adulto mayor", descripcion: "Solo veo mis medicamentos y confirmo las tomas" },
     { id: "cuidador", Icono: Users, titulo: "Cuidador / Familiar", descripcion: "Cuido a alguien más y administro sus medicamentos" },
@@ -622,6 +627,8 @@ function CampoHora({ C, valor, onCambio, oscuro }) {
     </>
   );
 }
+// ===== FIN PARTE 2 =====
+// ==================== MODALES INFORMATIVOS Y ADMIN ====================
 
 function MenuLateral({ C, abierto, onCerrar, tabActual, setTabActual, avisosNuevos, onCompartir, onModoOscuro, onAyuda, onAcercaDe, onPolitica, onPremium, onAjustes, oscuro, cuidadorNombre, elderName }) {
   if (!abierto) return null;
@@ -659,7 +666,7 @@ function MenuLateral({ C, abierto, onCerrar, tabActual, setTabActual, avisosNuev
         </div>
         <div style={{ padding: "14px 12px 8px" }}>
           <div style={{ fontSize: 10.5, fontWeight: 700, color: C.MUTED, letterSpacing: 1.2, padding: "0 8px 10px" }}>SECCIONES</div>
-          {secciones.map((s) => { const activo = tabActual === s.id; const Icono = s.Icono; return (<button key={s.id} onClick={() => { setTabActual(s.id); onCerrar(); }} className="btn-press-soft" style={{ width: "100%", padding: "13px 12px", borderRadius: 12, border: "none", background: activo ? (oscuro ? "#1E3A5F" : "#E3F2FD") : "transparent", color: activo ? C.TEAL : C.INK, fontWeight: activo ? 700 : 500, fontSize: 14.5, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 14, marginBottom: 2, transition: "all 0.15s ease" }}><Icono size={20} strokeWidth={activo ? 2.4 : 2} color={activo ? C.TEAL : C.MUTED} /><span>{s.label}</span></button>); })}
+          {secciones.map((s) => { const activo = tabActual === s.id; const Icono = s.Icono; return (<button key={s.id} onClick={() => { setTabActual(s.id); onCerrar(); }} className="btn-press-soft" style={{ width: "100%", padding: "13px 12px", borderRadius: 12, border: "none", background: activo ? (oscuro ? "#1E3A5F" : "#E3F2FD") : "transparent", color: activo ? C.TEAL : C.INK, fontWeight: activo ? 700 : 500, fontSize: 14.5, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 14, marginBottom: 2, transition: "all 0.15s ease" }}><Icono size={20} strokeWidth={activo ? 2.4 : 2} color={activo ? C.TEAL : C.MUTED} /><span style={{flex:1}}>{s.label}</span>{s.badge > 0 && <span style={{ background: C.CORAL, color: "#fff", fontSize: 10, fontWeight: 800, padding: "2px 6px", borderRadius: 999 }}>{s.badge}</span>}</button>); })}
         </div>
         <div style={{ padding: "8px 12px 20px" }}>
           <div style={{ fontSize: 10.5, fontWeight: 700, color: C.MUTED, letterSpacing: 1.2, padding: "10px 8px 10px" }}>ACCIONES</div>
@@ -674,10 +681,10 @@ function MenuLateral({ C, abierto, onCerrar, tabActual, setTabActual, avisosNuev
 function ComoFunciona({ C, onCerrar }) {
   const pasos = [
     { Icono: Pill, titulo: "1. Agrega los medicamentos", texto: "Nombre, dosis, horarios y stock." },
-    { Icono: KeyRound, titulo: "2. Comparte el código", texto: "Dale el código de 6 dígitos a tu familiar para vincular su app con la tuya." },
-    { Icono: BellRing, titulo: "3. Alerta con pantalla completa", texto: "Cuando es la hora, el teléfono del adulto mayor suena, vibra y muestra la alerta a pantalla completa." },
+    { Icono: KeyRound, titulo: "2. Comparte el código", texto: "Dale el código de 6 dígitos a tu familiar para vincular su app." },
+    { Icono: BellRing, titulo: "3. Alerta con pantalla completa", texto: "Cuando es la hora, el teléfono suena, vibra y muestra la alerta." },
     { Icono: Check, titulo: "4. Confirma cada toma", texto: "Él aprieta 'Sí, ya lo tomé' y tú lo ves al instante." },
-    { Icono: WifiOff, titulo: "5. Funciona sin internet", texto: "Si no hay conexión, la app guarda los datos y los sincroniza cuando vuelva la señal." },
+    { Icono: WifiOff, titulo: "5. Funciona sin internet", texto: "Si no hay conexión, la app guarda los datos y sincroniza luego." },
   ];
   return (
     <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 70 }}>
@@ -701,7 +708,7 @@ function OnboardingPremium({ C, onCerrar }) {
     { Icono: Users, titulo: "Hasta 3 personas mayores", texto: "Cuida a mamá y papá al mismo tiempo." },
     { Icono: BellRing, titulo: "Alerta a pantalla completa", texto: "Suena y vibra hasta que confirmen la toma." },
     { Icono: RefreshCw, titulo: "Reconteo manual", texto: "Ajusta el stock real cuando lo necesites." },
-    { Icono: FileText, titulo: "Reporte PDF para el médico", texto: "Adherencia del último mes lista para imprimir." },
+    { Icono: FileText, titulo: "Reporte para el médico", texto: "Comparte la adherencia por WhatsApp." },
     { Icono: TrendingDown, titulo: "Detección de cambio de patrón", texto: "La IA te avisa si la adherencia bajó." },
   ];
   return (
@@ -735,7 +742,6 @@ function AcercaDe({ C, onCerrar }) {
         </div>
         <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, marginBottom: 12, boxShadow: C.SHADOW }}><div style={{ fontSize: 13, lineHeight: 1.6 }}><strong>Contigo Siempre</strong> es una app de apoyo logístico para el cuidado de personas mayores.</div></div>
         <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, marginBottom: 12, boxShadow: C.SHADOW }}><div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8 }}>Contacto</div><div style={{ fontSize: 12.5, color: C.MUTED, lineHeight: 1.6 }}>📧 hola@contigosiempre.cl<br />🌐 www.contigosiempre.cl</div></div>
-        <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, marginBottom: 12, boxShadow: C.SHADOW }}><div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8 }}>Alertas inteligentes</div><div style={{ fontSize: 12.5, color: C.MUTED, lineHeight: 1.6 }}>La app suena, vibra y muestra la pantalla completa cuando es hora de tomar un medicamento.</div></div>
         <div style={{ fontSize: 11, color: C.MUTED, textAlign: "center", marginTop: 14 }}>Hecho en Chile con ❤ · © 2026</div>
         <button onClick={onCerrar} className="btn-press" style={{ marginTop: 16, width: "100%", padding: 14, borderRadius: 14, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>Cerrar</button>
       </div>
@@ -754,7 +760,7 @@ function PoliticaPrivacidad({ C, onCerrar }) {
         </div>
         <div style={{ fontSize: 12.5, color: C.MUTED, lineHeight: 1.7 }}>
           <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>1. Quiénes somos.</strong><br />Contigo Siempre es una aplicación chilena de apoyo al cuidado de personas mayores.</p>
-          <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>2. Qué datos recopilamos.</strong><br />Nombre y edad de la persona mayor, nombre del cuidador, medicamentos, confirmaciones, notas, contactos y preferencias.</p>
+          <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>2. Qué datos recopilamos.</strong><br />Nombre y edad del adulto mayor, nombre del cuidador, medicamentos, confirmaciones, notas, contactos y preferencias.</p>
           <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>3. Datos sensibles.</strong><br />La información sobre medicamentos y adherencia puede considerarse dato sensible de salud.</p>
           <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>4. Para qué usamos los datos.</strong><br />Mostrar recordatorios, enviar alertas, controlar stock y mejorar el servicio.</p>
           <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>5. Dónde se guardan.</strong><br />Servidores seguros de Google Firebase. La app funciona sin conexión y sincroniza cuando vuelve la señal.</p>
@@ -774,9 +780,40 @@ function VerEventos({ C, onCerrar }) {
   const [eventos, setEventos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [filtro, setFiltro] = useState("todos");
-  useEffect(() => { (async () => { setCargando(true); const data = await obtenerEventos(500); setEventos(data); setCargando(false); })(); }, []);
+  
+  useEffect(() => { 
+    (async () => { 
+      setCargando(true); 
+      try {
+        if (db) {
+          const snapshot = await db.collection("eventos").orderBy("timestamp", "desc").limit(500).get();
+          const out = [];
+          snapshot.forEach((doc) => { out.push({ id: doc.id, ...doc.data() }); });
+          setEventos(out);
+        }
+      } catch(e) {} 
+      setCargando(false); 
+    })(); 
+  }, []);
+  
   const filtrados = filtro === "todos" ? eventos : eventos.filter(e => e.tipo === filtro);
   const tiposUnicos = ["todos", ...Array.from(new Set(eventos.map(e => e.tipo)))];
+  
+  const exportarCSV = () => {
+    const headers = ["Fecha", "Hora", "Familia", "Tipo", "Detalle", "Persona", "Edad", "Cuidador", "Versión"];
+    const rows = filtrados.map(e => {
+      const d = new Date(e.timestamp);
+      return [d.toLocaleDateString("es-CL"), d.toLocaleTimeString("es-CL"), e.codigo || "", e.tipo || "", e.detalle || "", e.persona || "", e.edad || "", e.cuidador || "", e.appVersion || ""];
+    });
+    const csv = [headers.join(","), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(","))].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `contigo_siempre_eventos_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 76 }}>
       <div className="modal-scale" style={{ width: "100%", maxWidth: 480, background: C.CREAM, borderRadius: 24, padding: 20, margin: 20, maxHeight: "92vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.35)" }}>
@@ -786,7 +823,7 @@ function VerEventos({ C, onCerrar }) {
         </div>
         <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
           <select value={filtro} onChange={(e) => setFiltro(e.target.value)} style={{ flex: 1, padding: "8px 10px", borderRadius: 10, border: `1px solid ${C.LINE}`, fontSize: 12, background: C.PAPER, color: C.INK, outline: "none" }}>{tiposUnicos.map(t => <option key={t} value={t}>{t}</option>)}</select>
-          <button onClick={() => exportarCSV(filtrados)} disabled={filtrados.length === 0} className="btn-press" style={{ padding: "8px 14px", borderRadius: 10, border: "none", background: filtrados.length ? C.TEAL : C.LINE, color: filtrados.length ? "#fff" : C.MUTED, fontWeight: 700, fontSize: 12, cursor: filtrados.length ? "pointer" : "not-allowed", display: "flex", alignItems: "center", gap: 6 }}><Download size={14} /> CSV</button>
+          <button onClick={exportarCSV} disabled={filtrados.length === 0} className="btn-press" style={{ padding: "8px 14px", borderRadius: 10, border: "none", background: filtrados.length ? C.TEAL : C.LINE, color: filtrados.length ? "#fff" : C.MUTED, fontWeight: 700, fontSize: 12, cursor: filtrados.length ? "pointer" : "not-allowed", display: "flex", alignItems: "center", gap: 6 }}><Download size={14} /> CSV</button>
         </div>
         <div style={{ fontSize: 11, color: C.MUTED, marginBottom: 10 }}>{cargando ? "Cargando eventos..." : `${filtrados.length} eventos`} · últimos 500</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: "55vh", overflowY: "auto" }}>
@@ -820,7 +857,7 @@ function PanelAdmin({ C, familias, onCerrar, onAbrirDatos, onAbrirEventos }) {
     f.data?.personas?.forEach(p => {
       const dia = p.confirmedByDate?.[hoyStr] || {};
       totalConfirmaciones += Object.keys(dia).filter(k => dia[k]).length;
-      p.meds?.forEach(m => { totalEsperadas += m.times?.length || 0; });
+      p.meds?.forEach(m => { if (!m.archivado) totalEsperadas += m.times?.length || 0; });
     });
   });
   const adherenciaHoy = totalEsperadas > 0 ? Math.round((totalConfirmaciones / totalEsperadas) * 100) : 0;
@@ -853,8 +890,6 @@ function PanelAdmin({ C, familias, onCerrar, onAbrirDatos, onAbrirEventos }) {
         <button onClick={onAbrirEventos} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: `linear-gradient(135deg, ${C.GOLD}, #E65100)`, color: "#fff", fontWeight: 700, cursor: "pointer", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Activity size={18} /> Ver Eventos (Firebase)</button>
         <button onClick={onAbrirDatos} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><BarChart3 size={18} /> Datos Administrativos</button>
         
-        <button onClick={() => alert("Función de exportación para CORFO en desarrollo. Usa 'Ver Eventos' por ahora.")} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: `1px solid ${C.TEAL}`, background: "transparent", color: C.TEAL, fontWeight: 700, cursor: "pointer", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Download size={18} /> Exportar Reporte CORFO</button>
-
         <button onClick={onCerrar} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, cursor: "pointer" }}>Cerrar</button>
       </div>
     </div>
@@ -869,6 +904,7 @@ function DatosAdministrativos({ C, onCerrar, onReset }) {
   const farmacias = ["Cruz Verde", "Salcobrand", "Farmacias Ahumada", "Búho (comparador)"];
   const clicsFarmacia = datos.clicsFarmacia || {};
   const rankingFarmacias = farmacias.map((f) => ({ nombre: f, clics: clicsFarmacia[f] || 0 })).sort((a, b) => b.clics - a.clics);
+  
   return (
     <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 74 }}>
       <div className="modal-scale" style={{ width: "100%", maxWidth: 420, background: C.CREAM, borderRadius: 24, padding: 24, margin: 20, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.35)" }}>
@@ -876,12 +912,10 @@ function DatosAdministrativos({ C, onCerrar, onReset }) {
           <div style={{ fontWeight: 700, fontSize: 19, display: "flex", alignItems: "center", gap: 8 }}><BarChart3 size={20} color={C.TEAL} /> Datos Locales</div>
           <button onClick={onCerrar} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
         </div>
-        <div style={{ fontSize: 11.5, color: C.MUTED, marginBottom: 14, lineHeight: 1.5 }}>Estos datos son del almacenamiento local de este dispositivo. Los datos globales están en "Ver Eventos".</div>
+        <div style={{ fontSize: 11.5, color: C.MUTED, marginBottom: 14, lineHeight: 1.5 }}>Estos datos son del almacenamiento local de este dispositivo. Los globales están en "Ver Eventos".</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
           <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, boxShadow: C.SHADOW }}><div style={{ fontSize: 10.5, color: C.MUTED }}>Vio carro</div><div style={{ fontSize: 22, fontWeight: 800, color: C.TEAL }}>{fmtN(datos.vioCarroTotal || 0)}</div></div>
           <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, boxShadow: C.SHADOW }}><div style={{ fontSize: 10.5, color: C.MUTED }}>Abrió farmacia</div><div style={{ fontSize: 22, fontWeight: 800, color: C.CORAL }}>{fmtN(datos.abrioFarmaciaTotal || 0)}</div></div>
-          <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, boxShadow: C.SHADOW }}><div style={{ fontSize: 10.5, color: C.MUTED }}>Vio individual</div><div style={{ fontSize: 22, fontWeight: 800, color: C.AMBER }}>{fmtN(datos.vioIndividualTotal || 0)}</div></div>
-          <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, boxShadow: C.SHADOW }}><div style={{ fontSize: 10.5, color: C.MUTED }}>Productos sugeridos</div><div style={{ fontSize: 22, fontWeight: 800, color: C.GOLD }}>{fmtN(datos.productosSugeridosTotal || 0)}</div></div>
         </div>
         <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, marginBottom: 14, boxShadow: C.SHADOW }}>
           <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 10 }}>Ranking de farmacias (local)</div>
@@ -895,32 +929,327 @@ function DatosAdministrativos({ C, onCerrar, onReset }) {
     </div>
   );
 }
-const STORAGE_PREFIX = "familia_";
-const storage = {
-  async get(k) {
-    try { if (db) { const doc = await db.collection("familias").doc(k).get(); if (doc.exists) return { value: JSON.stringify(doc.data()) }; return null; } const v = localStorage.getItem(k); return v ? { value: v } : null; }
-    catch (e) { console.error("Firestore get error:", e); const v = localStorage.getItem(k); return v ? { value: v } : null; }
-  },
-  async set(k, v) {
-    try { if (db) { const data = JSON.parse(v); await db.collection("familias").doc(k).set(data); localStorage.setItem(k, v); return; } localStorage.setItem(k, v); }
-    catch (e) { console.error("Firestore set error:", e); localStorage.setItem(k, v); }
-  },
-  async listAll() {
-    try { if (db) { const snapshot = await db.collection("familias").get(); const out = []; snapshot.forEach((doc) => { out.push({ codigo: doc.id, data: doc.data() }); }); return out; } const out = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(STORAGE_PREFIX)) { const v = localStorage.getItem(k); try { out.push({ codigo: k.replace(STORAGE_PREFIX, ""), data: JSON.parse(v) }); } catch (e) {} } } return out; }
-    catch (e) { return []; }
-  },
-};
+// ===== FIN PARTE 3 =====
+// ==================== NUEVOS COMPONENTES CORFO Y UTILIDADES ====================
 
-function registrarDato(clave, valor = 1, detalle = null) {
-  try {
-    const raw = localStorage.getItem("datos_admin_global");
-    const datos = raw ? JSON.parse(raw) : {};
-    if (clave === "clicsFarmacia") { if (!datos[clave]) datos[clave] = {}; datos[clave][detalle] = (datos[clave][detalle] || 0) + 1; }
-    else if (clave === "medsConsultados") { if (!datos[clave]) datos[clave] = {}; if (!datos[clave][detalle]) datos[clave][detalle] = { clics: 0, precioTotal: 0 }; datos[clave][detalle].clics = (datos[clave][detalle].clics || 0) + 1; datos[clave][detalle].precioTotal = (datos[clave][detalle].precioTotal || 0) + (valor || 0); }
-    else { datos[clave] = (datos[clave] || 0) + valor; }
-    localStorage.setItem("datos_admin_global", JSON.stringify(datos));
-  } catch (e) { console.error(e); }
+function OnboardingCORFO({ C, onCerrar, onGuardar }) {
+  const [paso, setPaso] = useState(1);
+  const [paraQuien, setParaQuien] = useState("");
+  const [cantidadMeds, setCantidadMeds] = useState("");
+  const [avisos, setAvisos] = useState("");
+
+  const siguiente = () => {
+    if (paso === 1 && !paraQuien) return;
+    if (paso === 2 && !cantidadMeds) return;
+    if (paso === 3 && !avisos) {
+      onGuardar({ paraQuien, cantidadMeds, avisos });
+      onCerrar();
+      return;
+    }
+    setPaso(paso + 1);
+  };
+
+  return (
+    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200 }}>
+      <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 24, padding: 28, margin: 20, textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+        
+        <div style={{ fontSize: 12, fontWeight: 800, color: C.TEAL, marginBottom: 16, letterSpacing: 1 }}>PASO {paso} DE 3</div>
+
+        {paso === 1 && (
+          <div className="modal-slide">
+            <div style={{ fontSize: 22, fontWeight: 800, color: C.INK, marginBottom: 8 }}>¿Para quién es esta app?</div>
+            <div style={{ fontSize: 13, color: C.MUTED, marginBottom: 24 }}>Así personalizamos tu experiencia.</div>
+            {["Para mí", "Para mi mamá", "Para mi papá", "Para otro familiar"].map(op => (
+              <button key={op} onClick={() => setParaQuien(op)} className="btn-press-soft" style={{ width: "100%", padding: 16, borderRadius: 14, border: paraQuien === op ? `2px solid ${C.TEAL}` : `1px solid ${C.LINE}`, background: paraQuien === op ? C.TEAL + "10" : C.PAPER, color: C.INK, fontWeight: 700, fontSize: 15, marginBottom: 10, cursor: "pointer", transition: "all 0.2s" }}>
+                {op}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {paso === 2 && (
+          <div className="modal-slide">
+            <div style={{ fontSize: 22, fontWeight: 800, color: C.INK, marginBottom: 8 }}>¿Cuántos medicamentos toma?</div>
+            <div style={{ fontSize: 13, color: C.MUTED, marginBottom: 24 }}>Nos ayuda a configurar el stock.</div>
+            {["1 a 2 medicamentos", "3 a 4 medicamentos", "5 o más medicamentos"].map(op => (
+              <button key={op} onClick={() => setCantidadMeds(op)} className="btn-press-soft" style={{ width: "100%", padding: 16, borderRadius: 14, border: cantidadMeds === op ? `2px solid ${C.TEAL}` : `1px solid ${C.LINE}`, background: cantidadMeds === op ? C.TEAL + "10" : C.PAPER, color: C.INK, fontWeight: 700, fontSize: 15, marginBottom: 10, cursor: "pointer", transition: "all 0.2s" }}>
+                {op}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {paso === 3 && (
+          <div className="modal-slide">
+            <div style={{ fontSize: 22, fontWeight: 800, color: C.INK, marginBottom: 8 }}>¿Quieres que te avisemos si no confirma?</div>
+            <div style={{ fontSize: 13, color: C.MUTED, marginBottom: 24 }}>Para que estés tranquilo.</div>
+            {["Sí, enviar alertas", "No por ahora"].map(op => (
+              <button key={op} onClick={() => setAvisos(op)} className="btn-press-soft" style={{ width: "100%", padding: 16, borderRadius: 14, border: avisos === op ? `2px solid ${C.TEAL}` : `1px solid ${C.LINE}`, background: avisos === op ? C.TEAL + "10" : C.PAPER, color: C.INK, fontWeight: 700, fontSize: 15, marginBottom: 10, cursor: "pointer", transition: "all 0.2s" }}>
+                {op}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <button onClick={siguiente} disabled={(paso === 1 && !paraQuien) || (paso === 2 && !cantidadMeds) || (paso === 3 && !avisos)} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: ((paso === 1 && !paraQuien) || (paso === 2 && !cantidadMeds) || (paso === 3 && !avisos)) ? C.LINE : C.TEAL, color: "#fff", fontWeight: 700, fontSize: 16, marginTop: 20, cursor: "pointer" }}>
+          {paso === 3 ? "Finalizar" : "Siguiente"}
+        </button>
+      </div>
+    </div>
+  );
 }
+
+function PanelMetricasCORFO({ C, onCerrar }) {
+  const [data, setData] = useState(null);
+  const [cargando, setCargando] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!db) throw new Error("Sin DB");
+        const snapshot = await db.collection("familias").get();
+        let total = 0, d7 = 0, d30 = 0;
+        let sumAdherencia = 0, countAdherencia = 0;
+        const medsCount = {};
+        
+        const ahora = Date.now();
+        const hoy = todayStr();
+
+        snapshot.forEach(doc => {
+          const f = doc.data();
+          total++;
+          const firstSeen = f.creadoEn || (f.personas?.[0]?.ultimaConexion) || ahora;
+          const dias = Math.floor((ahora - firstSeen) / (1000 * 60 * 60 * 24));
+          
+          let tieneConfirmacionesRecientes = false;
+          let totalConf = 0, totalEsp = 0;
+
+          f.personas?.forEach(p => {
+            const cbd = p.confirmedByDate || {};
+            if (cbd[hoy] && Object.keys(cbd[hoy]).length > 0) tieneConfirmacionesRecientes = true;
+            
+            p.meds?.forEach(m => {
+              if (!m.archivado) {
+                totalEsp += m.times?.length || 0;
+                medsCount[m.name] = (medsCount[m.name] || 0) + 1;
+              }
+            });
+            
+            const dia = cbd[hoy] || {};
+            totalConf += Object.keys(dia).filter(k => dia[k]).length;
+          });
+
+          if (tieneConfirmacionesRecientes || dias < 2) {
+            if (dias >= 7) d7++;
+            if (dias >= 30) d30++;
+          }
+          
+          if (totalEsp > 0) {
+            sumAdherencia += (totalConf / totalEsp) * 100;
+            countAdherencia++;
+          }
+        });
+
+        const topMeds = Object.entries(medsCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
+        
+        setData({
+          total,
+          retencionD7: total > 0 ? Math.round((d7 / total) * 100) : 0,
+          retencionD30: total > 0 ? Math.round((d30 / total) * 100) : 0,
+          adherenciaPromedio: countAdherencia > 0 ? Math.round(sumAdherencia / countAdherencia) : 0,
+          topMeds
+        });
+      } catch (e) {
+        console.error(e);
+      }
+      setCargando(false);
+    })();
+  }, []);
+
+  return (
+    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 80 }}>
+      <div className="modal-scale" style={{ width: "100%", maxWidth: 400, background: C.CREAM, borderRadius: 24, padding: 24, margin: 20, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div style={{ fontWeight: 800, fontSize: 20, color: C.TEAL }}>Métricas CORFO</div>
+          <button onClick={onCerrar} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
+        </div>
+        
+        {cargando ? <div style={{ textAlign: "center", padding: 40 }}><Loader2 size={30} color={C.TEAL} className="spin" /></div> : data && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 16, boxShadow: C.SHADOW }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.MUTED, marginBottom: 4 }}>FAMILIAS TOTALES</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: C.INK }}>{data.total}</div>
+            </div>
+            
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+              <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 16, boxShadow: C.SHADOW }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: C.MUTED, marginBottom: 4 }}>RETENCIÓN D7</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: data.retencionD7 > 50 ? C.GREEN : C.AMBER }}>{data.retencionD7}%</div>
+              </div>
+              <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 16, boxShadow: C.SHADOW }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: C.MUTED, marginBottom: 4 }}>RETENCIÓN D30</div>
+                <div style={{ fontSize: 24, fontWeight: 800, color: data.retencionD30 > 30 ? C.GREEN : C.AMBER }}>{data.retencionD30}%</div>
+              </div>
+            </div>
+
+            <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 16, boxShadow: C.SHADOW }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: C.MUTED, marginBottom: 4 }}>ADHERENCIA PROMEDIO</div>
+              <div style={{ fontSize: 28, fontWeight: 800, color: C.TEAL }}>{data.adherenciaPromedio}%</div>
+            </div>
+
+            <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 16, boxShadow: C.SHADOW }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.INK, marginBottom: 10 }}>Top Medicamentos</div>
+              {data.topMeds.map((m, i) => (
+                <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "6px 0", borderBottom: i < data.topMeds.length - 1 ? `1px solid ${C.LINE}` : "none" }}>
+                  <span>{i + 1}. {m[0]}</span>
+                  <span style={{ fontWeight: 700, color: C.MUTED }}>{m[1]} familias</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ModalReporteMedico({ C, onCerrar, elderName, meds, confirmedByDate }) {
+  const [copiado, setCopiado] = useState(false);
+  const texto = generarTextoCompartir("medico", elderName, meds, confirmedByDate);
+
+  const copiar = () => {
+    navigator.clipboard.writeText(texto);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 2000);
+  };
+
+  const whatsapp = () => {
+    window.open(`https://wa.me/?text=${encodeURIComponent(texto)}`, "_blank");
+  };
+
+  return (
+    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 85 }}>
+      <div className="modal-scale" style={{ width: "100%", maxWidth: 400, background: C.CREAM, borderRadius: 24, padding: 24, margin: 20, maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div style={{ fontWeight: 800, fontSize: 18, color: C.INK }}>Reporte para el Médico</div>
+          <button onClick={onCerrar} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
+        </div>
+        
+        <div style={{ background: C.BG, border: `1px solid ${C.LINE}`, borderRadius: 12, padding: 16, fontSize: 13, color: C.INK, fontFamily: "monospace", whiteSpace: "pre-wrap", overflowY: "auto", flex: 1, marginBottom: 16, lineHeight: 1.5 }}>
+          {texto}
+        </div>
+
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={copiar} className="btn-press" style={{ flex: 1, padding: 14, borderRadius: 14, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            {copiado ? <Check size={18} color={C.GREEN} /> : <Copy size={18} color={C.MUTED} />} {copiado ? "Copiado" : "Copiar"}
+          </button>
+          <button onClick={whatsapp} className="btn-press" style={{ flex: 1, padding: 14, borderRadius: 14, border: "none", background: C.GREEN, color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            <MessageSquare size={18} /> WhatsApp
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CalendarioHistorial({ C, meds, confirmedByDate, onCerrar }) {
+  const { dias, mes, año } = getMesActual();
+  const mesStr = String(mes + 1).padStart(2, "0");
+  const totalMeds = meds.reduce((a, m) => a + m.times.length, 0);
+
+  return (
+    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 40 }}>
+      <div className="modal-slide" style={{ width: "100%", maxWidth: 420, background: C.CREAM, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "90vh", overflowY: "auto" }}>
+        <div style={{ width: 40, height: 4, background: C.LINE, borderRadius: 999, margin: "0 auto 16px" }} />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div style={{ fontWeight: 700, fontSize: 18 }}>{MESES[mes]} {año}</div>
+          <button onClick={onCerrar} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
+        </div>
+        
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 20 }}>
+          {DIAS_SEM.map((d, i) => <div key={i} style={{ textAlign: "center", fontSize: 11, fontWeight: 700, color: C.MUTED, paddingBottom: 8 }}>{d}</div>)}
+          {dias.map((d, i) => {
+            if (!d) return <div key={`empty-${i}`} />;
+            const key = `${año}-${mesStr}-${String(d.getDate()).padStart(2, "0")}`;
+            const diaData = confirmedByDate?.[key] || {};
+            const confirmadas = Object.keys(diaData).filter(k => diaData[k]).length;
+            const porcentaje = totalMeds > 0 ? confirmadas / totalMeds : 0;
+            
+            let bg = C.PAPER;
+            let color = C.INK;
+            if (d > new Date()) { bg = "transparent"; color = C.LINE; } // Futuro
+            else if (totalMeds === 0) { bg = C.LINE; }
+            else if (porcentaje === 1) { bg = C.GREEN + "20"; color = C.GREEN; }
+            else if (porcentaje > 0) { bg = C.AMBER + "20"; color = C.AMBER; }
+            else if (d <= new Date() && key !== todayStr()) { bg = C.CORAL + "20"; color = C.CORAL; } // Pasado sin tomas
+
+            return (
+              <div key={key} style={{ height: 40, borderRadius: 8, background: bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color }}>
+                {d.getDate()}
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{ display: "flex", gap: 16, justifyContent: "center", fontSize: 11, color: C.MUTED }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}><div style={{ width: 12, height: 12, borderRadius: 4, background: C.GREEN + "40" }} /> Todo</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}><div style={{ width: 12, height: 12, borderRadius: 4, background: C.AMBER + "40" }} /> Parcial</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}><div style={{ width: 12, height: 12, borderRadius: 4, background: C.CORAL + "40" }} /> Nada</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CarroCompleto({ C, meds, onCerrar, onElegirFarmacia }) {
+  const [farmacias, setFarmacias] = useState([
+    { id: "f1", nombre: "Cruz Verde", costo: 8990, distanciaKm: 1.2 },
+    { id: "f2", nombre: "Salcobrand", costo: 9490, distanciaKm: 2.1 },
+    { id: "f3", nombre: "Farmacias Ahumada", costo: 9690, distanciaKm: 1.8 },
+    { id: "f4", nombre: "Búho (comparador)", costo: 7490, distanciaKm: 4.1 },
+  ]);
+
+  const total = farmacias[0].costo; // Simplificado para el ejemplo
+
+  return (
+    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 50 }}>
+      <div className="modal-slide" style={{ width: "100%", maxWidth: 420, background: C.CREAM, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "90vh", overflowY: "auto" }}>
+        <div style={{ width: 40, height: 4, background: C.LINE, borderRadius: 999, margin: "0 auto 16px" }} />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div style={{ fontWeight: 700, fontSize: 18 }}>Canasta ({meds.length})</div>
+          <button onClick={onCerrar} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
+        </div>
+        
+        <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 10 }}>MEDICAMENTOS A COMPRAR</div>
+          {meds.map(m => (
+            <div key={m.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "6px 0", borderBottom: `1px solid ${C.LINE}` }}>
+              <span>{m.name}</span>
+              <span style={{ color: C.MUTED }}>Quedan {semaforoRiesgo(m).dias} días</span>
+            </div>
+          ))}
+          <div style={{ marginTop: 14, display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 16 }}>
+            <span>Estimado:</span>
+            <span style={{ color: C.TEAL }}>${total.toLocaleString("es-CL")}</span>
+          </div>
+        </div>
+
+        <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 10 }}>ELEGIR FARMACIA</div>
+        {farmacias.map(f => (
+          <button key={f.id} onClick={() => onElegirFarmacia(f, meds, total)} className="btn-press-soft" style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 12, padding: 14, marginBottom: 8, cursor: "pointer" }}>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: C.INK }}>{f.nombre}</div>
+              <div style={{ fontSize: 11, color: C.MUTED }}>{f.distanciaKm} km de distancia</div>
+            </div>
+            <div style={{ fontWeight: 800, fontSize: 14, color: C.TEAL }}>${f.costo.toLocaleString("es-CL")}</div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+// ===== FIN PARTE 4 =====
+// ==================== COMPONENTE PRINCIPAL APP ====================
 
 export default function App() {
   const [stage, setStage] = useState("cargando");
@@ -942,6 +1271,7 @@ export default function App() {
   const [showSelector, setShowSelector] = useState(false);
   const [rolUsuario, setRolUsuario] = useState(() => localStorage.getItem("rol_usuario") || null);
   const [showSelectorRol, setShowSelectorRol] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [editandoId, setEditandoId] = useState(null);
   const [archivarTarget, setArchivarTarget] = useState(null);
@@ -955,7 +1285,6 @@ export default function App() {
   const [showPremium, setShowPremium] = useState(false);
   const [showLimite, setShowLimite] = useState(null);
   const [codigoPremium, setCodigoPremium] = useState("");
-  const [diaDetalle, setDiaDetalle] = useState(null);
   const [showNotas, setShowNotas] = useState(null);
   const [showContactos, setShowContactos] = useState(false);
   const [showCompartir, setShowCompartir] = useState(false);
@@ -967,38 +1296,49 @@ export default function App() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [showDatos, setShowDatos] = useState(false);
   const [showEventos, setShowEventos] = useState(false);
+  const [showMetricasCORFO, setShowMetricasCORFO] = useState(false);
+  const [showReporteMedico, setShowReporteMedico] = useState(false);
+  const [showCalendario, setShowCalendario] = useState(false);
   const [showCarroCompleto, setShowCarroCompleto] = useState(false);
+  
   const [nombrePersonaNueva, setNombrePersonaNueva] = useState("");
   const [edadPersonaNueva, setEdadPersonaNueva] = useState("");
   const [formContacto, setFormContacto] = useState({ nombre: "", telefono: "", tipo: "médico" });
   const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: PILL_COLORS[0], shape: PILL_SHAPES[0], unidad: "pastilla", stock: 30, doseAmount: 1, type: "privada", receta: null, criticidad: null, modoAviso: null, notas: "", recetaVence: "", ventanaMin: 0 });
+  
   const [smsLog, setSmsLog] = useState([]);
   const [alertasDisparadas, setAlertasDisparadas] = useState({});
-  const [alertasPatron, setAlertasPatron] = useState({});
-  const [resumenEnviadoHoy, setResumenEnviadoHoy] = useState(false);
   const [familiasAdmin, setFamiliasAdmin] = useState([]);
   const [firebaseEstado, setFirebaseEstado] = useState("cargando");
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [alertaActiva, setAlertaActiva] = useState(null);
-  const [alertasSonadasHoy, setAlertasSonadasHoy] = useState({});
+  const [tokenFCM, setTokenFCM] = useState(null);
+  
+  // Persistencia de estados críticos (Fix: no re-alertar al recargar)
+  const [alertasSonadasHoy, setAlertasSonadasHoy] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(`alertas_sonadas_${todayStr()}`)) || {}; } catch (e) { return {}; }
+  });
+  const [resumenEnviadoHoy, setResumenEnviadoHoy] = useState(() => {
+    try { return localStorage.getItem(`resumen_enviado_${todayStr()}`) === "true"; } catch (e) { return false; }
+  });
+
   const alertasPorTomaRef = useRef({});
   const alertasPostergadasRef = useRef({});
+  const pendingLocalWriteRef = useRef(false);
   const [triggerPostergacion, setTriggerPostergacion] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
-  const [tokenFCM, setTokenFCM] = useState(null);
+  
   const appAbiertaRef = useRef(false);
   const addStartRef = useRef(null);
   const heartbeatRef = useRef(null);
 
   const PASOS_TUTORIAL = [
-    { titulo: "¡Bienvenido a Contigo Siempre!", texto: "Te mostraremos las funciones principales en 9 pasos rápidos. Puedes saltar el tutorial en cualquier momento.", target: null, abrirMenu: false, cerrarMenu: false },
-    { titulo: "Tu código de familia", texto: "Este código de 6 dígitos es la llave para conectar otros teléfonos. Compártelo con quien te ayude a cuidar.", target: '[data-tutorial="codigo"]', abrirMenu: false, cerrarMenu: false },
-    { titulo: "Barra de Navegación", texto: "Usa esta barra inferior para ir rápidamente a tus medicamentos o al historial.", target: '[data-tutorial="nav-meds"]', abrirMenu: false, cerrarMenu: false },
-    { titulo: "Historial de Adherencia", texto: "Toca aquí para ver el calendario con los días en que se tomaron los remedios.", target: '[data-tutorial="nav-historial"]', abrirMenu: false, cerrarMenu: false },
-    { titulo: "Agregar un medicamento", texto: "Toca este botón para agregar un medicamento nuevo. Puedes poner nombre, dosis, horarios y stock.", target: '[data-tutorial="add-med"]', abrirMenu: false, cerrarMenu: false },
-    { titulo: "Canasta de compras", texto: "Desde aquí puedes ver qué medicamentos te quedan pocos y comprarlos.", target: '[data-tutorial="nav-canasta"]', abrirMenu: false, cerrarMenu: false },
-    { titulo: "Avisos del cuidador", texto: "Aquí recibirás las alertas si el adulto mayor no confirma su toma.", target: '[data-tutorial="nav-avisos"]', abrirMenu: false, cerrarMenu: false },
-    { titulo: "Ajustes y alertas", texto: "Toca el botón 'Más' para abrir el menú lateral y encontrar los ajustes de sonido y modo oscuro.", target: '[data-tutorial="nav-menu"]', abrirMenu: false, cerrarMenu: false },
+    { titulo: "¡Bienvenido a Contigo Siempre!", texto: "Te mostraremos las funciones principales en 7 pasos rápidos.", target: null, abrirMenu: false, cerrarMenu: false },
+    { titulo: "Tu código de familia", texto: "Este código de 6 dígitos conecta otros teléfonos. Compártelo.", target: '[data-tutorial="codigo"]', abrirMenu: false, cerrarMenu: false },
+    { titulo: "Agregar un medicamento", texto: "Toca este botón para agregar nombre, dosis, horarios y stock.", target: '[data-tutorial="add-med"]', abrirMenu: false, cerrarMenu: false },
+    { titulo: "Menú Lateral", texto: "Toca el botón 'Más' para abrir el menú y encontrar Historial, Canasta, Ajustes y más.", target: '[data-tutorial="nav-menu"]', abrirMenu: false, cerrarMenu: false },
+    { titulo: "Historial de Adherencia", texto: "Ve al menú lateral y toca 'Historial' para ver el calendario de tomas.", target: null, abrirMenu: true, cerrarMenu: true },
+    { titulo: "Ajustes y alertas", texto: "En el menú lateral, busca 'Ajustes' para configurar sonido y modo oscuro.", target: null, abrirMenu: true, cerrarMenu: true },
     { titulo: "¡Listo!", texto: "Ya puedes empezar a usar Contigo Siempre. Cuida bien a tu ser querido.", target: null, abrirMenu: false, cerrarMenu: true },
   ];
 
@@ -1012,6 +1352,7 @@ export default function App() {
   const oscuro = settings.darkMode;
   const C = oscuro ? DARK : LIGHT;
 
+  // --- EFECTOS DE RED Y TIEMPO ---
   useEffect(() => {
     const handleOnline = () => { setIsOnline(true); enviarEventosPendientes(); };
     const handleOffline = () => { setIsOnline(false); };
@@ -1021,7 +1362,14 @@ export default function App() {
   }, []);
 
   useEffect(() => { const id = setInterval(() => setNowMin(toMinutes(nowHHMM())), 30000); return () => clearInterval(id); }, []);
-  
+
+  useEffect(() => {
+    // Fix: persistir alertas y resumen diario
+    localStorage.setItem(`alertas_sonadas_${todayStr()}`, JSON.stringify(alertasSonadasHoy));
+    localStorage.setItem(`resumen_enviado_${todayStr()}`, String(resumenEnviadoHoy));
+  }, [alertasSonadasHoy, resumenEnviadoHoy]);
+
+  // --- INICIALIZACIÓN DE FIREBASE ---
   useEffect(() => {
     const codigoGuardado = localStorage.getItem("codigo_familia");
     const cuidadorGuardado = localStorage.getItem("nombre_cuidador");
@@ -1042,10 +1390,11 @@ export default function App() {
       });
     } else { setStage("entrada"); }
   }, []);
-  
+
   useEffect(() => { cuandoDbListo((d) => { setFirebaseEstado(d ? "conectado" : "local"); }); }, []);
   useEffect(() => { if (familia && !personaActualId && familia.personas && familia.personas.length > 0) setPersonaActualId(familia.personas[0].id); }, [familia, personaActualId]);
 
+  // --- TOKEN FCM ---
   useEffect(() => {
     cuandoDbListo(async (d) => {
       if (!d) return;
@@ -1058,7 +1407,19 @@ export default function App() {
       } catch (err) { console.warn("No se pudo inicializar FCM:", err); }
     });
   }, [codigo]);
-  
+
+  // --- ACCIÓN DESDE NOTIFICACIÓN PUSH (?accion=...) ---
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const accion = params.get("accion");
+    if (accion === "confirmar") {
+      // Se dispara un evento manual si hay alerta, o se confirma si está en primer plano
+      setTimeout(() => { if (alertaActiva) confirmar(alertaActiva); }, 2000);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [alertaActiva]);
+
+  // --- SERVICE WORKER MESSAGE ---
   useEffect(() => {
     if (!navigator.serviceWorker) return;
     const handler = (event) => {
@@ -1070,10 +1431,11 @@ export default function App() {
     return () => navigator.serviceWorker.removeEventListener("message", handler);
   }, [alertaActiva]);
 
+  // --- HEARTBEAT Y SNAPSHOT ---
   useEffect(() => {
     if (stage !== "app" || !codigo || !personaActualId) return;
     const enviarHeartbeat = async () => {
-      if (!isOnline) return;
+      if (!db || !isOnline) return; // Fix: db null guard
       try {
         const ref = db.collection("familias").doc(STORAGE_PREFIX + codigo);
         const doc = await ref.get();
@@ -1100,7 +1462,7 @@ export default function App() {
   useEffect(() => {
     if (!codigo || !db) return;
     const unsub = db.collection("familias").doc(STORAGE_PREFIX + codigo).onSnapshot((doc) => {
-      if (doc.exists) {
+      if (doc.exists && !pendingLocalWriteRef.current) {
         const data = doc.data();
         setFamilia((prev) => { if (JSON.stringify(prev) === JSON.stringify(data)) return prev; return data; });
       }
@@ -1108,16 +1470,15 @@ export default function App() {
     return () => unsub();
   }, [codigo]);
 
+  // --- DATOS DERIVADOS ---
   const personaActual = familia?.personas?.find((p) => p.id === personaActualId) || familia?.personas?.[0] || null;
   const elderName = personaActual?.nombre || "";
   const elderEdad = personaActual?.edad || null;
   const meds = (personaActual?.meds || []).filter((m) => !m.archivado);
   const confirmedByDate = personaActual?.confirmedByDate || {};
   const contactos = familia?.contactos || [];
-  const historialCambios = familia?.historialCambios || [];
   const ultimaConexionPersona = personaActual?.ultimaConexion || null;
-  const minutosSinConexion = minutosDesde(ultimaConexionPersona);
-  const personaDesconectada = !isOnline || (minutosSinConexion !== null && minutosSinConexion > MINUTOS_SIN_CONEXION_ALERTA);
+  const personaDesconectada = !isOnline || (minutosDesde(ultimaConexionPersona) !== null && minutosDesde(ultimaConexionPersona) > MINUTOS_SIN_CONEXION_ALERTA);
 
   useEffect(() => {
     if (stage === "app" && familia && familia.settings && familia.settings.aceptoTerminos === true && familia.settings.tutorialVisto === false && !showSelectorRol && rolUsuario !== "mayor") {
@@ -1126,12 +1487,14 @@ export default function App() {
     }
   }, [stage, familia, showSelectorRol]);
 
+  // --- EFECTO DE ALERTAS Y AVISOS ---
   useEffect(() => {
     if (stage !== "app" || !familia || !personaActual) return;
     if (view !== "mayor" && !(personaActual?.esAutocuidado)) return;
-    const confirmedHoy = confirmedByDate?.[todayStr()] || {};
     
+    const confirmedHoy = confirmedByDate?.[todayStr()] || {};
     const dueTimes = {};
+    
     meds.forEach(m => {
       m.times.forEach(t => {
         const key = occKey(m.id, t);
@@ -1171,7 +1534,7 @@ export default function App() {
       }, 2 * 60 * 1000);
     }
   }, [nowMin, stage, familia, personaActual, confirmedByDate, view, alertaActiva, alertasSonadasHoy, settings, codigo, nombreCuidadorInput, elderName, meds, triggerPostergacion]);
-  
+
   useEffect(() => {
     if (!alertaActiva) return;
     const id = setInterval(() => {
@@ -1181,6 +1544,7 @@ export default function App() {
     return () => clearInterval(id);
   }, [alertaActiva, settings]);
 
+  // --- AVISOS AL CUIDADOR ---
   useEffect(() => {
     if (stage !== "app" || !familia || !personaActual) return;
     if (personaDesconectada) return;
@@ -1193,12 +1557,13 @@ export default function App() {
       const modo = crit === "vital" ? "inmediato" : (m.modoAviso || (crit === "importante" ? "inmediato" : "final_dia"));
       const umbral = UMBRAL_MIN[crit];
       const ventana = m.ventanaMin || 0;
+      
       m.times.forEach((t) => {
         const key = occKey(m.id, t);
         if (confirmedHoy[key]) return;
         const clavePostergacion = `${personaActual.id}_${m.id}_${t}`;
-        const baseTiempo = alertasPostergadasRef.current[clavePostergacion] || toMinutes(t);
-        const minutosExtra = alertasPostergadasRef.current[clavePostergacion] ? 5 : 0;
+        const baseTiempo = alertasPostergadasRef.current[clavePostergacion]?.postergadoEn || toMinutes(t);
+        const minutosExtra = alertasPostergadasRef.current[clavePostergacion]?.count ? 5 : 0;
         const diff = ahoraMin - baseTiempo;
         
         if (modo === "inmediato" && diff >= umbral + ventana + minutosExtra) {
@@ -1210,6 +1575,7 @@ export default function App() {
           }
         }
       });
+      
       if (m.recetaVence) {
         const dias = diasHastaVencimiento(m.recetaVence);
         if (dias !== null && dias >= 0 && dias <= 7) {
@@ -1228,8 +1594,8 @@ export default function App() {
       const textoResumen = `Resumen ${elderName.split(" ")[0]}: ${conf}/${esp} tomas confirmadas.`;
       setSmsLog((prev) => [...prev, { tipo: "ok", hora: smsTime(), texto: textoResumen }]);
       
-      if (Notification.permission === "granted") {
-        new Notification("Resumen del día - Contigo Siempre", { body: textoResumen, icon: "/icon-192.png" });
+      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+        new Notification("Resumen del día - Contigo Siempre", { body: textoResumen, icon: "/icons/icon-192.png" });
       }
       setResumenEnviadoHoy(true);
     }
@@ -1237,12 +1603,41 @@ export default function App() {
     if (nuevas.length > 0) setSmsLog((prev) => [...prev, ...nuevas]);
   }, [nowMin, stage, familia, personaActual, alertasDisparadas, resumenEnviadoHoy, esPremium, elderName, meds, confirmedByDate, personaDesconectada]);
 
+  // ==========================================
+  // A PARTIR DE AQUÍ VAN LOS HANDLERS (Parte 6)
+  // ==========================================
+  // ==================== HANDLERS PRINCIPALES ====================
+
+  // Fix: Evitar setState anidado usando queueMicrotask
   const guardarFamilia = useCallback(async (cod, data) => {
     setSaving(true);
+    pendingLocalWriteRef.current = true;
     try { await storage.set(STORAGE_PREFIX + cod, JSON.stringify(data)); }
     catch (e) { setError("No se pudo guardar."); }
-    finally { setSaving(false); }
+    finally { 
+      setSaving(false); 
+      setTimeout(() => { pendingLocalWriteRef.current = false; }, 500);
+    }
   }, []);
+
+  const actualizar = useCallback((updater) => {
+    setFamilia((prev) => {
+      if (!prev) return prev;
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      queueMicrotask(() => guardarFamilia(codigo, next));
+      return next;
+    });
+  }, [codigo, guardarFamilia]);
+
+  const actualizarPersona = useCallback((updater) => {
+    actualizar((prev) => ({ ...prev, personas: prev.personas.map((p) => p.id === personaActualId ? updater(p) : p) }));
+  }, [actualizar, personaActualId]);
+
+  const actualizarSettings = (c) => actualizar((prev) => ({ ...prev, settings: { ...(prev.settings || {}), ...c } }));
+
+  const registrarCambio = (accion, detalle) => {
+    actualizar((prev) => ({ ...prev, historialCambios: [...(prev.historialCambios || []), { id: Date.now(), fecha: Date.now(), cuidador: nombreCuidadorInput || "Tú", accion, detalle }] }));
+  };
 
   const cargarFamiliaConNombre = async (cod, nombreCuidador) => {
     setError("");
@@ -1250,6 +1645,7 @@ export default function App() {
       const res = await storage.get(STORAGE_PREFIX + cod);
       if (res && res.value) {
         let data = JSON.parse(res.value);
+        // Migración
         if (!data.personas && data.elderName) {
           data.personas = [{ id: Date.now(), nombre: data.elderName, edad: null, meds: data.meds || [], confirmedByDate: data.confirmedByDate || {}, preferenciasFarmacia: {}, ultimoReconteo: {}, ultimaConexion: Date.now() }];
           delete data.elderName; delete data.meds; delete data.confirmedByDate;
@@ -1257,12 +1653,22 @@ export default function App() {
         if (!data.contactos) data.contactos = [];
         if (!data.historialCambios) data.historialCambios = [];
         if (!data.cuidadores) data.cuidadores = [];
-        if (!data.cuidadores.includes(nombreCuidador)) data.cuidadores = [...data.cuidadores, nombreCuidador];
+        
+        // Validar límite de cuidadores
+        if (!data.cuidadores.includes(nombreCuidador)) {
+          if (data.cuidadores.length >= LIMITES_ESTANDAR.maxCuidadores) {
+            setError("Límite de cuidadores alcanzado. Pide a otro cuidador que te elimine.");
+            return;
+          }
+          data.cuidadores = [...data.cuidadores, nombreCuidador];
+        }
+        
         if (!data.settings) data.settings = {};
         if (data.settings.sonidoActivo === undefined) data.settings.sonidoActivo = true;
         if (data.settings.vibracionActiva === undefined) data.settings.vibracionActiva = true;
         if (data.settings.tutorialVisto === undefined) data.settings.tutorialVisto = true;
         if (data.settings.notificarConfirmacion === undefined) data.settings.notificarConfirmacion = true;
+        
         await guardarFamilia(cod, data);
         localStorage.setItem("codigo_familia", cod);
         localStorage.setItem("nombre_cuidador", nombreCuidador);
@@ -1273,10 +1679,6 @@ export default function App() {
         if (tokenFCM) await guardarTokenEnFirestore(cod, tokenFCM, "cuidador");
       } else setError("No encontramos ese código.");
     } catch (e) { setError("No encontramos ese código."); }
-  };
-
-  const registrarCambio = (accion, detalle) => {
-    actualizar((prev) => ({ ...prev, historialCambios: [...(prev.historialCambios || []), { id: Date.now(), fecha: Date.now(), cuidador: nombreCuidadorInput || "Tú", accion, detalle }] }));
   };
 
   const crearFamilia = async () => {
@@ -1291,7 +1693,7 @@ export default function App() {
       plan: "estandar", planInicio: null,
       esPiloto: false, fechaFinPiloto: null,
       esFundador: false, fechaFinFundador: null,
-      settings: { fontSize: "normal", daltonico: false, darkMode: false, aceptoTerminos: false, onboardingPremiumVisto: false, sonidoActivo: true, vibracionActiva: true, tutorialVisto: false, notificarConfirmacion: true }
+      settings: { fontSize: "normal", daltonico: false, darkMode: false, aceptoTerminos: false, onboardingPremiumVisto: false, sonidoActivo: true, vibracionActiva: true, tutorialVisto: false, notificarConfirmacion: true, onboardingCORFOVisto: false }
     };
     await guardarFamilia(cod, nueva);
     localStorage.setItem("codigo_familia", cod);
@@ -1304,13 +1706,9 @@ export default function App() {
 
   const unirseFamilia = () => {
     if (codigoInput.trim().length !== 6) return;
-    if (!nombreCuidadorInput.trim()) { setError("Pontu nombre como cuidador"); return; }
+    if (!nombreCuidadorInput.trim()) { setError("Pon tu nombre como cuidador"); return; }
     cargarFamiliaConNombre(codigoInput.trim(), nombreCuidadorInput.trim());
   };
-
-  const actualizar = async (updater) => { setFamilia((prev) => { const next = updater(prev); guardarFamilia(codigo, next); return next; }); };
-  const actualizarPersona = async (updater) => { actualizar((prev) => ({ ...prev, personas: prev.personas.map((p) => p.id === personaActualId ? updater(p) : p) })); };
-  const actualizarSettings = (c) => actualizar((prev) => ({ ...prev, settings: { ...(prev.settings || {}), ...c } }));
 
   const activarPremium = () => {
     actualizar((prev) => ({ ...prev, plan: "premium", planInicio: Date.now(), settings: { ...(prev.settings || {}), onboardingPremiumVisto: false } }));
@@ -1338,7 +1736,225 @@ export default function App() {
     else if (CODIGOS_PILOTO.includes(up)) { activarPremium(); setCodigoPremium(""); }
     else alert("Código no válido");
   };
-    if (stage === "cargando") return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: LIGHT.TEAL }}><Loader2 size={30} color="#fff" /></div>;
+
+  // --- CONFIRMACIÓN Y ALERTAS ---
+  const confirmar = (occData) => {
+    actualizarPersona((p) => {
+      const fecha = todayStr();
+      const nc = { ...(p.confirmedByDate || {}) };
+      occData.keys.forEach(k => { nc[fecha] = { ...(nc[fecha] || {}), [k]: true }; });
+      const nm = p.meds.map((m) => {
+        if (occData.meds.find(md => md.id === m.id)) {
+          return { ...m, stock: Math.max(0, +(m.stock - m.doseAmount).toFixed(2)) };
+        }
+        return m;
+      });
+      return { ...p, meds: nm, confirmedByDate: nc, ultimaConexion: Date.now() };
+    });
+    const akKeyConfirm = `alertas_${personaActual.id}_${occData.time}_${todayStr()}`;
+    delete alertasPorTomaRef.current[akKeyConfirm];
+    const nombresMeds = occData.meds.map(m => m.name).join(", ");
+    registrarEvento(codigo, "confirmar_toma", `${nombresMeds} a las ${fmtHoraConAmPm(occData.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: nombresMeds, hora: occData.time });
+    setAlertaActiva(null);
+
+    if (familia?.settings?.notificarConfirmacion && typeof Notification !== "undefined" && Notification.permission === "granted") {
+      new Notification("✅ Toma confirmada", { body: `${elderName.split(" ")[0]} confirmó: ${nombresMeds}`, icon: "/icons/icon-192.png" });
+    }
+  };
+
+  const posponerAlerta = () => {
+    if (!alertaActiva) return;
+    const alertaGuardada = alertaActiva;
+    setAlertaActiva(null);
+    const nombresMeds = alertaGuardada.meds.map(m => m.name).join(", ");
+    registrarEvento(codigo, "alerta_pospuesta", `${nombresMeds} a las ${fmtHoraConAmPm(alertaGuardada.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: nombresMeds, hora: alertaGuardada.time });
+    
+    alertaGuardada.meds.forEach(m => {
+      const key = `${personaActual.id}_${m.id}_${alertaGuardada.time}`;
+      const prev = alertasPostergadasRef.current[key];
+      alertasPostergadasRef.current[key] = { 
+        postergadoEn: toMinutes(nowHHMM()), 
+        count: prev ? prev.count + 1 : 1 
+      };
+    });
+    
+    setTriggerPostergacion((t) => t + 1);
+    setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[`sonada_${personaActual.id}_${alertaGuardada.time}_${todayStr()}`]; return nuevo; });
+  };
+
+  const seleccionarRol = (rol) => {
+    setRolUsuario(rol);
+    localStorage.setItem("rol_usuario", rol);
+    setShowSelectorRol(false);
+    setView(rol === "mayor" ? "mayor" : "cuidador");
+    if (!familia?.settings?.aceptoTerminos) { setStage("consentimiento"); } 
+    else if (!familia?.settings?.onboardingCORFOVisto) { setShowOnboarding(true); } 
+    else { setStage("app"); }
+    registrarEvento(codigo, "seleccionar_rol", rol, { cuidador: nombreCuidadorInput, rol: rol });
+  };
+
+  const completarOnboarding = (data) => {
+    actualizar((prev) => ({ 
+      ...prev, 
+      settings: { ...prev.settings, onboardingCORFOVisto: true },
+      metricasOnboarding: data
+    }));
+    setShowOnboarding(false);
+    setStage("app");
+    registrarEvento(codigo, "completar_onboarding", "Onboarding CORFO completado", { cuidador: nombreCuidadorInput, ...data });
+  };
+
+  const seleccionarYo = () => {
+    const existeYo = familia.personas.find((p) => p.nombre === "Yo");
+    if (existeYo) { setPersonaActualId(existeYo.id); setShowSelector(false); }
+    else {
+      const nuevaYo = { id: Date.now(), nombre: "Yo", edad: null, meds: [], confirmedByDate: {}, preferenciasFarmacia: {}, ultimoReconteo: {}, ultimaConexion: Date.now(), esAutocuidado: true };
+      actualizar((prev) => ({ ...prev, personas: [...prev.personas, nuevaYo] }));
+      setPersonaActualId(nuevaYo.id); setShowSelector(false);
+      registrarEvento(codigo, "activar_autocuidado", "Modo Autocuidado activado", { cuidador: nombreCuidadorInput });
+    }
+  };
+
+  // --- GESTIÓN DE MEDICAMENTOS Y PERSONAS ---
+  const maxMeds = esPremium ? Infinity : LIMITES_ESTANDAR.maxMeds;
+  const maxPersonas = esPremium ? 3 : LIMITES_ESTANDAR.maxElderly;
+
+  const intentarAgregarMed = () => { if (meds.length >= maxMeds) { setShowLimite("meds"); return; } addStartRef.current = Date.now(); setShowAdd(true); };
+  const intentarAgregarPersona = () => { if ((familia.personas?.length || 0) >= maxPersonas) { setShowLimite("personas"); return; } setShowAddPersona(true); };
+
+  const archivarMed = (id) => {
+    actualizarPersona((p) => ({ ...p, meds: p.meds.map((m) => m.id === id ? { ...m, archivado: true, fechaArchivado: Date.now() } : m) }));
+    const med = meds.find((m) => m.id === id);
+    if (med) registrarCambio("Archivó", med.name);
+    registrarEvento(codigo, "archivar_med", med?.name || "", { cuidador: nombreCuidadorInput, persona: elderName, med: med?.name });
+    setArchivarTarget(null);
+  };
+
+  const reactivarMed = (id) => {
+    actualizarPersona((p) => ({ ...p, meds: p.meds.map((m) => m.id === id ? { ...m, archivado: false, fechaArchivado: null } : m) }));
+    registrarCambio("Reactivó", "Medicamento reactivado");
+    setCuidadorTab("meds");
+  };
+
+  const borrarMedFijo = (id) => {
+    if (!window.confirm("¿Borrar definitivamente este medicamento? No se podrá recuperar.")) return;
+    actualizarPersona((p) => ({ ...p, meds: p.meds.filter((m) => m.id !== id) }));
+    registrarCambio("Borró", "Medicamento eliminado permanentemente");
+  };
+
+  const abrirEditar = (med) => {
+    setForm({ name: med.name || "", dose: med.dose || "", times: med.times || ["08:00"], color: med.color || PILL_COLORS[0], shape: med.shape || PILL_SHAPES[0], stock: med.stock || 30, doseAmount: med.doseAmount || 1, type: med.type || "privada", receta: med.receta || null, criticidad: med.criticidad || null, modoAviso: med.modoAviso || null, notas: med.notas || "", recetaVence: med.recetaVence || "", ventanaMin: med.ventanaMin || 0 });
+    setEditandoId(med.id); addStartRef.current = Date.now(); setShowAdd(true);
+  };
+
+  const agregarMed = () => {
+    if (!form.name.trim()) return;
+    const critF = form.criticidad || detectarCriticidad(form.name);
+    const modoF = critF === "vital" ? "inmediato" : (form.modoAviso || (critF === "importante" ? "inmediato" : "final_dia"));
+    
+    // Fix: forzar stock numérico
+    const stockNum = Number(form.stock) || 0;
+    
+    const nuevo = { id: editandoId || Date.now(), name: form.name.trim(), dose: form.dose.trim() || "1 dosis", times: form.times.filter(Boolean), color: form.color, shape: form.shape, unidad: form.unidad || "pastilla", stock: stockNum, doseAmount: form.doseAmount, type: form.type, receta: form.receta || clasificarMedicamento(form.name) || "sin_receta", criticidad: critF, modoAviso: modoF, notas: form.notas || "", recetaVence: form.recetaVence || "", ventanaMin: Number(form.ventanaMin) || 0, archivado: false, fechaInicio: Date.now(), fechaArchivado: null };
+    const duracionSeg = addStartRef.current ? Math.round((Date.now() - addStartRef.current) / 1000) : 0;
+    
+    if (editandoId) {
+      actualizarPersona((p) => ({ ...p, meds: p.meds.map((m) => m.id === editandoId ? { ...m, ...nuevo, fechaInicio: m.fechaInicio || nuevo.fechaInicio, archivado: m.archivado || false, fechaArchivado: m.fechaArchivado || null } : m) }));
+      registrarCambio("Editó", nuevo.name);
+      registrarEvento(codigo, "editar_med", nuevo.name, { cuidador: nombreCuidadorInput, persona: elderName, edad: elderEdad || "", med: nuevo.name, criticidad: critF, duracion_seg: duracionSeg });
+      setEditandoId(null);
+    } else {
+      actualizarPersona((p) => ({ ...p, meds: [...p.meds, nuevo] }));
+      registrarCambio("Agregó", nuevo.name);
+      registrarEvento(codigo, "agregar_med", nuevo.name, { cuidador: nombreCuidadorInput, persona: elderName, edad: elderEdad || "", med: nuevo.name, criticidad: critF, duracion_seg: duracionSeg });
+    }
+    addStartRef.current = null;
+    setForm({ name: "", dose: "", times: ["08:00"], color: PILL_COLORS[0], shape: PILL_SHAPES[0], stock: 30, doseAmount: 1, type: "privada", receta: null, criticidad: null, modoAviso: null, notas: "", recetaVence: "", ventanaMin: 0 });
+    setShowAdd(false);
+  };
+
+  const guardarNotas = (medId, texto) => {
+    actualizarPersona((p) => ({ ...p, meds: p.meds.map((m) => (m.id === medId ? { ...m, notas: texto } : m)) }));
+    const med = meds.find((m) => m.id === medId);
+    if (med) registrarCambio("Cambió notas", med.name);
+    setShowNotas(null);
+  };
+
+  const agregarPersona = () => {
+    if (!nombrePersonaNueva.trim()) return;
+    if (edadPersonaNueva && (isNaN(Number(edadPersonaNueva)) || Number(edadPersonaNueva) < 0 || Number(edadPersonaNueva) > 120)) { alert("La edad debe ser un número entre 0 y 120"); return; }
+    const edadNum = edadPersonaNueva ? Number(edadPersonaNueva) : null;
+    const nueva = { id: Date.now(), nombre: nombrePersonaNueva.trim(), edad: edadNum, meds: [], confirmedByDate: {}, preferenciasFarmacia: {}, ultimoReconteo: {}, ultimaConexion: Date.now() };
+    actualizar((prev) => ({ ...prev, personas: [...prev.personas, nueva] }));
+    registrarCambio("Agregó persona", `${nombrePersonaNueva.trim()}${edadNum ? ` (${edadNum} años)` : ""}`);
+    registrarEvento(codigo, "agregar_persona", `${nombrePersonaNueva.trim()}${edadNum ? ` (${edadNum} años)` : ""}`, { cuidador: nombreCuidadorInput, persona: nombrePersonaNueva.trim(), edad: edadNum || "" });
+    setPersonaActualId(nueva.id); setNombrePersonaNueva(""); setEdadPersonaNueva(""); setShowAddPersona(false);
+  };
+
+  const agregarContacto = () => {
+    if (!formContacto.nombre.trim() || !formContacto.telefono.trim()) return;
+    actualizar((prev) => ({ ...prev, contactos: [...(prev.contactos || []), { id: Date.now(), ...formContacto }] }));
+    registrarEvento(codigo, "agregar_contacto", formContacto.nombre, { cuidador: nombreCuidadorInput, tipo_contacto: formContacto.tipo });
+    setFormContacto({ nombre: "", telefono: "", tipo: "médico" });
+  };
+  const eliminarContacto = (id) => actualizar((prev) => ({ ...prev, contactos: (prev.contactos || []).filter((c) => c.id !== id) }));
+
+  const reponer = (cant) => {
+    if (!restockTarget) return;
+    actualizarPersona((p) => ({ ...p, meds: p.meds.map((m) => (m.id === restockTarget.id ? { ...m, stock: +(m.stock + cant).toFixed(2) } : m)) }));
+    registrarCambio("Repuso stock", `${restockTarget.name} +${fmtN(cant)}`);
+    registrarEvento(codigo, "reponer_stock", `${restockTarget.name} +${fmtN(cant)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: restockTarget.name, cantidad: cant });
+    setRestockTarget(null);
+  };
+  
+  const aplicarReconteo = (id, c) => {
+    actualizarPersona((p) => ({ ...p, meds: p.meds.map((m) => (m.id === id ? { ...m, stock: c } : m)), ultimoReconteo: { ...(p.ultimoReconteo || {}), [id]: Date.now() } }));
+    const med = meds.find((m) => m.id === id);
+    if (med) registrarCambio("Recontó", `${med.name} → ${fmtN(c)}`);
+    registrarEvento(codigo, "reconteo", `${med?.name || ""} → ${fmtN(c)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: med?.name, stock: c });
+    setReconteoTarget(null);
+  };
+
+  const abrirFarmaciaIndividual = (f, m) => {
+    registrarDato("vioIndividualTotal"); registrarDato("clicsFarmacia", 1, f.nombre); registrarDato("medsConsultados", f.costo, m.name);
+    registrarEvento(codigo, "clic_farmacia_individual", `${f.nombre} — ${m.name}`, { cuidador: nombreCuidadorInput, persona: elderName, farmacia: f.nombre, med: m.name });
+    const url = `${f.url}?ref=contigo_siempre_app&producto=${encodeURIComponent(m.name)}`;
+    actualizarPersona((p) => ({ ...p, preferenciasFarmacia: { ...(p.preferenciasFarmacia || {}), [m.id]: f.id } }));
+    setLinkAbierto({ farmacia: f.nombre, url, receta: m.receta });
+  };
+
+  const abrirFarmaciaCarro = (f, medsList, total) => {
+    registrarDato("abrioFarmaciaTotal"); registrarDato("clicsFarmacia", 1, f.nombre); medsList.forEach((m) => registrarDato("medsConsultados", f.costo, m.name));
+    registrarEvento(codigo, "clic_farmacia_carro", `${f.nombre} — ${medsList.length} meds — $${total}`, { cuidador: nombreCuidadorInput, persona: elderName, farmacia: f.nombre, cantidad: medsList.length, total });
+    const url = `${f.url}?ref=contigo_siempre_app&carro=completo`;
+    setLinkAbierto({ farmacia: f.nombre, url, receta: "con_receta" }); setShowCarroCompleto(false);
+  };
+
+  const compartirWhatsApp = (tipo) => {
+    const texto = generarTextoCompartir(tipo, elderName, meds, confirmedByDate);
+    const url = `https://wa.me/?text=${encodeURIComponent(texto)}`;
+    window.open(url, "_blank");
+    registrarEvento(codigo, "compartir_whatsapp", tipo, { cuidador: nombreCuidadorInput, persona: elderName, tipo_compartir: tipo });
+    setShowCompartir(false);
+  };
+
+  // --- RENDERIZADO (Parte 7) ---
+  // ==================== RENDERIZADO ====================
+  const scale = FONT_SCALE[settings.fontSize] || 1;
+  const confirmedHoy = confirmedByDate?.[todayStr()] || {};
+  const occurrences = meds.flatMap((m) => m.times.map((t) => ({ med: m, time: t, key: occKey(m.id, t) })));
+  const upcoming = occurrences.filter((o) => toMinutes(o.time) >= nowMin && !confirmedHoy[o.key]).sort((a, b) => toMinutes(a.time) - toMinutes(b.time));
+  const current = upcoming[0];
+  const isCurrentDue = current && toMinutes(current.time) <= nowMin;
+  const racha = calcularRacha(meds, confirmedByDate);
+  const recetasPorVencer = meds.filter((m) => { if (!m.recetaVence) return false; const d = diasHastaVencimiento(m.recetaVence); return d !== null && d >= 0 && d <= 30; });
+  const diasPremium = familia?.planInicio ? Math.floor((Date.now() - familia.planInicio) / (1000 * 60 * 60 * 24)) : 0;
+  const mostrarAvisoRenovacion = esPremium && diasPremium >= 27 && diasPremium <= 30;
+  const medsCarro = meds.filter((m) => { const s = semaforoRiesgo(m); return s.nivel === "urgente" || s.nivel === "atención"; });
+  const medsArchivados = (personaActual?.meds || []).filter(m => m.archivado);
+  const cambioPatron = detectarCambioPatron(meds, confirmedByDate);
+
+  if (stage === "cargando") return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: LIGHT.TEAL }}><Loader2 size={30} color="#fff" /></div>;
 
   if (stage === "entrada") {
     return (
@@ -1420,224 +2036,19 @@ export default function App() {
     );
   }
 
-  const scale = FONT_SCALE[settings.fontSize] || 1;
-  const maxMeds = esPremium ? Infinity : LIMITES_ESTANDAR.maxMeds;
-  const maxPersonas = esPremium ? 3 : LIMITES_ESTANDAR.maxElderly;
-  const confirmedHoy = confirmedByDate?.[todayStr()] || {};
-  const occurrences = meds.flatMap((m) => m.times.map((t) => ({ med: m, time: t, key: occKey(m.id, t) })));
-  const upcoming = occurrences.filter((o) => toMinutes(o.time) >= nowMin && !confirmedHoy[o.key]).sort((a, b) => toMinutes(a.time) - toMinutes(b.time));
-  const current = upcoming[0];
-  const isCurrentDue = current && toMinutes(current.time) <= nowMin;
-  const racha = calcularRacha(meds, confirmedByDate);
-
-  const confirmar = (occData) => {
-    actualizarPersona((p) => {
-      const fecha = todayStr();
-      const nc = { ...(p.confirmedByDate || {}) };
-      occData.keys.forEach(k => { nc[fecha] = { ...(nc[fecha] || {}), [k]: true }; });
-      const nm = p.meds.map((m) => {
-        if (occData.meds.find(md => md.id === m.id)) {
-          return { ...m, stock: Math.max(0, +(m.stock - m.doseAmount).toFixed(2)) };
-        }
-        return m;
-      });
-      return { ...p, meds: nm, confirmedByDate: nc, ultimaConexion: Date.now() };
-    });
-    const akKeyConfirm = `alertas_${personaActual.id}_${occData.time}_${todayStr()}`;
-    delete alertasPorTomaRef.current[akKeyConfirm];
-    const nombresMeds = occData.meds.map(m => m.name).join(", ");
-    registrarEvento(codigo, "confirmar_toma", `${nombresMeds} a las ${fmtHoraConAmPm(occData.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: nombresMeds, hora: occData.time });
-    setAlertaActiva(null);
-
-    if (familia?.settings?.notificarConfirmacion && Notification.permission === "granted") {
-      new Notification("✅ Toma confirmada", { body: `${elderName.split(" ")[0]} confirmó: ${nombresMeds}`, icon: "/icon-192.png" });
-    }
-  };
-
-  const posponerAlerta = () => {
-    if (!alertaActiva) return;
-    const alertaGuardada = alertaActiva;
-    setAlertaActiva(null);
-    const nombresMeds = alertaGuardada.meds.map(m => m.name).join(", ");
-    registrarEvento(codigo, "alerta_pospuesta", `${nombresMeds} a las ${fmtHoraConAmPm(alertaGuardada.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: nombresMeds, hora: alertaGuardada.time });
-    alertaGuardada.meds.forEach(m => {
-      alertasPostergadasRef.current[`${personaActual.id}_${m.id}_${alertaGuardada.time}`] = toMinutes(nowHHMM());
-    });
-    setTriggerPostergacion((t) => t + 1);
-    setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[`sonada_${personaActual.id}_${alertaGuardada.time}_${todayStr()}`]; return nuevo; });
-  };
-
-  const seleccionarRol = (rol) => {
-    setRolUsuario(rol);
-    localStorage.setItem("rol_usuario", rol);
-    setShowSelectorRol(false);
-    setView(rol === "mayor" ? "mayor" : "cuidador");
-    if (!familia?.settings?.aceptoTerminos) { setStage("consentimiento"); } else { setStage("app"); }
-    registrarEvento(codigo, "seleccionar_rol", rol, { cuidador: nombreCuidadorInput, rol: rol });
-  };
-
-  const seleccionarYo = () => {
-    const existeYo = familia.personas.find((p) => p.nombre === "Yo");
-    if (existeYo) { setPersonaActualId(existeYo.id); setShowSelector(false); }
-    else {
-      const nuevaYo = { id: Date.now(), nombre: "Yo", edad: null, meds: [], confirmedByDate: {}, preferenciasFarmacia: {}, ultimoReconteo: {}, ultimaConexion: Date.now(), esAutocuidado: true };
-      actualizar((prev) => ({ ...prev, personas: [...prev.personas, nuevaYo] }));
-      setPersonaActualId(nuevaYo.id); setShowSelector(false);
-      registrarEvento(codigo, "activar_autocuidado", "Modo Autocuidado activado", { cuidador: nombreCuidadorInput });
-    }
-  };
-
-  const intentarAgregarMed = () => { if (meds.length >= maxMeds) { setShowLimite("meds"); return; } addStartRef.current = Date.now(); setShowAdd(true); };
-  const intentarAgregarPersona = () => { if ((familia.personas?.length || 0) >= maxPersonas) { setShowLimite("personas"); return; } setShowAddPersona(true); };
- 
-  const archivarMed = (id) => {
-    actualizarPersona((p) => ({ ...p, meds: p.meds.map((m) => m.id === id ? { ...m, archivado: true, fechaArchivado: Date.now() } : m) }));
-    const med = meds.find((m) => m.id === id);
-    if (med) registrarCambio("Archivó", med.name);
-    registrarEvento(codigo, "archivar_med", med?.name || "", { cuidador: nombreCuidadorInput, persona: elderName, med: med?.name });
-    setArchivarTarget(null);
-  };
-
-  const reactivarMed = (id) => {
-    actualizarPersona((p) => ({ ...p, meds: p.meds.map((m) => m.id === id ? { ...m, archivado: false, fechaArchivado: null } : m) }));
-    registrarCambio("Reactivó", "Medicamento reactivado");
-    setCuidadorTab("meds");
-  };
-
-  const borrarMedFijo = (id) => {
-    if (!window.confirm("¿Borrar definitivamente este medicamento? No se podrá recuperar.")) return;
-    actualizarPersona((p) => ({ ...p, meds: p.meds.filter((m) => m.id !== id) }));
-    registrarCambio("Borró", "Medicamento eliminado permanentemente");
-  };
-
-  const abrirEditar = (med) => {
-    setForm({ name: med.name || "", dose: med.dose || "", times: med.times || ["08:00"], color: med.color || PILL_COLORS[0], shape: med.shape || PILL_SHAPES[0], stock: med.stock || 30, doseAmount: med.doseAmount || 1, type: med.type || "privada", receta: med.receta || null, criticidad: med.criticidad || null, modoAviso: med.modoAviso || null, notas: med.notas || "", recetaVence: med.recetaVence || "", ventanaMin: med.ventanaMin || 0 });
-    setEditandoId(med.id); addStartRef.current = Date.now(); setShowAdd(true);
-  };
-
-  const agregarMed = () => {
-    if (!form.name.trim()) return;
-    const critF = form.criticidad || detectarCriticidad(form.name);
-    const modoF = critF === "vital" ? "inmediato" : (form.modoAviso || (critF === "importante" ? "inmediato" : "final_dia"));
-    const nuevo = { id: editandoId || Date.now(), name: form.name.trim(), dose: form.dose.trim() || "1 dosis", times: form.times.filter(Boolean), color: form.color, shape: form.shape, unidad: form.unidad || "pastilla", stock: form.stock, doseAmount: form.doseAmount, type: form.type, receta: form.receta || clasificarMedicamento(form.name) || "sin_receta", criticidad: critF, modoAviso: modoF, notas: form.notas || "", recetaVence: form.recetaVence || "", ventanaMin: Number(form.ventanaMin) || 0, archivado: false, fechaInicio: Date.now(), fechaArchivado: null };
-    const duracionSeg = addStartRef.current ? Math.round((Date.now() - addStartRef.current) / 1000) : 0;
-    if (editandoId) {
-      actualizarPersona((p) => ({ ...p, meds: p.meds.map((m) => m.id === editandoId ? { ...m, ...nuevo, fechaInicio: m.fechaInicio || nuevo.fechaInicio, archivado: m.archivado || false, fechaArchivado: m.fechaArchivado || null } : m) }));
-      registrarCambio("Editó", nuevo.name);
-      registrarEvento(codigo, "editar_med", nuevo.name, { cuidador: nombreCuidadorInput, persona: elderName, edad: elderEdad || "", med: nuevo.name, criticidad: critF, duracion_seg: duracionSeg });
-      setEditandoId(null);
-    } else {
-      actualizarPersona((p) => ({ ...p, meds: [...p.meds, nuevo] }));
-      registrarCambio("Agregó", nuevo.name);
-      registrarEvento(codigo, "agregar_med", nuevo.name, { cuidador: nombreCuidadorInput, persona: elderName, edad: elderEdad || "", med: nuevo.name, criticidad: critF, duracion_seg: duracionSeg });
-    }
-    addStartRef.current = null;
-    setForm({ name: "", dose: "", times: ["08:00"], color: PILL_COLORS[0], shape: PILL_SHAPES[0], stock: 30, doseAmount: 1, type: "privada", receta: null, criticidad: null, modoAviso: null, notas: "", recetaVence: "", ventanaMin: 0 });
-    setShowAdd(false);
-  };
-
-  const guardarNotas = (medId, texto) => {
-    actualizarPersona((p) => ({ ...p, meds: p.meds.map((m) => (m.id === medId ? { ...m, notas: texto } : m)) }));
-    const med = meds.find((m) => m.id === medId);
-    if (med) registrarCambio("Cambió notas", med.name);
-    setShowNotas(null);
-  };
-
-  const agregarPersona = () => {
-    if (!nombrePersonaNueva.trim()) return;
-    if (edadPersonaNueva && (isNaN(Number(edadPersonaNueva)) || Number(edadPersonaNueva) < 0 || Number(edadPersonaNueva) > 120)) { alert("La edad debe ser un número entre 0 y 120"); return; }
-    const edadNum = edadPersonaNueva ? Number(edadPersonaNueva) : null;
-    const nueva = { id: Date.now(), nombre: nombrePersonaNueva.trim(), edad: edadNum, meds: [], confirmedByDate: {}, preferenciasFarmacia: {}, ultimoReconteo: {}, ultimaConexion: Date.now() };
-    actualizar((prev) => ({ ...prev, personas: [...prev.personas, nueva] }));
-    registrarCambio("Agregó persona", `${nombrePersonaNueva.trim()}${edadNum ? ` (${edadNum} años)` : ""}`);
-    registrarEvento(codigo, "agregar_persona", `${nombrePersonaNueva.trim()}${edadNum ? ` (${edadNum} años)` : ""}`, { cuidador: nombreCuidadorInput, persona: nombrePersonaNueva.trim(), edad: edadNum || "" });
-    setPersonaActualId(nueva.id); setNombrePersonaNueva(""); setEdadPersonaNueva(""); setShowAddPersona(false);
-  };
-
-  const agregarContacto = () => {
-    if (!formContacto.nombre.trim() || !formContacto.telefono.trim()) return;
-    actualizar((prev) => ({ ...prev, contactos: [...(prev.contactos || []), { id: Date.now(), ...formContacto }] }));
-    registrarEvento(codigo, "agregar_contacto", formContacto.nombre, { cuidador: nombreCuidadorInput, tipo_contacto: formContacto.tipo });
-    setFormContacto({ nombre: "", telefono: "", tipo: "médico" });
-  };
-  const eliminarContacto = (id) => actualizar((prev) => ({ ...prev, contactos: (prev.contactos || []).filter((c) => c.id !== id) }));
-
-  const reponer = (cant) => {
-    if (!restockTarget) return;
-    actualizarPersona((p) => ({ ...p, meds: p.meds.map((m) => (m.id === restockTarget.id ? { ...m, stock: +(m.stock + cant).toFixed(2) } : m)) }));
-    registrarCambio("Repuso stock", `${restockTarget.name} +${fmtN(cant)}`);
-    registrarEvento(codigo, "reponer_stock", `${restockTarget.name} +${fmtN(cant)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: restockTarget.name, cantidad: cant });
-    setRestockTarget(null);
-  };
-  const aplicarReconteo = (id, c) => {
-    actualizarPersona((p) => ({ ...p, meds: p.meds.map((m) => (m.id === id ? { ...m, stock: c } : m)), ultimoReconteo: { ...(p.ultimoReconteo || {}), [id]: Date.now() } }));
-    const med = meds.find((m) => m.id === id);
-    if (med) registrarCambio("Recontó", `${med.name} → ${fmtN(c)}`);
-    registrarEvento(codigo, "reconteo", `${med?.name || ""} → ${fmtN(c)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: med?.name, stock: c });
-    setReconteoTarget(null);
-  };
-
-  const abrirFarmaciaIndividual = (f, m) => {
-    registrarDato("vioIndividualTotal"); registrarDato("clicsFarmacia", 1, f.nombre); registrarDato("medsConsultados", f.costo, m.name);
-    registrarEvento(codigo, "clic_farmacia_individual", `${f.nombre} — ${m.name}`, { cuidador: nombreCuidadorInput, persona: elderName, farmacia: f.nombre, med: m.name });
-    const url = `${f.url}?ref=contigo_siempre_app&producto=${encodeURIComponent(m.name)}`;
-    actualizarPersona((p) => ({ ...p, preferenciasFarmacia: { ...(p.preferenciasFarmacia || {}), [m.id]: f.id } }));
-    setLinkAbierto({ farmacia: f.nombre, url, receta: m.receta });
-  };
-
-  const abrirFarmaciaCarro = (f, medsList, total) => {
-    registrarDato("abrioFarmaciaTotal"); registrarDato("clicsFarmacia", 1, f.nombre); medsList.forEach((m) => registrarDato("medsConsultados", f.costo, m.name));
-    registrarEvento(codigo, "clic_farmacia_carro", `${f.nombre} — ${medsList.length} meds — $${total}`, { cuidador: nombreCuidadorInput, persona: elderName, farmacia: f.nombre, cantidad: medsList.length, total });
-    const url = `${f.url}?ref=contigo_siempre_app&carro=completo`;
-    setLinkAbierto({ farmacia: f.nombre, url, receta: "con_receta" }); setShowCarroCompleto(false);
-  };
-
-  const abrirCarroCompleto = () => {
-    registrarDato("vioCarroTotal");
-    registrarEvento(codigo, "ver_carro_completo", `${medsCarro.length} medicamentos pendientes`, { cuidador: nombreCuidadorInput, persona: elderName, cantidad: medsCarro.length });
-    setShowCarroCompleto(true);
-  };
-
-  const abrirProductosVentaLibre = (productos) => {
-    registrarDato("productosSugeridosTotal");
-    registrarEvento(codigo, "ver_productos_sugeridos", `${productos.length} productos`, { cuidador: nombreCuidadorInput, persona: elderName, cantidad: productos.length, skus: productos.map(p => p.sku).join(",") });
-    const ids = productos.map((p) => p.sku).join(",");
-    setLinkAbierto({ url: `https://www.mercadolibre.cl/cart/add-multiple?items=${ids}&matt_tool=PENDIENTE`, mensaje: "Artículos útiles para el cuidado diario" });
-  };
-
-  const compartirWhatsApp = (tipo) => {
-    const texto = generarTextoCompartir(tipo, elderName, meds, confirmedByDate);
-    const url = `https://wa.me/?text=${encodeURIComponent(texto)}`;
-    window.open(url, "_blank");
-    registrarEvento(codigo, "compartir_whatsapp", tipo, { cuidador: nombreCuidadorInput, persona: elderName, tipo_compartir: tipo });
-    setShowCompartir(false);
-  };
-
-  const detectadoReceta = clasificarMedicamento(form.name);
-  const detectadoCrit = detectarCriticidad(form.name);
-  const { dias: diasMes, mes, año } = getMesActual();
-  const recetasPorVencer = meds.filter((m) => { if (!m.recetaVence) return false; const d = diasHastaVencimiento(m.recetaVence); return d !== null && d >= 0 && d <= 30; });
-  const diasPremium = familia.planInicio ? Math.floor((Date.now() - familia.planInicio) / (1000 * 60 * 60 * 24)) : 0;
-  const mostrarAvisoRenovacion = esPremium && diasPremium >= 27 && diasPremium <= 30;
-  const medsCarro = meds.filter((m) => { const s = semaforoRiesgo(m, confirmedByDate); return s.nivel === "urgente" || s.nivel === "atención"; });
-  const medsArchivados = (personaActual?.meds || []).filter(m => m.archivado);
-    return (
+  // RENDERIZADO PRINCIPAL DE LA APP
+  return (
     <div style={{ minHeight: "100vh", background: C.BG, fontFamily: "'Space Grotesk','Segoe UI',sans-serif", color: C.INK, display: "flex", justifyContent: "center" }}>
       <style>{CSS_GLOBAL}</style>
       <div style={{ width: "100%", maxWidth: 420, minHeight: "100vh", background: C.CREAM, display: "flex", flexDirection: "column", position: "relative" }}>
 
         {alertaActiva && (view === "mayor" || personaActual?.esAutocuidado) && (
           <PantallaAlertaMedicamento
-            C={C}
-            meds={alertaActiva.meds}
-            hora={alertaActiva.time}
-            onConfirmar={() => confirmar(alertaActiva)}
-            onPosponer={posponerAlerta}
-            escala={scale}
-            daltonico={settings.daltonico}
-            sonidoActivo={settings.sonidoActivo !== false}
+            C={C} meds={alertaActiva.meds} hora={alertaActiva.time}
+            onConfirmar={() => confirmar(alertaActiva)} onPosponer={posponerAlerta}
+            escala={scale} daltonico={settings.daltonico} sonidoActivo={settings.sonidoActivo !== false}
             esVital={alertaActiva.meds.some(m => (m.criticidad || detectarCriticidad(m.name)) === "vital")}
-            yaPostergada={alertaActiva.meds.some(m => alertasPostergadasRef.current[`${personaActual?.id}_${m.id}_${alertaActiva.time}`] === true)}
+            yaPostergada={alertaActiva.meds.some(m => alertasPostergadasRef.current[`${personaActual?.id}_${m.id}_${alertaActiva.time}`]?.count > 0)}
             esAdultoMayor={view === "mayor"}
           />
         )}
@@ -1730,6 +2141,20 @@ export default function App() {
           </div>
         ) : (
           <div style={{ padding: "16px 20px 100px", flex: 1 }}>
+            {mostrarAvisoRenovacion && (
+               <div style={{ background: C.GOLD + "15", border: `1px solid ${C.GOLD}`, borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14, marginTop: 8 }}>
+                 <Crown size={20} color={C.GOLD} style={{ marginTop: 1 }} />
+                 <div style={{ fontSize: 13, color: C.INK, lineHeight: 1.5 }}>Tu plan Premium vence pronto. Renueva para seguir disfrutando de los beneficios.</div>
+               </div>
+            )}
+
+            {cuidadorTab === "meds" && cambioPatron && (
+              <div style={{ background: C.AMBER + "15", border: `1px solid ${C.AMBER}`, borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14, marginTop: 8 }}>
+                <TrendingDown size={20} color={C.AMBER} style={{ marginTop: 1 }} />
+                <div style={{ fontSize: 13, color: C.INK, lineHeight: 1.5 }}>Detectamos una baja en la adherencia esta semana ({cambioPatron.tasaActual}% vs {cambioPatron.tasaPrevia}% anterior). Sugerimos revisar.</div>
+              </div>
+            )}
+
             {cuidadorTab === "meds" && recetasPorVencer.length > 0 && (
               <div style={{ background: oscuro ? "#3A2F1A" : "#FFF8E1", border: `1px solid ${oscuro ? "#5A4A2A" : "#FFE082"}`, borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14, marginTop: 8, boxShadow: C.SHADOW }}>
                 <FileText size={20} color={C.AMBER} style={{ marginTop: 1 }} />
@@ -1739,6 +2164,11 @@ export default function App() {
 
             {cuidadorTab === "meds" && (
               <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                  <button data-tutorial="nav-menu" onClick={() => setShowMenuLateral(true)} className="btn-press-soft" style={{ padding: "10px 14px", borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6, boxShadow: C.SHADOW }}><Menu size={16} /> Menú</button>
+                  <button onClick={() => setShowReporteMedico(true)} className="btn-press-soft" style={{ padding: "10px 14px", borderRadius: 12, border: `1px solid ${C.TEAL}`, background: C.TEAL + "10", color: C.TEAL, fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}><FileText size={16} /> Reporte Médico</button>
+                </div>
+
                 {meds.length === 0 ? (
                   <div style={{ marginTop: 14 }}>
                     <EstadoVacio C={C} icono={Pill} titulo="Sin medicamentos aún" texto="Agrega el primer medicamento para empezar a cuidar." botonTexto="Agregar medicamento" onBoton={intentarAgregarMed} />
@@ -1750,7 +2180,7 @@ export default function App() {
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                       {meds.slice(0, 4).map((m) => {
-                        const sem = semaforoRiesgo(m, confirmedByDate);
+                        const sem = semaforoRiesgo(m);
                         const crit = m.criticidad || detectarCriticidad(m.name);
                         const colorCrit = crit === "vital" ? C.CORAL : crit === "importante" ? C.AMBER : C.GREEN;
                         const labelCrit = crit === "vital" ? "VITAL" : crit === "importante" ? "IMPORTANTE" : "NORMAL";
@@ -1782,7 +2212,7 @@ export default function App() {
                       })}
                     </div>
                     {meds.length > 4 && (
-                      <div style={{ textAlign: "center", marginTop: 10, fontSize: 12, color: C.MUTED }}>+ {meds.length - 4} medicamentos más. Hazte Premium para verlos todos en pantalla.</div>
+                      <div style={{ textAlign: "center", marginTop: 10, fontSize: 12, color: C.MUTED }}>+ {meds.length - 4} medicamentos más. Hazte Premium para verlos todos.</div>
                     )}
                     <button onClick={intentarAgregarMed} data-tutorial="add-med" className="btn-press-soft" style={{ marginTop: 18, width: "100%", background: oscuro ? "#1E3A5F" : "#E3F2FD", border: `1.5px dashed ${oscuro ? "#FFFFFF" : "#1976D2"}`, color: oscuro ? "#FFFFFF" : C.TEAL, padding: 13, borderRadius: 14, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 0 15px rgba(255,255,255,0.4)" }}>
                       {meds.length >= maxMeds ? <><Lock size={16} /> Límite alcanzado — Hazte Premium</> : <><Plus size={16} /> Agregar medicamento</>}
@@ -1794,8 +2224,11 @@ export default function App() {
 
             {cuidadorTab === "archivados" && (
               <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                  <button onClick={() => setShowMenuLateral(true)} className="btn-press-soft" style={{ padding: "10px 14px", borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6, boxShadow: C.SHADOW }}><Menu size={16} /> Menú</button>
+                </div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 12 }}>Medicamentos Anteriores</div>
-                <div style={{ fontSize: 11, color: C.MUTED, marginBottom: 12, fontStyle: "italic" }}>(Medicamentos que ya no se usan porque terminó el tratamiento o fueron suspendidos por el médico).</div>
+                <div style={{ fontSize: 11, color: C.MUTED, marginBottom: 12, fontStyle: "italic" }}>(Medicamentos que ya no se usan porque terminó el tratamiento o fueron suspendidos).</div>
                 {medsArchivados.length === 0 ? (
                   <EstadoVacio C={C} icono={History} titulo="Sin historial" texto="Los medicamentos que archives aparecerán aquí." />
                 ) : (
@@ -1817,6 +2250,9 @@ export default function App() {
 
             {cuidadorTab === "avisos" && (
               <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                  <button onClick={() => setShowMenuLateral(true)} className="btn-press-soft" style={{ padding: "10px 14px", borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6, boxShadow: C.SHADOW }}><Menu size={16} /> Menú</button>
+                </div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 12 }}>Avisos enviados</div>
                 {smsLog.length === 0 ? (
                   <div style={{ background: oscuro ? "#1B3A2A" : "#E8F5E9", border: `1px solid ${oscuro ? "#2F5A3A" : "#A5D6A7"}`, borderRadius: 16, padding: 40, textAlign: "center" }}>
@@ -1837,24 +2273,39 @@ export default function App() {
             )}
 
             {cuidadorTab === "historial" && (
-              <div style={{ textAlign: "center", padding: 20 }}>
-                <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 14 }}>Historial de Adherencia</div>
-                <div style={{ fontSize: 12, color: C.MUTED, marginBottom: 10 }}>(Calendario de adherencia disponible. Haz scroll o consulta los avisos)</div>
-                <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
-                  <button onClick={() => setDiaDetalle({ fecha: todayStr(), dia: new Date().getDate(), confirmadas: Object.keys(confirmedHoy).filter(k => confirmedHoy[k]).length, esperadas: meds.reduce((a, m) => a + m.times.length, 0), olvidos: Math.max(0, meds.reduce((a, m) => a + m.times.length, 0) - Object.keys(confirmedHoy).filter(k => confirmedHoy[k]).length), diaData: confirmedHoy })} className="btn-press" style={{ padding: 10, borderRadius: 10, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Ver detalle de hoy</button>
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                  <button onClick={() => setShowMenuLateral(true)} className="btn-press-soft" style={{ padding: "10px 14px", borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6, boxShadow: C.SHADOW }}><Menu size={16} /> Menú</button>
                 </div>
-              </div>
+                <div style={{ textAlign: "center", padding: 20 }}>
+                  <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Historial de Adherencia</div>
+                  <div style={{ fontSize: 12, color: C.MUTED, marginBottom: 20 }}>Revisa el cumplimiento de los medicamentos.</div>
+                  <button onClick={() => setShowCalendario(true)} className="btn-press" style={{ padding: "14px 24px", borderRadius: 14, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, margin: "0 auto" }}><Calendar size={18} /> Ver Calendario del Mes</button>
+                </div>
+              </>
             )}
 
             {cuidadorTab === "canasta" && (
-              <div style={{ textAlign: "center", padding: 20 }}>
-                <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 14 }}>Carro y Farmacias</div>
-                <div style={{ fontSize: 12, color: C.MUTED }}>(Módulo de compras en desarrollo)</div>
-              </div>
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                  <button onClick={() => setShowMenuLateral(true)} className="btn-press-soft" style={{ padding: "10px 14px", borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6, boxShadow: C.SHADOW }}><Menu size={16} /> Menú</button>
+                </div>
+                <div style={{ textAlign: "center", padding: "20px 0" }}>
+                  <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Carro y Farmacias</div>
+                  {medsCarro.length === 0 ? (
+                    <div style={{ background: C.PAPER, padding: 40, borderRadius: 20, border: `1px dashed ${C.LINE}`, color: C.MUTED }}>No hay medicamentos por reabastecer aún.</div>
+                  ) : (
+                    <button onClick={() => setShowCarroCompleto(true)} className="btn-press" style={{ marginTop: 12, width: "100%", padding: 16, borderRadius: 14, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><ShoppingCart size={20} /> Ver {medsCarro.length} medicamentos por comprar</button>
+                  )}
+                </div>
+              </>
             )}
 
             {cuidadorTab === "contactos" && (
               <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                  <button onClick={() => setShowMenuLateral(true)} className="btn-press-soft" style={{ padding: "10px 14px", borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6, boxShadow: C.SHADOW }}><Menu size={16} /> Menú</button>
+                </div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 12 }}>Contactos de emergencia</div>
                 {contactos.length === 0 ? (
                   <div style={{ marginBottom: 14 }}>
@@ -1888,11 +2339,33 @@ export default function App() {
                 </div>
               </>
             )}
+            
+            {cuidadorTab === "cambios" && (
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                  <button onClick={() => setShowMenuLateral(true)} className="btn-press-soft" style={{ padding: "10px 14px", borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6, boxShadow: C.SHADOW }}><Menu size={16} /> Menú</button>
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 12 }}>Historial de cambios</div>
+                {(familia.historialCambios || []).length === 0 ? (
+                  <EstadoVacio C={C} icono={FileText} titulo="Sin cambios registrados" texto="Los cambios que hagas en los medicamentos aparecerán aquí." />
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {[...(familia.historialCambios || [])].reverse().map((h) => (
+                      <div key={h.id} style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 12, padding: 12 }}>
+                        <div style={{ fontSize: 11, color: C.MUTED, marginBottom: 4 }}>{new Date(h.fecha).toLocaleString("es-CL")} · {h.cuidador}</div>
+                        <div style={{ fontSize: 13, fontWeight: 600 }}>{h.accion}: {h.detalle}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )}
 
+        {/* MODALES GLOBALES */}
         <MenuLateral C={C} abierto={showMenuLateral} onCerrar={() => setShowMenuLateral(false)} tabActual={cuidadorTab} setTabActual={setCuidadorTab} avisosNuevos={smsLog.length} oscuro={oscuro} cuidadorNombre={nombreCuidadorInput || familia?.cuidadores?.[0] || "Cuidador"} elderName={elderName} onCompartir={() => setShowCompartir(true)} onModoOscuro={() => { actualizarSettings({ darkMode: !oscuro }); registrarEvento(codigo, "toggle_dark_mode", !oscuro ? "activado" : "desactivado", { cuidador: nombreCuidadorInput }); }} onAyuda={() => setShowComoFunciona(true)} onAcercaDe={() => setShowAcercaDe(true)} onPolitica={() => setShowPolitica(true)} onPremium={() => setShowPremium(true)} onAjustes={() => setShowAjustes(true)} />
-
+        
         {showComoFunciona && <ComoFunciona C={C} onCerrar={() => setShowComoFunciona(false)} />}
         {showOnboardingPremium && <OnboardingPremium C={C} onCerrar={() => { setShowOnboardingPremium(false); actualizar((prev) => ({ ...prev, settings: { ...prev.settings, onboardingPremiumVisto: true } })); }} />}
         {showAcercaDe && <AcercaDe C={C} onCerrar={() => setShowAcercaDe(false)} />}
@@ -1900,11 +2373,13 @@ export default function App() {
         {showAdmin && <PanelAdmin C={C} familias={familiasAdmin} onCerrar={() => setShowAdmin(false)} onAbrirDatos={() => { setShowAdmin(false); setShowDatos(true); }} onAbrirEventos={() => { setShowAdmin(false); setShowEventos(true); }} />}
         {showDatos && <DatosAdministrativos C={C} onCerrar={() => setShowDatos(false)} onReset={() => { try { localStorage.removeItem("datos_admin_global"); } catch (e) {} }} />}
         {showEventos && <VerEventos C={C} onCerrar={() => setShowEventos(false)} />}
-        {showCarroCompleto && <CarroCompleto C={C} meds={meds} onCerrar={() => setShowCarroCompleto(false)} onElegirFarmacia={abrirFarmaciaCarro} />}
+        {showMetricasCORFO && <PanelMetricasCORFO C={C} onCerrar={() => setShowMetricasCORFO(false)} />}
+        {showReporteMedico && <ModalReporteMedico C={C} onCerrar={() => setShowReporteMedico(false)} elderName={elderName} meds={meds} confirmedByDate={confirmedByDate} />}
+        {showCalendario && <CalendarioHistorial C={C} onCerrar={() => setShowCalendario(false)} meds={meds} confirmedByDate={confirmedByDate} />}
+        {showCarroCompleto && <CarroCompleto C={C} meds={medsCarro} onCerrar={() => setShowCarroCompleto(false)} onElegirFarmacia={abrirFarmaciaCarro} />}
 
-        {showSelectorRol && (
-          <SelectorRol C={C} onSeleccionar={(rol) => seleccionarRol(rol)} onCerrar={() => setShowSelectorRol(false)} />
-        )}
+        {showSelectorRol && <SelectorRol C={C} onSeleccionar={(rol) => seleccionarRol(rol)} onCerrar={() => setShowSelectorRol(false)} />}
+        {showOnboarding && <OnboardingCORFO C={C} onCerrar={completarOnboarding} onGuardar={completarOnboarding} />}
 
         {showTutorial && <TutorialInteractivo pasos={PASOS_TUTORIAL} onCerrar={() => { setShowTutorial(false); actualizar((prev) => ({ ...prev, settings: { ...prev.settings, tutorialVisto: true } })); registrarEvento(codigo, "tutorial_completado", "Tutorial finalizado", { cuidador: nombreCuidadorInput }); }} C={C} onAbrirMenu={() => setShowMenuLateral(true)} />}
 
@@ -1972,33 +2447,6 @@ export default function App() {
           </div>
         )}
 
-        {diaDetalle && (() => {
-          const adherencia = diaDetalle.esperadas > 0 ? Math.round((diaDetalle.confirmadas / diaDetalle.esperadas) * 100) : 0;
-          const colorAdh = adherencia >= 90 ? C.GREEN : adherencia >= 70 ? C.AMBER : C.CORAL;
-          return (
-            <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 34 }}>
-              <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 20, padding: 24, margin: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                  <div style={{ fontWeight: 700, fontSize: 17 }}>{diaDetalle.dia} de {MESES[mes]}</div>
-                  <button onClick={() => setDiaDetalle(null)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer" }}><X size={15} color={C.INK} /></button>
-                </div>
-                <div style={{ background: C.PAPER, borderRadius: 14, padding: 16, marginBottom: 14, boxShadow: C.SHADOW, textAlign: "center" }}>
-                  <div style={{ fontSize: 11, color: C.MUTED, fontWeight: 700, marginBottom: 6 }}>ADHERENCIA DEL DÍA</div>
-                  <div style={{ fontSize: 38, fontWeight: 800, color: colorAdh, lineHeight: 1 }}>{fmtN(adherencia)}%</div>
-                  <div style={{ fontSize: 12.5, color: C.MUTED, marginTop: 6 }}>{fmtN(diaDetalle.confirmadas)} de {fmtN(diaDetalle.esperadas)} tomas confirmadas</div>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 250, overflowY: "auto" }}>
-                  {meds.flatMap((m) => m.times.map((t) => {
-                    const k = occKey(m.id, t);
-                    return (<div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "8px 10px", background: C.PAPER, borderRadius: 10, fontSize: 12 }}><span>{m.name} · {fmtHoraConAmPm(t)}</span><span style={{ color: diaDetalle.diaData[k] ? C.GREEN : C.CORAL, fontWeight: 700 }}>{diaDetalle.diaData[k] ? "✓" : "✗"}</span></div>);
-                  }))}
-                </div>
-                <button onClick={() => setDiaDetalle(null)} className="btn-press" style={{ marginTop: 16, width: "100%", padding: 12, borderRadius: 12, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Cerrar</button>
-              </div>
-            </div>
-          );
-        })()}
-
         {showLimite && (
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 32 }}>
             <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 24, padding: 26, margin: 20, textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
@@ -2027,7 +2475,7 @@ export default function App() {
                 <div>✓ Medicamentos ilimitados</div>
                 <div>✓ Hasta 3 personas mayores</div>
                 <div>✓ Reconteo manual del stock</div>
-                <div>✓ Reporte PDF médico</div>
+                <div>✓ Reporte médico</div>
                 <div>✓ Detección de cambio de patrón</div>
                 <div>✓ Funciona sin conexión</div>
               </div>
@@ -2037,6 +2485,7 @@ export default function App() {
                 <input value={codigoPremium} onChange={(e) => setCodigoPremium(e.target.value)} placeholder="Ingresa tu código" style={{ flex: 1, padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 13, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
                 <button onClick={canjearCodigo} className="btn-press" style={{ padding: "12px 18px", borderRadius: 12, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Canjear</button>
               </div>
+              <button onClick={() => { setShowPremium(false); setShowMetricasCORFO(true); }} className="btn-press-soft" style={{ width: "100%", marginTop: 14, padding: 12, borderRadius: 12, border: `1px solid ${C.TEAL}`, background: "transparent", color: C.TEAL, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><BarChart3 size={16} /> Ver Métricas CORFO</button>
             </div>
           </div>
         )}
@@ -2048,11 +2497,11 @@ export default function App() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}><div style={{ fontWeight: 700, fontSize: 17 }}>{editandoId ? "Editar medicamento" : "Nuevo medicamento"}</div><button onClick={() => setShowAdd(false)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer" }}><X size={16} color={C.INK} /></button></div>
               <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6 }}>NOMBRE</div>
               <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value, receta: null, criticidad: null }))} placeholder="Ej. Losartán" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, marginBottom: 8, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
-              {form.name.trim().length > 2 && detectadoCrit === "vital" && (<div style={{ background: "#FFEBEE", border: `1px solid #FFCDD2`, borderRadius: 12, padding: "10px 12px", fontSize: 12, color: C.CORAL, marginBottom: 10, fontWeight: 600 }}>🔴 Medicamento vital. Aviso fijo a los 2 min.</div>)}
+              {form.name.trim().length > 2 && detectarCriticidad(form.name) === "vital" && (<div style={{ background: "#FFEBEE", border: `1px solid #FFCDD2`, borderRadius: 12, padding: "10px 12px", fontSize: 12, color: C.CORAL, marginBottom: 10, fontWeight: 600 }}>🔴 Medicamento vital. Aviso fijo a los 2 min.</div>)}
               <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 8 }}>NIVEL DE CRITICIDAD</div>
               <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
                 {[{ v: "vital", l: "🔴 Vital", c: C.CORAL }, { v: "importante", l: "🟡 Importante", c: C.AMBER }, { v: "normal", l: "🟢 Normal", c: C.GREEN }].map((op) => (
-                  <button key={op.v} onClick={() => setForm((f) => ({ ...f, criticidad: op.v }))} className="btn-press-soft" style={{ flex: 1, padding: 10, borderRadius: 10, border: (form.criticidad || detectadoCrit) === op.v ? `2px solid ${op.c}` : `1.5px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 11, cursor: "pointer" }}>{op.l}</button>
+                  <button key={op.v} onClick={() => setForm((f) => ({ ...f, criticidad: op.v }))} className="btn-press-soft" style={{ flex: 1, padding: 10, borderRadius: 10, border: (form.criticidad || detectarCriticidad(form.name)) === op.v ? `2px solid ${op.c}` : `1.5px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 11, cursor: "pointer" }}>{op.l}</button>
                 ))}
               </div>
               <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6 }}>INDICACIÓN</div>
@@ -2141,9 +2590,9 @@ export default function App() {
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 30 }}>
             <div className="modal-scale" style={{ width: "100%", maxWidth: 340, background: C.CREAM, borderRadius: 20, padding: 24, margin: 20 }}>
               <div style={{ width: 48, height: 48, borderRadius: 999, background: C.GOLD + "15", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}><Sparkles size={22} color={C.GOLD} /></div>
-              <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8 }}>{linkAbierto.mensaje || (linkAbierto.farmacia ? `Abriría ${linkAbierto.farmacia}` : "Se abriría en el navegador")}</div>
-              <div style={{ fontSize: 11, color: C.MUTED, wordBreak: "break-all", background: C.PAPER, padding: 10, borderRadius: 10, border: `1px solid ${C.LINE}` }}>{linkAbierto.url}</div>
-              <button onClick={() => setLinkAbierto(null)} className="btn-press" style={{ marginTop: 16, width: "100%", padding: 12, borderRadius: 12, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Cerrar</button>
+              <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8 }}>{linkAbierto.farmacia ? `Ir a ${linkAbierto.farmacia}` : "Abrir enlace"}</div>
+              <a href={linkAbierto.url} target="_blank" rel="noopener noreferrer" style={{ display: "block", fontSize: 13, color: C.TEAL, wordBreak: "break-all", background: C.PAPER, padding: 10, borderRadius: 10, border: `1px solid ${C.LINE}`, textDecoration: "underline", marginBottom: 14 }}>{linkAbierto.url}</a>
+              <button onClick={() => setLinkAbierto(null)} className="btn-press" style={{ width: "100%", padding: 12, borderRadius: 12, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Cerrar</button>
             </div>
           </div>
         )}
