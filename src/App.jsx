@@ -2096,26 +2096,26 @@ export default function App() {
           </div>
         )}
 
-               {/* Barra Superior (Menú hamburguesa siempre visible) */}
-        <div style={{ padding: "16px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          {rolUsuario !== "mayor" && (
+                {/* Barra Superior (Menú, Código, etc.) - Oculto para el Adulto Mayor */}
+        {rolUsuario !== "mayor" && (
+          <div style={{ padding: "16px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <button data-tutorial="nav-menu-top" onClick={() => setShowMenuLateral(true)} className="btn-press-soft" style={{ padding: "10px", borderRadius: 12, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <Menu size={20} />
             </button>
-          )}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
-            <div data-tutorial="codigo" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: C.MUTED }}>
-              <KeyRound size={11} /> Código: <strong>{codigo}</strong>
-              <button onClick={() => navigator.clipboard?.writeText(codigo)} className="btn-press-soft" style={{ border: "none", background: "transparent", color: C.TEAL, cursor: "pointer", display: "flex", padding: 4 }}><Copy size={12} /></button>
-              <button onClick={() => { const txt = `Hola ${elderName.split(" ")[0]}, toca este link para ver tus remedios en Contigo Siempre: https://contigo-siempre.vercel.app/?unirse=${codigo}&rol=mayor`; window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, "_blank"); }} className="btn-press-soft" style={{ border: "none", background: "transparent", color: C.TEAL, cursor: "pointer", display: "flex", padding: 4 }}><Share2 size={12} /></button>
-              {saving && <Loader2 size={11} />}
-              {firebaseEstado === "conectado" && isOnline && <span style={{ fontSize: 10, color: C.GREEN, fontWeight: 700 }}>☁️</span>}
-            </div>
-            <div style={{ fontSize: 9.5, color: C.MUTED, fontStyle: "italic" }}>
-              Cuidador: {nombreCuidadorInput || "Tú"} · Viendo a: {elderName.split(" ")[0]}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+              <div data-tutorial="codigo" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: C.MUTED }}>
+                <KeyRound size={11} /> Código: <strong>{codigo}</strong>
+                <button onClick={() => navigator.clipboard?.writeText(codigo)} className="btn-press-soft" style={{ border: "none", background: "transparent", color: C.TEAL, cursor: "pointer", display: "flex", padding: 4 }}><Copy size={12} /></button>
+                <button onClick={() => { const txt = `Hola ${elderName.split(" ")[0]}, toca este link para ver tus remedios en Contigo Siempre: https://contigo-siempre.vercel.app/?unirse=${codigo}&rol=mayor`; window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, "_blank"); }} className="btn-press-soft" style={{ border: "none", background: "transparent", color: C.TEAL, cursor: "pointer", display: "flex", padding: 4 }}><Share2 size={12} /></button>
+                {saving && <Loader2 size={11} />}
+                {firebaseEstado === "conectado" && isOnline && <span style={{ fontSize: 10, color: C.GREEN, fontWeight: 700 }}>☁️</span>}
+              </div>
+              <div style={{ fontSize: 9.5, color: C.MUTED, fontStyle: "italic" }}>
+                Cuidador: {nombreCuidadorInput || "Tú"} · Viendo a: {elderName.split(" ")[0]}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Selector de Pacientes (Solo si hay más de 1 y es vista de cuidador) */}
         {familia.personas && familia.personas.length > 1 && view === "cuidador" && (
