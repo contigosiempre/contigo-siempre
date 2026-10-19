@@ -1677,22 +1677,35 @@ export default function App() {
       setShowPremium(false); 
     }
     else if (up === "PILOTO2026") {
-      try {
-        const todas = await storage.listAll();
-        const pilotosActuales = todas.filter((f) => f.data?.esPiloto === true || f.data?.origen === "piloto").length;
-        if (pilotosActuales >= 50) { 
-          alert("Cupos de piloto agotados. Lo sentimos."); 
+         try {
+        if (!db) throw new Error("Sin DB");
+        
+        const snapshot = await db.collection("familias").where("esPiloto", "==", true).get();
+        const numeroPiloto = snapshot.size + 1;
+
+        if (numeroPiloto > 50) { 
+          alert("Lo sentimos, los 50 cupos del programa piloto ya se agotaron."); 
           setCodigoPremium(""); 
           return; 
         }
+
         const nuevaFecha = Date.now() + (60 * 24 * 60 * 60 * 1000);
-        actualizar((prev) => ({ ...prev, esPiloto: true, fechaFinPiloto: nuevaFecha, origen: "piloto" }));
+        actualizar((prev) => ({ 
+          ...prev, 
+          esPiloto: true, 
+          fechaFinPiloto: nuevaFecha, 
+          origen: "piloto",
+          numeroPiloto: numeroPiloto
+        }));
+        
         setCodigoPremium(""); 
         setShowPremium(false);
-        alert("¡Bienvenido al programa piloto! Tienes Premium completo por 60 días.");
-        registrarEvento(codigo, "activar_piloto", "Piloto activado", { cuidador: nombreCuidadorInput, origen: "piloto" });
+        
+        alert(`¡Felicidades! Eres el Piloto N° ${numeroPiloto}. Has desbloqueado el Plan Premium gratis por 60 días.`);
+        
+        registrarEvento(codigo, "activar_piloto", `Piloto N° ${numeroPiloto} activado`, { cuidador: nombreCuidadorInput, origen: "piloto", numero: numeroPiloto });
       } catch (e) { 
-        alert("Error al activar piloto. Intenta de nuevo."); 
+        alert("Error al activar el piloto. Revisa tu conexión e intenta de nuevo."); 
       }
     }
     else if (CODIGOS_PILOTO.includes(up)) { 
