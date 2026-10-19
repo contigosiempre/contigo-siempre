@@ -1481,11 +1481,13 @@ export default function App() {
       if (settings.vibracionActiva !== false) vibrarPatron();
       registrarEvento(codigo, "alerta_activada", `Grupo ${horaActualVencida}`, { cuidador: nombreCuidadorInput, persona: elderName });
       
-      const timers = [];
-      if (!esVitalAhora) {
-        timers.push(setTimeout(() => { if (settings.sonidoActivo !== false) reproducirAlertaSonido(); if (settings.vibracionActiva !== false) vibrarPatron(); }, 3 * 60 * 1000));
-      } else {
+         const timers = [];
+      
+      // Sonidos: Normales (a los 3 min). Vitales (a los 1 min).
+      if (esVitalAhora) {
         timers.push(setTimeout(() => { if (settings.sonidoActivo !== false) reproducirAlertaSonido(); if (settings.vibracionActiva !== false) vibrarPatron(); }, 1 * 60 * 1000));
+      } else {
+        timers.push(setTimeout(() => { if (settings.sonidoActivo !== false) reproducirAlertaSonido(); if (settings.vibracionActiva !== false) vibrarPatron(); }, 3 * 60 * 1000));
       }
 
       timers.push(setTimeout(() => {
