@@ -1281,10 +1281,10 @@ function CalendarioHistorial({ C, meds, confirmedByDate, onCerrar }) {
 // Arreglo 4: Canasta sin precios falsos
 function CarroCompleto({ C, meds, onCerrar, onElegirFarmacia }) {
   const [farmacias, setFarmacias] = useState([
-    { id: "f1", nombre: "Cruz Verde", distanciaKm: 1.2 },
-    { id: "f2", nombre: "Salcobrand", distanciaKm: 2.1 },
-    { id: "f3", nombre: "Farmacias Ahumada", distanciaKm: 1.8 },
-    { id: "f4", nombre: "Búho (comparador)", distanciaKm: 4.1 },
+    { id: "f1", nombre: "Cruz Verde", distanciaKm: 1.2, url: "https://www.cruzverde.cl" },
+    { id: "f2", nombre: "Salcobrand", distanciaKm: 2.1, url: "https://www.salcobrand.cl" },
+    { id: "f3", nombre: "Farmacias Ahumada", distanciaKm: 1.8, url: "https://www.farmaciasahumada.cl" },
+    { id: "f4", nombre: "Búho (comparador)", distanciaKm: 4.1, url: "https://www.buho.cl" },
   ]);
 
   return (
