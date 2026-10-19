@@ -1605,7 +1605,7 @@ export default function App() {
   };
 
   const cargarFamiliaConNombre = async (cod, nombreCuidador) => {
-    setError("");
+     setError("");
     try {
       const res = await storage.get(STORAGE_PREFIX + cod);
       if (res && res.value) {
@@ -1618,10 +1618,11 @@ export default function App() {
         if (!data.historialCambios) data.historialCambios = [];
         if (!data.cuidadores) data.cuidadores = [];
         
-        // Validar límite de cuidadores (Estándar = 1, Premium = ilimitados)
-        const esFamPremium = data.plan === "premium" || data.esPiloto;
-        if (!data.cuidadores.includes(nombreCuidador)) {
-          if (!esFamPremium && data.cuidadores.length >= LIMITES_ESTANDAR.maxCuidadores) {
+        // Si es el adulto mayor, no validamos límite de cuidadores
+        const isElder = nombreCuidador.toLowerCase() === data.personas[0]?.nombre.toLowerCase() || nombreCuidador === "Adulto Mayor";
+        
+        if (!isElder && !data.cuidadores.includes(nombreCuidador)) {
+          if (data.cuidadores.length >= LIMITES_ESTANDAR.maxCuidadores && !(data.plan === "premium" || data.esPiloto)) {
             setError("Esta familia tiene el Plan Estándar (1 cuidador). Pide al creador que active Premium para unirse.");
             return;
           }
@@ -1637,10 +1638,19 @@ export default function App() {
         await guardarFamilia(cod, data);
         localStorage.setItem("codigo_familia", cod);
         localStorage.setItem("nombre_cuidador", nombreCuidador);
-        setFamilia(data); setCodigo(cod); setPersonaActualId(data.personas[0]?.id || null);
+        
+        setFamilia(data); 
+        setCodigo(cod); 
+        setPersonaActualId(data.personas[0]?.id || null);
         setNombreCuidadorInput(nombreCuidador);
         setStage(data.settings?.aceptoTerminos ? "app" : "consentimiento");
-        registrarEvento(cod, "unirse_familia", `Cuidador ${nombreCuidador} se unió`, { cuidador: nombreCuidador, persona: data.personas[0]?.nombre || "", edad: data.personas[0]?.edad || "" });
+        
+        // Forzamos a que muestre el selector de rol si el que entró es el adulto mayor
+        if (isElder) {
+           setShowSelectorRol(true);
+        }
+
+        registrarEvento(cod, "unirse_familia", `Usuario ${nombreCuidador} se unió`, { cuidador: nombreCuidador, persona: data.personas[0]?.nombre || "", edad: data.personas[0]?.edad || "" });
         if (tokenFCM) await guardarTokenEnFirestore(cod, tokenFCM, "cuidador");
       } else setError("No encontramos ese código.");
     } catch (e) { setError("No encontramos ese código."); }
