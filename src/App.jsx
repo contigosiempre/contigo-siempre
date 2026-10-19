@@ -1355,7 +1355,8 @@ export default function App() {
     await guardarFamilia(cod, nueva);
     localStorage.setItem("codigo_familia", cod);
     localStorage.setItem("nombre_cuidador", nombreCuidadorInput.trim());
-    setStage("app"); setFamilia(nueva); setCodigo(cod); setPersonaActualId(personaId); setShowSelectorRol(true);
+    setFamilia(nueva); setCodigo(cod); setPersonaActualId(personaId); setShowSelectorRol(true);
+setStage(nueva.settings.aceptoTerminos ? "app" : "consentimiento");
     registrarEvento(cod, "crear_familia", `Familia creada para ${nombreInput.trim()}${edadNum ? ` (${edadNum} años)` : ""}`, { cuidador: nombreCuidadorInput, persona: nombreInput.trim(), edad: edadNum || "" });
     if (tokenFCM) await guardarTokenEnFirestore(cod, tokenFCM, "cuidador");
   };
