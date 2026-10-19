@@ -1656,21 +1656,18 @@ export default function App() {
 
    const canjearCodigo = async () => {
     const up = codigoPremium.trim().toUpperCase();
-    if (up === CODIGO_ADMIN) { 
+      if (up === CODIGO_ADMIN) { 
       localStorage.setItem("es_admin", "true");
       setEsAdmin(true);
       setCodigoPremium(""); 
-      setShowPremium(false); 
       
       try {
         const todas = await storage.listAll();
         setFamiliasAdmin(todas);
       } catch (e) {}
 
-      // Pequeño retraso para que React actualice el estado antes de abrir el panel
-      setTimeout(() => {
-        setShowAdmin(true);
-      }, 150);
+      setShowAdmin(true); 
+      setShowPremium(false); 
     }
     else if (up === CODIGO_DATOS) { 
       setShowDatos(true); 
