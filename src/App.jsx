@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Clock, Check, AlertTriangle, Plus, X, ArrowRight, User, Users, Heart, PackageOpen, RotateCcw, KeyRound, Loader2, Copy, Truck, Store, ShoppingCart, ExternalLink, Sparkles, ShieldCheck, MessageSquare, Camera, Calendar, TrendingDown, Award, MapPin, Lock, Crown, Moon, Sun, Phone, FileText, Share2, StickyNote, UserPlus, ChevronDown, Info, ScrollText, BarChart3, Trash2, Menu, Pill, Bell, HelpCircle, Settings, Flame, Tag, Download, Activity, WifiOff, Wifi, Volume2, VolumeX, Vibrate, BellRing, Cake, RefreshCw, History, ClipboardCheck, Send, Eye, Edit } from "lucide-react";
+import { Clock, Check, AlertTriangle, Plus, X, User, Users, Heart, PackageOpen, RotateCcw, KeyRound, Loader2, Copy, ShoppingCart, ExternalLink, Sparkles, ShieldCheck, MessageSquare, Camera, Calendar, TrendingDown, Award, MapPin, Lock, Crown, Moon, Sun, Phone, FileText, Share2, StickyNote, UserPlus, ChevronDown, Info, ScrollText, BarChart3, Trash2, Menu, Pill, Bell, HelpCircle, Settings, Flame, Tag, Download, Activity, WifiOff, Wifi, Volume2, VolumeX, Vibrate, BellRing, Cake, RefreshCw, History, ClipboardCheck, Send, Eye, Edit } from "lucide-react";
 
 const STORAGE_PREFIX = "familia_";
 const EVENTOS_COLLECTION = "eventos";
-const APP_VERSION = "2.2.7-estable";
+const APP_VERSION = "2.2.8-estable";
 const MINUTOS_SIN_CONEXION_ALERTA = 5;
 
 const FIREBASE_CONFIG = {
@@ -55,6 +55,7 @@ const CSS_GLOBAL = `
   .offline-pulse { animation: pulseOffline 1.5s ease-in-out infinite; }
   ::-webkit-scrollbar { width: 0; height: 0; }
   * { -webkit-tap-highlight-color: transparent; font-family: 'Inter', 'Segoe UI', sans-serif !important; }
+  body { margin: 0; padding: 0; }
 `;
 
 let db = null;
@@ -1654,9 +1655,10 @@ export default function App() {
     registrarEvento(codigo, "activar_premium", "Premium activado", { cuidador: nombreCuidadorInput });
   };
 
-   const canjearCodigo = async () => {
+  const canjearCodigo = async () => {
     const up = codigoPremium.trim().toUpperCase();
-      if (up === CODIGO_ADMIN) { 
+    
+    if (up === CODIGO_ADMIN) { 
       localStorage.setItem("es_admin", "true");
       setEsAdmin(true);
       setCodigoPremium(""); 
@@ -1666,8 +1668,11 @@ export default function App() {
         setFamiliasAdmin(todas);
       } catch (e) {}
 
-      setShowAdmin(true); 
+      // Cerramos Premium primero y le damos 100ms a React para abrir el Admin sin conflictos
       setShowPremium(false); 
+      setTimeout(() => {
+        setShowAdmin(true); 
+      }, 100);
     }
     else if (up === CODIGO_DATOS) { 
       setShowDatos(true); 
@@ -1699,6 +1704,7 @@ export default function App() {
     }
     else alert("Código no válido");
   };
+
   const confirmar = (occData) => {
     actualizarPersona((p) => {
       const fecha = todayStr();
