@@ -1654,33 +1654,54 @@ export default function App() {
     registrarEvento(codigo, "activar_premium", "Premium activado", { cuidador: nombreCuidadorInput });
   };
 
-  const canjearCodigo = async () => {
+   const canjearCodigo = async () => {
     const up = codigoPremium.trim().toUpperCase();
     if (up === CODIGO_ADMIN) { 
       localStorage.setItem("es_admin", "true");
       setEsAdmin(true);
-      storage.listAll().then(setFamiliasAdmin); 
-      setShowAdmin(true); 
+      setCodigoPremium(""); 
+      setShowPremium(false); 
+      
+      try {
+        const todas = await storage.listAll();
+        setFamiliasAdmin(todas);
+      } catch (e) {}
+
+      // Pequeño retraso para que React actualice el estado antes de abrir el panel
+      setTimeout(() => {
+        setShowAdmin(true);
+      }, 150);
+    }
+    else if (up === CODIGO_DATOS) { 
+      setShowDatos(true); 
       setCodigoPremium(""); 
       setShowPremium(false); 
     }
-    else if (up === CODIGO_DATOS) { setShowDatos(true); setCodigoPremium(""); setShowPremium(false); }
     else if (up === "PILOTO2026") {
       try {
         const todas = await storage.listAll();
         const pilotosActuales = todas.filter((f) => f.data?.esPiloto === true || f.data?.origen === "piloto").length;
-        if (pilotosActuales >= 50) { alert("Cupos de piloto agotados. Lo sentimos."); setCodigoPremium(""); return; }
+        if (pilotosActuales >= 50) { 
+          alert("Cupos de piloto agotados. Lo sentimos."); 
+          setCodigoPremium(""); 
+          return; 
+        }
         const nuevaFecha = Date.now() + (60 * 24 * 60 * 60 * 1000);
         actualizar((prev) => ({ ...prev, esPiloto: true, fechaFinPiloto: nuevaFecha, origen: "piloto" }));
-        setCodigoPremium(""); setShowPremium(false);
+        setCodigoPremium(""); 
+        setShowPremium(false);
         alert("¡Bienvenido al programa piloto! Tienes Premium completo por 60 días.");
         registrarEvento(codigo, "activar_piloto", "Piloto activado", { cuidador: nombreCuidadorInput, origen: "piloto" });
-      } catch (e) { alert("Error al activar piloto. Intenta de nuevo."); }
+      } catch (e) { 
+        alert("Error al activar piloto. Intenta de nuevo."); 
+      }
     }
-    else if (CODIGOS_PILOTO.includes(up)) { activarPremium(); setCodigoPremium(""); }
+    else if (CODIGOS_PILOTO.includes(up)) { 
+      activarPremium(); 
+      setCodigoPremium(""); 
+    }
     else alert("Código no válido");
   };
-
   const confirmar = (occData) => {
     actualizarPersona((p) => {
       const fecha = todayStr();
@@ -2538,10 +2559,7 @@ export default function App() {
                 <input value={codigoPremium} onChange={(e) => setCodigoPremium(e.target.value)} placeholder="Ingresa tu código" style={{ flex: 1, padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 13, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
                 <button onClick={canjearCodigo} className="btn-press" style={{ padding: "12px 18px", borderRadius: 12, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Canjear</button>
               </div>
-              
-              {esAdmin && (
-                <button onClick={() => { setShowPremium(false); setShowMetricasCORFO(true); }} className="btn-press-soft" style={{ width: "100%", marginTop: 14, padding: 12, borderRadius: 12, border: `1px solid ${C.TEAL}`, background: "transparent", color: C.TEAL, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><BarChart3 size={16} /> Ver Métricas CORFO</button>
-              )}
+            
             </div>
           </div>
         )}
