@@ -4,7 +4,7 @@ import { Clock, Check, AlertTriangle, Plus, X, ArrowRight, User, Users, Heart, P
 // ==================== CONSTANTES GLOBALES ====================
 const STORAGE_PREFIX = "familia_";
 const EVENTOS_COLLECTION = "eventos";
-const APP_VERSION = "2.2.2-estable";
+const APP_VERSION = "2.2.3-estable";
 const MINUTOS_SIN_CONEXION_ALERTA = 5;
 
 const FIREBASE_CONFIG = {
@@ -113,8 +113,7 @@ const storage = {
   },
 };
 
-// ==================== FUNCIONES DE FECHA Y UTILIDADES ====================
-// Fix Crítico: Fechas en hora local Chile (no UTC)
+// ==================== UTILIDADES Y FECHAS ====================
 function todayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
@@ -145,7 +144,6 @@ function smsTime() { const d = new Date(); return `${String(d.getHours()).padSta
 function diasHastaVencimiento(fechaStr) { if (!fechaStr) return null; const v = new Date(fechaStr); const h = new Date(); return Math.floor((v - h) / (1000 * 60 * 60 * 24)); }
 function minutosDesde(ts) { if (!ts) return null; return Math.floor((Date.now() - ts) / 60000); }
 
-// Fix: Normalizar tildes para clasificar medicamentos
 function normalizarTexto(txt) {
   return txt ? txt.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : "";
 }
@@ -205,6 +203,41 @@ function getMesActual() {
 const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const DIAS_SEM = ["L","M","M","J","V","S","D"];
 
+function generarTextoCompartir(tipo, elderName, meds, confirmedByDate) {
+  if (tipo === "resumen" || tipo === "medico") {
+    const hoy = todayStr(); 
+    let conf = 0, esp = 0, omitidas = [];
+    
+    for (let i = 0; i < 7; i++) {
+      const k = dateKeyOffset(i); 
+      const dia = confirmedByDate?.[k] || {};
+      meds.forEach((m) => m.times.forEach((t) => { 
+        esp++; 
+        if (dia[occKey(m.id, t)]) conf++; 
+        else if (i > 0) omitidas.push(`${new Date(k).getDate()}/${new Date(k).getMonth() + 1} (${fmtHoraConAmPm(t)} ${m.name})`);
+      }));
+    }
+    
+    let txt = `Resumen médico — ${elderName}\n\n📅 Últimos 7 días: ${conf} de ${esp} tomas confirmadas (${esp > 0 ? Math.round(conf/esp*100) : 0}%)\n\n💊 Medicamentos:\n`;
+    meds.forEach(m => {
+      const s = semaforoRiesgo(m);
+      txt += `• ${m.name} — ${m.times.map(fmtHoraConAmPm).join(", ")} — quedan ${s.dias !== null ? fmtN(s.dias) + ' días' : '?'}\n`;
+    });
+    
+    if (omitidas.length > 0) {
+      txt += `\n⚠️ Tomas omitidas (últimos 6 días):\n${omitidas.slice(0,5).join("\n")}${omitidas.length > 5 ? '\n...' : ''}\n`;
+    }
+    
+    txt += `\n— Enviado desde Contigo Siempre`;
+    return txt;
+  }
+  if (tipo === "meds") {
+    const lineas = meds.map((m) => `• ${m.name} — ${m.times.map(fmtHoraConAmPm).join(", ")} (${fmtN(m.stock)} unid.)`);
+    return `Medicamentos de ${elderName}:\n\n${lineas.join("\n")}\n\nEnviado desde Contigo Siempre.`;
+  }
+  return "";
+}
+
 // ==================== SONIDO Y VIBRACIÓN ====================
 let audioCtxRef = null;
 function reproducirAlertaSonido(volumen = 1) {
@@ -252,14 +285,13 @@ function cargarMessaging() {
 async function obtenerTokenFCM() {
   return new Promise(async (resolve) => {
     try {
-      // Fix: Timeout para evitar que se cuelgue si SW no está listo
-      const timeout = setTimeout(() => { console.warn("Timeout esperando token FCM"); resolve(null); }, 10000);
+      const timeout = setTimeout(() => { console.warn("Timeout esperando token FCM"); resolve(null); }, 15000);
       
       if (!("serviceWorker" in navigator)) { clearTimeout(timeout); resolve(null); return; }
       
-      // Registrar SW explícitamente (aunque Vercel lo haga, aseguramos)
       try {
-        await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+        await navigator.serviceWorker.ready;
       } catch (e) { console.warn("Error registrando SW:", e); }
 
       await cargarMessaging();
@@ -289,7 +321,7 @@ async function guardarTokenEnFirestore(codigoFamilia, token, rol = "paciente") {
   } catch (error) { console.error("Error al guardar el token:", error); }
 }
 
-// ==================== EVENTOS Y REPORTES ====================
+// ==================== EVENTOS Y REGISTROS ====================
 async function registrarEvento(codigoFamilia, tipo, detalle, extra = {}) {
   if (!codigoFamilia) return;
   const evento = { codigo: String(codigoFamilia), tipo: tipo || "desconocido", detalle: detalle || "", timestamp: Date.now(), fecha: new Date().toISOString(), appVersion: APP_VERSION, ...extra };
@@ -315,43 +347,6 @@ async function enviarEventosPendientes() {
   } catch (e) {}
 }
 
-function generarTextoCompartir(tipo, elderName, meds, confirmedByDate) {
-  if (tipo === "resumen" || tipo === "medico") {
-    const hoy = todayStr(); 
-    let conf = 0, esp = 0, omitidas = [];
-    
-    // Historial 7 días
-    for (let i = 0; i < 7; i++) {
-      const k = dateKeyOffset(i); 
-      const dia = confirmedByDate?.[k] || {};
-      meds.forEach((m) => m.times.forEach((t) => { 
-        esp++; 
-        if (dia[occKey(m.id, t)]) conf++; 
-        else if (i > 0) omitidas.push(`${new Date(k).getDate()}/${new Date(k).getMonth() + 1} (${fmtHoraConAmPm(t)} ${m.name})`);
-      }));
-    }
-    
-    let txt = `Resumen médico — ${elderName}\n\n📅 Últimos 7 días: ${conf} de ${esp} tomas confirmadas (${esp > 0 ? Math.round(conf/esp*100) : 0}%)\n\n💊 Medicamentos:\n`;
-    meds.forEach(m => {
-      const s = semaforoRiesgo(m);
-      txt += `• ${m.name} — ${m.times.map(fmtHoraConAmPm).join(", ")} — quedan ${s.dias !== null ? fmtN(s.dias) + ' días' : '?'}\n`;
-    });
-    
-    if (omitidas.length > 0) {
-      txt += `\n⚠️ Tomas omitidas (últimos 6 días):\n${omitidas.slice(0,5).join("\n")}${omitidas.length > 5 ? '\n...' : ''}\n`;
-    }
-    
-    txt += `\n— Enviado desde Contigo Siempre`;
-    return txt;
-  }
-  if (tipo === "meds") {
-    const lineas = meds.map((m) => `• ${m.name} — ${m.times.map(fmtHoraConAmPm).join(", ")} (${fmtN(m.stock)} unid.)`);
-    return `Medicamentos de ${elderName}:\n\n${lineas.join("\n")}\n\nEnviado desde Contigo Siempre.`;
-  }
-  return "";
-}
-
-// ==================== REGISTRO DE DATOS ADMIN ====================
 function registrarDato(clave, valor = 1, detalle = null) {
   try {
     const raw = localStorage.getItem("datos_admin_global");
@@ -397,39 +392,64 @@ function AvisoSinConexion({ C, offline, ultimaConexion, compacto, nombre }) {
   return null;
 }
 
+// Arreglo 6: Alerta Múltiple (Check individual por medicamento)
 function PantallaAlertaMedicamento({ C, meds, hora, onConfirmar, onPosponer, escala, daltonico, sonidoActivo, esVital, yaPostergada, esAdultoMayor }) {
   const medPrincipal = meds[0];
   const esMultiple = meds.length > 1;
+  const [confirmados, setConfirmados] = useState([]);
+
+  const toggleConfirmado = (medId) => {
+    let nuevos;
+    if (confirmados.includes(medId)) {
+      nuevos = confirmados.filter(id => id !== medId);
+    } else {
+      nuevos = [...confirmados, medId];
+      // Si ya confirmó todos, cerrar automáticamente
+      if (nuevos.length === meds.length) {
+        setTimeout(() => onConfirmar(), 300);
+      }
+    }
+    setConfirmados(nuevos);
+  };
 
   return (
     <div className="modal-fade" style={{ position: "fixed", inset: 0, background: `linear-gradient(160deg, ${dispColor(medPrincipal.color, daltonico)}, #0D47A1)`, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
       <div style={{ fontSize: 16 * escala, fontWeight: 700, color: "rgba(255,255,255,0.85)", letterSpacing: 2, textTransform: "uppercase", marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
-        <BellRing size={20} /> {esMultiple ? "Es hora de tus medicamentos" : "Es hora de tu medicamento"}
+        <BellRing size={20} /> {esMultiple ? "Marca los que ya tomaste" : "Es hora de tu medicamento"}
       </div>
       
       <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 30, width: "100%", maxWidth: 360 }}>
-        {meds.map((m, i) => (
-          <div key={i} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 20, padding: 16, display: "flex", alignItems: "center", gap: 16, backdropFilter: "blur(10px)" }}>
-            <div style={{ width: 60, height: 60, borderRadius: 999, background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, color: dispColor(m.color, daltonico), flexShrink: 0, boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }}>
-              {m.shape}
+        {meds.map((m, i) => {
+          const estaConfirmado = confirmados.includes(m.id);
+          return (
+            <div key={i} style={{ background: estaConfirmado ? "rgba(76, 175, 80, 0.4)" : "rgba(255,255,255,0.15)", border: estaConfirmado ? "2px solid #4CAF50" : "1px solid rgba(255,255,255,0.3)", borderRadius: 20, padding: 16, display: "flex", alignItems: "center", gap: 16, backdropFilter: "blur(10px)", transition: "all 0.2s ease" }}>
+              <div style={{ width: 60, height: 60, borderRadius: 999, background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, color: dispColor(m.color, daltonico), flexShrink: 0, boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }}>
+                {m.shape}
+              </div>
+              <div style={{ textAlign: "left", flex: 1, opacity: estaConfirmado ? 0.6 : 1 }}>
+                <div style={{ fontSize: 22 * escala, fontWeight: 900, color: "#FFFFFF", lineHeight: 1.1, textDecoration: estaConfirmado ? "line-through" : "none" }}>{m.name}</div>
+                <div style={{ fontSize: 14 * escala, color: "rgba(255,255,255,0.9)", fontWeight: 600 }}>{m.dose}</div>
+              </div>
+              {esMultiple && (
+                <button onClick={() => toggleConfirmado(m.id)} className="btn-press" style={{ width: 50, height: 50, borderRadius: 999, border: `2px solid ${estaConfirmado ? "#4CAF50" : "rgba(255,255,255,0.5)"}`, background: estaConfirmado ? "#4CAF50" : "rgba(0,0,0,0.2)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
+                  <Check size={28} color="#FFFFFF" strokeWidth={3} opacity={estaConfirmado ? 1 : 0.3} />
+                </button>
+              )}
             </div>
-            <div style={{ textAlign: "left", flex: 1 }}>
-              <div style={{ fontSize: 22 * escala, fontWeight: 900, color: "#FFFFFF", lineHeight: 1.1 }}>{m.name}</div>
-              <div style={{ fontSize: 14 * escala, color: "rgba(255,255,255,0.9)", fontWeight: 600 }}>{m.dose}</div>
-              {m.notas && <div style={{ fontSize: 12 * escala, color: "rgba(255,255,255,0.75)", fontStyle: "italic", marginTop: 2 }}>📝 {m.notas}</div>}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div style={{ fontSize: 20 * escala, color: "rgba(255,255,255,0.9)", marginBottom: 30, fontWeight: 700 }}>🕐 {fmtHoraConAmPm(hora)}</div>
 
-      <button onClick={onConfirmar} className="btn-press" style={{ width: "100%", maxWidth: 360, padding: "24px 20px", borderRadius: 24, border: "none", background: "#FFFFFF", color: dispColor(medPrincipal.color, daltonico), fontWeight: 900, fontSize: 26 * escala, cursor: "pointer", marginBottom: 14, boxShadow: "0 12px 30px rgba(0,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
-        <Check size={32} strokeWidth={3} /> {esMultiple ? "SÍ, YA LOS TOMÉ" : "SÍ, YA LO TOMÉ"}
-      </button>
+      {!esMultiple && (
+        <button onClick={onConfirmar} className="btn-press" style={{ width: "100%", maxWidth: 360, padding: "24px 20px", borderRadius: 24, border: "none", background: "#FFFFFF", color: dispColor(medPrincipal.color, daltonico), fontWeight: 900, fontSize: 26 * escala, cursor: "pointer", marginBottom: 14, boxShadow: "0 12px 30px rgba(0,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
+          <Check size={32} strokeWidth={3} /> SÍ, YA LO TOMÉ
+        </button>
+      )}
 
       {!esVital && !yaPostergada && !esAdultoMayor && (
-        <button onClick={onPosponer} className="btn-press-soft" style={{ width: "100%", maxWidth: 360, padding: "16px 20px", borderRadius: 18, border: "2px solid rgba(255,255,255,0.4)", background: "transparent", color: "#FFFFFF", fontWeight: 700, fontSize: 16 * escala, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+        <button onClick={onPosponer} className="btn-press-soft" style={{ width: "100%", maxWidth: 360, padding: "16px 20px", borderRadius: 18, border: "2px solid rgba(255,255,255,0.4)", background: "transparent", color: "#FFFFFF", fontWeight: 700, fontSize: 16 * escala, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: esMultiple ? 20 : 0 }}>
           <Clock size={18} /> Recordar en 5 minutos
         </button>
       )}
@@ -843,7 +863,7 @@ function VerEventos({ C, onCerrar }) {
   );
 }
 
-function PanelAdmin({ C, familias, onCerrar, onAbrirDatos, onAbrirEventos }) {
+function PanelAdmin({ C, familias, onCerrar, onAbrirDatos, onAbrirEventos, onAbrirMetricas }) {
   const totalFamilias = familias.length;
   const premium = familias.filter((f) => f.data?.plan === "premium").length;
   const totalPersonas = familias.reduce((a, f) => a + (f.data?.personas?.length || 0), 0);
@@ -887,6 +907,7 @@ function PanelAdmin({ C, familias, onCerrar, onAbrirDatos, onAbrirEventos }) {
 
         <div style={{ background: `linear-gradient(135deg, ${C.GOLD}, #E65100)`, borderRadius: 14, padding: 16, color: "#fff", marginBottom: 14, boxShadow: "0 6px 20px rgba(249,168,37,0.3)" }}><div style={{ fontSize: 11, opacity: 0.9 }}>Ingresos estimados</div><div style={{ fontSize: 26, fontWeight: 800 }}>${ingresos.toLocaleString("es-CL")}</div></div>
         
+        <button onClick={onAbrirMetricas} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: `linear-gradient(135deg, ${C.TEAL}, #0D47A1)`, color: "#fff", fontWeight: 700, cursor: "pointer", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><BarChart3 size={18} /> Ver Métricas CORFO</button>
         <button onClick={onAbrirEventos} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: `linear-gradient(135deg, ${C.GOLD}, #E65100)`, color: "#fff", fontWeight: 700, cursor: "pointer", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Activity size={18} /> Ver Eventos (Firebase)</button>
         <button onClick={onAbrirDatos} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><BarChart3 size={18} /> Datos Administrativos</button>
         
@@ -930,37 +951,45 @@ function DatosAdministrativos({ C, onCerrar, onReset }) {
   );
 }
 // ===== FIN PARTE 3 =====
-// ==================== NUEVOS COMPONENTES CORFO Y UTILIDADES ====================
+// ==================== ONBOARDING Y MÉTRICAS CORFO ====================
 
 function OnboardingCORFO({ C, onCerrar, onGuardar }) {
   const [paso, setPaso] = useState(1);
-  const [paraQuien, setParaQuien] = useState("");
+  const [uso, setUso] = useState("");
+  const [cantidadPersonas, setCantidadPersonas] = useState("");
   const [cantidadMeds, setCantidadMeds] = useState("");
-  const [avisos, setAvisos] = useState("");
 
   const siguiente = () => {
-    if (paso === 1 && !paraQuien) return;
-    if (paso === 2 && !cantidadMeds) return;
-    if (paso === 3 && !avisos) {
-      onGuardar({ paraQuien, cantidadMeds, avisos });
+    if (paso === 1) {
+      if (!uso) return;
+      if (uso === "Para mí") {
+        onGuardar({ uso, cantidadPersonas: "1", cantidadMeds: "" });
+        onCerrar();
+      } else {
+        setPaso(2);
+      }
+    } else if (paso === 2) {
+      if (!cantidadPersonas) return;
+      setPaso(3);
+    } else if (paso === 3) {
+      if (!cantidadMeds) return;
+      onGuardar({ uso, cantidadPersonas, cantidadMeds });
       onCerrar();
-      return;
     }
-    setPaso(paso + 1);
   };
 
   return (
     <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200 }}>
       <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 24, padding: 28, margin: 20, textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
         
-        <div style={{ fontSize: 12, fontWeight: 800, color: C.TEAL, marginBottom: 16, letterSpacing: 1 }}>PASO {paso} DE 3</div>
+        <div style={{ fontSize: 12, fontWeight: 800, color: C.TEAL, marginBottom: 16, letterSpacing: 1 }}>PASO {paso} DE {uso === "Para mí" ? "1" : "3"}</div>
 
         {paso === 1 && (
           <div className="modal-slide">
-            <div style={{ fontSize: 22, fontWeight: 800, color: C.INK, marginBottom: 8 }}>¿Para quién es esta app?</div>
-            <div style={{ fontSize: 13, color: C.MUTED, marginBottom: 24 }}>Así personalizamos tu experiencia.</div>
-            {["Para mí", "Para mi mamá", "Para mi papá", "Para otro familiar"].map(op => (
-              <button key={op} onClick={() => setParaQuien(op)} className="btn-press-soft" style={{ width: "100%", padding: 16, borderRadius: 14, border: paraQuien === op ? `2px solid ${C.TEAL}` : `1px solid ${C.LINE}`, background: paraQuien === op ? C.TEAL + "10" : C.PAPER, color: C.INK, fontWeight: 700, fontSize: 15, marginBottom: 10, cursor: "pointer", transition: "all 0.2s" }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: C.INK, marginBottom: 8 }}>¿Cómo usarás la app?</div>
+            <div style={{ fontSize: 13, color: C.MUTED, marginBottom: 24 }}>Así adaptamos la pantalla a tus necesidades.</div>
+            {["Para mí", "Para un familiar"].map(op => (
+              <button key={op} onClick={() => setUso(op)} className="btn-press-soft" style={{ width: "100%", padding: 16, borderRadius: 14, border: uso === op ? `2px solid ${C.TEAL}` : `1px solid ${C.LINE}`, background: uso === op ? C.TEAL + "10" : C.PAPER, color: C.INK, fontWeight: 700, fontSize: 15, marginBottom: 10, cursor: "pointer", transition: "all 0.2s" }}>
                 {op}
               </button>
             ))}
@@ -969,10 +998,10 @@ function OnboardingCORFO({ C, onCerrar, onGuardar }) {
 
         {paso === 2 && (
           <div className="modal-slide">
-            <div style={{ fontSize: 22, fontWeight: 800, color: C.INK, marginBottom: 8 }}>¿Cuántos medicamentos toma?</div>
-            <div style={{ fontSize: 13, color: C.MUTED, marginBottom: 24 }}>Nos ayuda a configurar el stock.</div>
-            {["1 a 2 medicamentos", "3 a 4 medicamentos", "5 o más medicamentos"].map(op => (
-              <button key={op} onClick={() => setCantidadMeds(op)} className="btn-press-soft" style={{ width: "100%", padding: 16, borderRadius: 14, border: cantidadMeds === op ? `2px solid ${C.TEAL}` : `1px solid ${C.LINE}`, background: cantidadMeds === op ? C.TEAL + "10" : C.PAPER, color: C.INK, fontWeight: 700, fontSize: 15, marginBottom: 10, cursor: "pointer", transition: "all 0.2s" }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: C.INK, marginBottom: 8 }}>¿A cuántas personas cuidarás?</div>
+            <div style={{ fontSize: 13, color: C.MUTED, marginBottom: 24 }}>El plan Estándar permite 1 persona. Premium permite hasta 3.</div>
+            {["Solo a 1 persona", "A 2 o más personas"].map(op => (
+              <button key={op} onClick={() => setCantidadPersonas(op)} className="btn-press-soft" style={{ width: "100%", padding: 16, borderRadius: 14, border: cantidadPersonas === op ? `2px solid ${C.TEAL}` : `1px solid ${C.LINE}`, background: cantidadPersonas === op ? C.TEAL + "10" : C.PAPER, color: C.INK, fontWeight: 700, fontSize: 15, marginBottom: 10, cursor: "pointer", transition: "all 0.2s" }}>
                 {op}
               </button>
             ))}
@@ -981,18 +1010,27 @@ function OnboardingCORFO({ C, onCerrar, onGuardar }) {
 
         {paso === 3 && (
           <div className="modal-slide">
-            <div style={{ fontSize: 22, fontWeight: 800, color: C.INK, marginBottom: 8 }}>¿Quieres que te avisemos si no confirma?</div>
-            <div style={{ fontSize: 13, color: C.MUTED, marginBottom: 24 }}>Para que estés tranquilo.</div>
-            {["Sí, enviar alertas", "No por ahora"].map(op => (
-              <button key={op} onClick={() => setAvisos(op)} className="btn-press-soft" style={{ width: "100%", padding: 16, borderRadius: 14, border: avisos === op ? `2px solid ${C.TEAL}` : `1px solid ${C.LINE}`, background: avisos === op ? C.TEAL + "10" : C.PAPER, color: C.INK, fontWeight: 700, fontSize: 15, marginBottom: 10, cursor: "pointer", transition: "all 0.2s" }}>
+            <div style={{ fontSize: 22, fontWeight: 800, color: C.INK, marginBottom: 8 }}>¿Cuántos remedios toma en total?</div>
+            <div style={{ fontSize: 13, color: C.MUTED, marginBottom: 24 }}>Nos ayuda a configurar el control de stock.</div>
+            {["1 a 2 medicamentos", "3 a 4 medicamentos", "5 o más medicamentos"].map(op => (
+              <button key={op} onClick={() => setCantidadMeds(op)} className="btn-press-soft" style={{ width: "100%", padding: 16, borderRadius: 14, border: cantidadMeds === op ? `2px solid ${C.TEAL}` : `1px solid ${C.LINE}`, background: cantidadMeds === op ? C.TEAL + "10" : C.PAPER, color: C.INK, fontWeight: 700, fontSize: 15, marginBottom: 10, cursor: "pointer", transition: "all 0.2s" }}>
                 {op}
               </button>
             ))}
           </div>
         )}
 
-        <button onClick={siguiente} disabled={(paso === 1 && !paraQuien) || (paso === 2 && !cantidadMeds) || (paso === 3 && !avisos)} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: ((paso === 1 && !paraQuien) || (paso === 2 && !cantidadMeds) || (paso === 3 && !avisos)) ? C.LINE : C.TEAL, color: "#fff", fontWeight: 700, fontSize: 16, marginTop: 20, cursor: "pointer" }}>
-          {paso === 3 ? "Finalizar" : "Siguiente"}
+        <button 
+          onClick={siguiente} 
+          disabled={(paso === 1 && !uso) || (paso === 2 && !cantidadPersonas) || (paso === 3 && !cantidadMeds)} 
+          className="btn-press" 
+          style={{ 
+            width: "100%", padding: 14, borderRadius: 14, border: "none", 
+            background: ((paso === 1 && !uso) || (paso === 2 && !cantidadPersonas) || (paso === 3 && !cantidadMeds)) ? C.LINE : C.TEAL, 
+            color: "#fff", fontWeight: 700, fontSize: 16, marginTop: 20, cursor: "pointer" 
+          }}
+        >
+          {paso === 3 || (paso === 1 && uso === "Para mí") ? "Finalizar" : "Siguiente"}
         </button>
       </div>
     </div>
@@ -1074,7 +1112,7 @@ function PanelMetricasCORFO({ C, onCerrar }) {
           <button onClick={onCerrar} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
         </div>
         
-        {cargando ? <div style={{ textAlign: "center", padding: 40 }}><Loader2 size={30} color={C.TEAL} className="spin" /></div> : data && (
+        {cargando ? <div style={{ textAlign: "center", padding: 40 }}><Loader2 size={30} color={C.TEAL} /></div> : data && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 16, boxShadow: C.SHADOW }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: C.MUTED, marginBottom: 4 }}>FAMILIAS TOTALES</div>
@@ -1152,10 +1190,22 @@ function ModalReporteMedico({ C, onCerrar, elderName, meds, confirmedByDate }) {
   );
 }
 
+// Arreglo 5: Calendario Interactivo
 function CalendarioHistorial({ C, meds, confirmedByDate, onCerrar }) {
   const { dias, mes, año } = getMesActual();
   const mesStr = String(mes + 1).padStart(2, "0");
   const totalMeds = meds.reduce((a, m) => a + m.times.length, 0);
+  const [diaSeleccionado, setDiaSeleccionado] = useState(null);
+
+  const abrirDetalle = (key, diaData, d) => {
+    const confirmadas = Object.keys(diaData).filter(k => diaData[k]).length;
+    setDiaSeleccionado({
+      dia: d.getDate(),
+      confirmadas,
+      esperadas: totalMeds,
+      data: diaData
+    });
+  };
 
   return (
     <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 40 }}>
@@ -1177,14 +1227,18 @@ function CalendarioHistorial({ C, meds, confirmedByDate, onCerrar }) {
             
             let bg = C.PAPER;
             let color = C.INK;
-            if (d > new Date()) { bg = "transparent"; color = C.LINE; } // Futuro
+            if (d > new Date()) { bg = "transparent"; color = C.LINE; } 
             else if (totalMeds === 0) { bg = C.LINE; }
             else if (porcentaje === 1) { bg = C.GREEN + "20"; color = C.GREEN; }
             else if (porcentaje > 0) { bg = C.AMBER + "20"; color = C.AMBER; }
-            else if (d <= new Date() && key !== todayStr()) { bg = C.CORAL + "20"; color = C.CORAL; } // Pasado sin tomas
+            else if (d <= new Date() && key !== todayStr()) { bg = C.CORAL + "20"; color = C.CORAL; }
 
             return (
-              <div key={key} style={{ height: 40, borderRadius: 8, background: bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color }}>
+              <div 
+                key={key} 
+                onClick={() => { if (d <= new Date()) abrirDetalle(key, diaData, d); }}
+                style={{ height: 40, borderRadius: 8, background: bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color, cursor: d <= new Date() ? "pointer" : "default", border: key === todayStr() ? `2px solid ${C.TEAL}` : "none" }}
+              >
                 {d.getDate()}
               </div>
             );
@@ -1196,20 +1250,42 @@ function CalendarioHistorial({ C, meds, confirmedByDate, onCerrar }) {
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}><div style={{ width: 12, height: 12, borderRadius: 4, background: C.AMBER + "40" }} /> Parcial</div>
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}><div style={{ width: 12, height: 12, borderRadius: 4, background: C.CORAL + "40" }} /> Nada</div>
         </div>
+
+        {diaSeleccionado && (
+          <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
+            <div className="modal-scale" style={{ width: "100%", maxWidth: 320, background: C.CREAM, borderRadius: 20, padding: 20, margin: 20 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+                <div style={{ fontWeight: 700, fontSize: 16 }}>{diaSeleccionado.dia} de {MESES[mes]}</div>
+                <button onClick={() => setDiaSeleccionado(null)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 28, height: 28, cursor: "pointer" }}><X size={14} color={C.INK} /></button>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {meds.flatMap(m => m.times.map(t => {
+                  const k = occKey(m.id, t);
+                  const tomado = diaSeleccionado.data[k];
+                  return (
+                    <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, background: C.PAPER, padding: 8, borderRadius: 8 }}>
+                      <span>{m.name} ({fmtHoraConAmPm(t)})</span>
+                      <span style={{ fontWeight: 700, color: tomado ? C.GREEN : C.CORAL }}>{tomado ? "✓" : "✗"}</span>
+                    </div>
+                  );
+                }))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
+// Arreglo 4: Canasta sin precios falsos
 function CarroCompleto({ C, meds, onCerrar, onElegirFarmacia }) {
   const [farmacias, setFarmacias] = useState([
-    { id: "f1", nombre: "Cruz Verde", costo: 8990, distanciaKm: 1.2 },
-    { id: "f2", nombre: "Salcobrand", costo: 9490, distanciaKm: 2.1 },
-    { id: "f3", nombre: "Farmacias Ahumada", costo: 9690, distanciaKm: 1.8 },
-    { id: "f4", nombre: "Búho (comparador)", costo: 7490, distanciaKm: 4.1 },
+    { id: "f1", nombre: "Cruz Verde", distanciaKm: 1.2 },
+    { id: "f2", nombre: "Salcobrand", distanciaKm: 2.1 },
+    { id: "f3", nombre: "Farmacias Ahumada", distanciaKm: 1.8 },
+    { id: "f4", nombre: "Búho (comparador)", distanciaKm: 4.1 },
   ]);
-
-  const total = farmacias[0].costo; // Simplificado para el ejemplo
 
   return (
     <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 50 }}>
@@ -1228,20 +1304,26 @@ function CarroCompleto({ C, meds, onCerrar, onElegirFarmacia }) {
               <span style={{ color: C.MUTED }}>Quedan {semaforoRiesgo(m).dias} días</span>
             </div>
           ))}
-          <div style={{ marginTop: 14, display: "flex", justifyContent: "space-between", fontWeight: 800, fontSize: 16 }}>
-            <span>Estimado:</span>
-            <span style={{ color: C.TEAL }}>${total.toLocaleString("es-CL")}</span>
-          </div>
         </div>
 
         <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 10 }}>ELEGIR FARMACIA</div>
         {farmacias.map(f => (
-          <button key={f.id} onClick={() => onElegirFarmacia(f, meds, total)} className="btn-press-soft" style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 12, padding: 14, marginBottom: 8, cursor: "pointer" }}>
+          <button 
+            key={f.id} 
+            onClick={() => {
+              registrarDato("clicsFarmacia", 1, f.nombre);
+              onElegirFarmacia(f, meds, 0);
+            }} 
+            className="btn-press-soft" 
+            style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 12, padding: 14, marginBottom: 8, cursor: "pointer" }}
+          >
             <div style={{ textAlign: "left" }}>
               <div style={{ fontWeight: 700, fontSize: 14, color: C.INK }}>{f.nombre}</div>
               <div style={{ fontSize: 11, color: C.MUTED }}>{f.distanciaKm} km de distancia</div>
             </div>
-            <div style={{ fontWeight: 800, fontSize: 14, color: C.TEAL }}>${f.costo.toLocaleString("es-CL")}</div>
+            <div style={{ fontWeight: 800, fontSize: 13, color: C.TEAL, display: "flex", alignItems: "center", gap: 4 }}>
+              Consultar <ExternalLink size={14} />
+            </div>
           </button>
         ))}
       </div>
@@ -1301,6 +1383,8 @@ export default function App() {
   const [showCalendario, setShowCalendario] = useState(false);
   const [showCarroCompleto, setShowCarroCompleto] = useState(false);
   
+  const [esAdmin, setEsAdmin] = useState(() => localStorage.getItem("es_admin") === "true");
+
   const [nombrePersonaNueva, setNombrePersonaNueva] = useState("");
   const [edadPersonaNueva, setEdadPersonaNueva] = useState("");
   const [formContacto, setFormContacto] = useState({ nombre: "", telefono: "", tipo: "médico" });
@@ -1314,7 +1398,6 @@ export default function App() {
   const [alertaActiva, setAlertaActiva] = useState(null);
   const [tokenFCM, setTokenFCM] = useState(null);
   
-  // Persistencia de estados críticos (Fix: no re-alertar al recargar)
   const [alertasSonadasHoy, setAlertasSonadasHoy] = useState(() => {
     try { return JSON.parse(localStorage.getItem(`alertas_sonadas_${todayStr()}`)) || {}; } catch (e) { return {}; }
   });
@@ -1332,14 +1415,13 @@ export default function App() {
   const addStartRef = useRef(null);
   const heartbeatRef = useRef(null);
 
+  // Arreglo 2: Nuevo Tutorial
   const PASOS_TUTORIAL = [
-    { titulo: "¡Bienvenido a Contigo Siempre!", texto: "Te mostraremos las funciones principales en 7 pasos rápidos.", target: null, abrirMenu: false, cerrarMenu: false },
-    { titulo: "Tu código de familia", texto: "Este código de 6 dígitos conecta otros teléfonos. Compártelo.", target: '[data-tutorial="codigo"]', abrirMenu: false, cerrarMenu: false },
-    { titulo: "Agregar un medicamento", texto: "Toca este botón para agregar nombre, dosis, horarios y stock.", target: '[data-tutorial="add-med"]', abrirMenu: false, cerrarMenu: false },
-    { titulo: "Menú Lateral", texto: "Toca el botón 'Más' para abrir el menú y encontrar Historial, Canasta, Ajustes y más.", target: '[data-tutorial="nav-menu"]', abrirMenu: false, cerrarMenu: false },
-    { titulo: "Historial de Adherencia", texto: "Ve al menú lateral y toca 'Historial' para ver el calendario de tomas.", target: null, abrirMenu: true, cerrarMenu: true },
-    { titulo: "Ajustes y alertas", texto: "En el menú lateral, busca 'Ajustes' para configurar sonido y modo oscuro.", target: null, abrirMenu: true, cerrarMenu: true },
-    { titulo: "¡Listo!", texto: "Ya puedes empezar a usar Contigo Siempre. Cuida bien a tu ser querido.", target: null, abrirMenu: false, cerrarMenu: true },
+    { titulo: "Tu código de familia", texto: "Este código de 6 dígitos conecta otros teléfonos. Compártelo con quien te ayude a cuidar.", target: '[data-tutorial="codigo"]', abrirMenu: false, cerrarMenu: false },
+    { titulo: "Agregar medicamentos", texto: "Toca este botón para agregar nombre, dosis, horarios y stock. La app calculará solita cuántos días quedan.", target: '[data-tutorial="add-med"]', abrirMenu: false, cerrarMenu: false },
+    { titulo: "El Menú", texto: "Toca este botón para abrir el Historial, la Canasta, Contactos y Ajustes.", target: '[data-tutorial="nav-menu"]', abrirMenu: false, cerrarMenu: false },
+    { titulo: "Reporte Médico", texto: "Cuando vayas al doctor, toca aquí. Armará un resumen de los últimos 7 días para enviar por WhatsApp.", target: '[data-tutorial="btn-reporte"]', abrirMenu: false, cerrarMenu: false },
+    { titulo: "El Modo Mayor", texto: "Si le pasas el celular al adulto mayor, toca aquí. La app se pondrá en modo fácil con botones gigantes.", target: '[data-tutorial="nav-view"]', abrirMenu: false, cerrarMenu: false },
   ];
 
   const settings = familia?.settings || { fontSize: "normal", daltonico: false, darkMode: false, sonidoActivo: true, vibracionActiva: true, notificarConfirmacion: true };
@@ -1352,7 +1434,6 @@ export default function App() {
   const oscuro = settings.darkMode;
   const C = oscuro ? DARK : LIGHT;
 
-  // --- EFECTOS DE RED Y TIEMPO ---
   useEffect(() => {
     const handleOnline = () => { setIsOnline(true); enviarEventosPendientes(); };
     const handleOffline = () => { setIsOnline(false); };
@@ -1364,12 +1445,21 @@ export default function App() {
   useEffect(() => { const id = setInterval(() => setNowMin(toMinutes(nowHHMM())), 30000); return () => clearInterval(id); }, []);
 
   useEffect(() => {
-    // Fix: persistir alertas y resumen diario
     localStorage.setItem(`alertas_sonadas_${todayStr()}`, JSON.stringify(alertasSonadasHoy));
     localStorage.setItem(`resumen_enviado_${todayStr()}`, String(resumenEnviadoHoy));
   }, [alertasSonadasHoy, resumenEnviadoHoy]);
 
-  // --- INICIALIZACIÓN DE FIREBASE ---
+  // Arreglo 8: Link Mágico (?unirse=123456)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const unirseCodigo = params.get("unirse");
+    if (unirseCodigo && unirseCodigo.length === 6) {
+      setModoEntrada("unirse");
+      setCodigoInput(unirseCodigo);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
   useEffect(() => {
     const codigoGuardado = localStorage.getItem("codigo_familia");
     const cuidadorGuardado = localStorage.getItem("nombre_cuidador");
@@ -1394,7 +1484,6 @@ export default function App() {
   useEffect(() => { cuandoDbListo((d) => { setFirebaseEstado(d ? "conectado" : "local"); }); }, []);
   useEffect(() => { if (familia && !personaActualId && familia.personas && familia.personas.length > 0) setPersonaActualId(familia.personas[0].id); }, [familia, personaActualId]);
 
-  // --- TOKEN FCM ---
   useEffect(() => {
     cuandoDbListo(async (d) => {
       if (!d) return;
@@ -1408,18 +1497,15 @@ export default function App() {
     });
   }, [codigo]);
 
-  // --- ACCIÓN DESDE NOTIFICACIÓN PUSH (?accion=...) ---
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const accion = params.get("accion");
-    if (accion === "confirmar") {
-      // Se dispara un evento manual si hay alerta, o se confirma si está en primer plano
+    if (accion === "confirmar" && alertaActiva) {
       setTimeout(() => { if (alertaActiva) confirmar(alertaActiva); }, 2000);
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, [alertaActiva]);
 
-  // --- SERVICE WORKER MESSAGE ---
   useEffect(() => {
     if (!navigator.serviceWorker) return;
     const handler = (event) => {
@@ -1431,11 +1517,10 @@ export default function App() {
     return () => navigator.serviceWorker.removeEventListener("message", handler);
   }, [alertaActiva]);
 
-  // --- HEARTBEAT Y SNAPSHOT ---
   useEffect(() => {
     if (stage !== "app" || !codigo || !personaActualId) return;
     const enviarHeartbeat = async () => {
-      if (!db || !isOnline) return; // Fix: db null guard
+      if (!db || !isOnline) return;
       try {
         const ref = db.collection("familias").doc(STORAGE_PREFIX + codigo);
         const doc = await ref.get();
@@ -1470,7 +1555,6 @@ export default function App() {
     return () => unsub();
   }, [codigo]);
 
-  // --- DATOS DERIVADOS ---
   const personaActual = familia?.personas?.find((p) => p.id === personaActualId) || familia?.personas?.[0] || null;
   const elderName = personaActual?.nombre || "";
   const elderEdad = personaActual?.edad || null;
@@ -1480,14 +1564,15 @@ export default function App() {
   const ultimaConexionPersona = personaActual?.ultimaConexion || null;
   const personaDesconectada = !isOnline || (minutosDesde(ultimaConexionPersona) !== null && minutosDesde(ultimaConexionPersona) > MINUTOS_SIN_CONEXION_ALERTA);
 
+  // Arreglo 3: Bloqueo del Tutorial
   useEffect(() => {
-    if (stage === "app" && familia && familia.settings && familia.settings.aceptoTerminos === true && familia.settings.tutorialVisto === false && !showSelectorRol && rolUsuario !== "mayor") {
+    if (stage === "app" && familia && familia.settings && familia.settings.aceptoTerminos === true && familia.settings.onboardingCORFOVisto === true && familia.settings.tutorialVisto === false && !showSelectorRol && rolUsuario !== "mayor" && !showOnboarding) {
       setShowTutorial(true);
       actualizar((prev) => ({ ...prev, settings: { ...prev.settings, tutorialVisto: true } }));
     }
-  }, [stage, familia, showSelectorRol]);
+  }, [stage, familia, showSelectorRol, showOnboarding]);
 
-  // --- EFECTO DE ALERTAS Y AVISOS ---
+  // Arreglo 7: Timeline de Alerta (6 min normales / 2 min vitales)
   useEffect(() => {
     if (stage !== "app" || !familia || !personaActual) return;
     if (view !== "mayor" && !(personaActual?.esAutocuidado)) return;
@@ -1516,22 +1601,31 @@ export default function App() {
       setAlertasSonadasHoy(prev => ({ ...prev, [ak]: true }));
       setAlertaActiva({ meds: medsVencidos.map(mv => mv.med), time: horaActualVencida, keys: medsVencidos.map(mv => mv.key) });
       
-      const akKey = `alertas_${personaActual.id}_${horaActualVencida}_${todayStr()}`;
-      alertasPorTomaRef.current[akKey] = (alertasPorTomaRef.current[akKey] || 0) + 1;
-      const alertasActuales = alertasPorTomaRef.current[akKey] || 0;
       const esVitalAhora = medsVencidos.some(mv => (mv.med.criticidad || detectarCriticidad(mv.med.name)) === "vital");
-      const maxAlertas = esVitalAhora ? 2 : 3;
+      const duracionTotal = esVitalAhora ? 2 * 60 * 1000 : 6 * 60 * 1000;
       
       if (settings.sonidoActivo !== false) reproducirAlertaSonido();
       if (settings.vibracionActiva !== false) vibrarPatron();
       registrarEvento(codigo, "alerta_activada", `Grupo ${horaActualVencida}`, { cuidador: nombreCuidadorInput, persona: elderName });
       
-      setTimeout(() => {
+      const timers = [];
+      if (!esVitalAhora) {
+        timers.push(setTimeout(() => { if (settings.sonidoActivo !== false) reproducirAlertaSonido(); if (settings.vibracionActiva !== false) vibrarPatron(); }, 2 * 60 * 1000));
+        timers.push(setTimeout(() => { if (settings.sonidoActivo !== false) reproducirAlertaSonido(); if (settings.vibracionActiva !== false) vibrarPatron(); }, 4 * 60 * 1000));
+      } else {
+        timers.push(setTimeout(() => { if (settings.sonidoActivo !== false) reproducirAlertaSonido(); if (settings.vibracionActiva !== false) vibrarPatron(); }, 1 * 60 * 1000));
+      }
+
+      timers.push(setTimeout(() => {
         setAlertaActiva(null);
         setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[ak]; return nuevo; });
-        if (alertasActuales < maxAlertas) setTriggerPostergacion((t) => t + 1);
-        else registrarEvento(codigo, "alerta_cerrada_max_reenvios", `Grupo ${horaActualVencida}`, { cuidador: nombreCuidadorInput, persona: elderName });
-      }, 2 * 60 * 1000);
+        const textoAviso = `⚠️ ${elderName.split(" ")[0]} no confirmó la toma de las ${fmtHoraConAmPm(horaActualVencida)} (${esVitalAhora ? 'VITAL' : 'Normal'}).`;
+        setSmsLog(prev => [...prev, { tipo: "alerta", hora: smsTime(), texto: textoAviso }]);
+        if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+          new Notification("Alerta de toma omitida", { body: textoAviso, icon: "/icons/icon-192.png" });
+        }
+        registrarEvento(codigo, "toma_omitida", `Grupo ${horaActualVencida}`, { cuidador: nombreCuidadorInput, persona: elderName });
+      }, duracionTotal));
     }
   }, [nowMin, stage, familia, personaActual, confirmedByDate, view, alertaActiva, alertasSonadasHoy, settings, codigo, nombreCuidadorInput, elderName, meds, triggerPostergacion]);
 
@@ -1544,7 +1638,6 @@ export default function App() {
     return () => clearInterval(id);
   }, [alertaActiva, settings]);
 
-  // --- AVISOS AL CUIDADOR ---
   useEffect(() => {
     if (stage !== "app" || !familia || !personaActual) return;
     if (personaDesconectada) return;
@@ -1608,7 +1701,6 @@ export default function App() {
   // ==========================================
   // ==================== HANDLERS PRINCIPALES ====================
 
-  // Fix: Evitar setState anidado usando queueMicrotask
   const guardarFamilia = useCallback(async (cod, data) => {
     setSaving(true);
     pendingLocalWriteRef.current = true;
@@ -1645,7 +1737,6 @@ export default function App() {
       const res = await storage.get(STORAGE_PREFIX + cod);
       if (res && res.value) {
         let data = JSON.parse(res.value);
-        // Migración
         if (!data.personas && data.elderName) {
           data.personas = [{ id: Date.now(), nombre: data.elderName, edad: null, meds: data.meds || [], confirmedByDate: data.confirmedByDate || {}, preferenciasFarmacia: {}, ultimoReconteo: {}, ultimaConexion: Date.now() }];
           delete data.elderName; delete data.meds; delete data.confirmedByDate;
@@ -1654,7 +1745,6 @@ export default function App() {
         if (!data.historialCambios) data.historialCambios = [];
         if (!data.cuidadores) data.cuidadores = [];
         
-        // Validar límite de cuidadores
         if (!data.cuidadores.includes(nombreCuidador)) {
           if (data.cuidadores.length >= LIMITES_ESTANDAR.maxCuidadores) {
             setError("Límite de cuidadores alcanzado. Pide a otro cuidador que te elimine.");
@@ -1719,7 +1809,14 @@ export default function App() {
 
   const canjearCodigo = async () => {
     const up = codigoPremium.trim().toUpperCase();
-    if (up === CODIGO_ADMIN) { storage.listAll().then(setFamiliasAdmin); setShowAdmin(true); setCodigoPremium(""); setShowPremium(false); }
+    if (up === CODIGO_ADMIN) { 
+      localStorage.setItem("es_admin", "true");
+      setEsAdmin(true);
+      storage.listAll().then(setFamiliasAdmin); 
+      setShowAdmin(true); 
+      setCodigoPremium(""); 
+      setShowPremium(false); 
+    }
     else if (up === CODIGO_DATOS) { setShowDatos(true); setCodigoPremium(""); setShowPremium(false); }
     else if (up === "PILOTO2026") {
       try {
@@ -1737,7 +1834,6 @@ export default function App() {
     else alert("Código no válido");
   };
 
-  // --- CONFIRMACIÓN Y ALERTAS ---
   const confirmar = (occData) => {
     actualizarPersona((p) => {
       const fecha = todayStr();
@@ -1815,7 +1911,6 @@ export default function App() {
     }
   };
 
-  // --- GESTIÓN DE MEDICAMENTOS Y PERSONAS ---
   const maxMeds = esPremium ? Infinity : LIMITES_ESTANDAR.maxMeds;
   const maxPersonas = esPremium ? 3 : LIMITES_ESTANDAR.maxElderly;
 
@@ -1851,8 +1946,6 @@ export default function App() {
     if (!form.name.trim()) return;
     const critF = form.criticidad || detectarCriticidad(form.name);
     const modoF = critF === "vital" ? "inmediato" : (form.modoAviso || (critF === "importante" ? "inmediato" : "final_dia"));
-    
-    // Fix: forzar stock numérico
     const stockNum = Number(form.stock) || 0;
     
     const nuevo = { id: editandoId || Date.now(), name: form.name.trim(), dose: form.dose.trim() || "1 dosis", times: form.times.filter(Boolean), color: form.color, shape: form.shape, unidad: form.unidad || "pastilla", stock: stockNum, doseAmount: form.doseAmount, type: form.type, receta: form.receta || clasificarMedicamento(form.name) || "sin_receta", criticidad: critF, modoAviso: modoF, notas: form.notas || "", recetaVence: form.recetaVence || "", ventanaMin: Number(form.ventanaMin) || 0, archivado: false, fechaInicio: Date.now(), fechaArchivado: null };
@@ -1938,7 +2031,9 @@ export default function App() {
     setShowCompartir(false);
   };
 
-  // --- RENDERIZADO (Parte 7) ---
+  // ==========================================
+  // A PARTIR DE AQUÍ VA EL RENDERIZADO (Parte 7)
+  // ==========================================
   // ==================== RENDERIZADO ====================
   const scale = FONT_SCALE[settings.fontSize] || 1;
   const confirmedHoy = confirmedByDate?.[todayStr()] || {};
@@ -2059,7 +2154,7 @@ export default function App() {
           </div>
         )}
 
-        {familia.personas && familia.personas.length > 1 && view === "cuidador" && (
+        {familia.personas && familia.personas.length > 0 && view === "cuidador" && (
           <div style={{ padding: "12px 20px 0", position: "relative" }}>
             <button onClick={() => setShowSelector(!showSelector)} className="btn-press-soft" style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: C.SHADOW }}>
               <span>👤 {elderName}{elderEdad ? ` · ${elderEdad} años` : ""}</span><ChevronDown size={14} />
@@ -2077,13 +2172,15 @@ export default function App() {
                   );
                 })}
                 {esPremium && (<button onClick={seleccionarYo} className="btn-press-soft" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "none", background: "transparent", color: C.TEAL, fontWeight: 700, fontSize: 13, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 6 }}>💊 Yo (mis medicamentos)</button>)}
-                <button onClick={() => { setShowSelector(false); intentarAgregarPersona(); }} className="btn-press-soft" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "none", background: "transparent", color: C.TEAL, fontWeight: 700, fontSize: 13, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 6 }}><UserPlus size={14} /> Agregar persona</button>
+                
+                {/* Arreglo 10: Botón + Agregar Paciente visible */}
+                <button onClick={() => { setShowSelector(false); intentarAgregarPersona(); }} className="btn-press-soft" style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: `1px dashed ${C.TEAL}`, background: C.TEAL + "08", color: C.TEAL, fontWeight: 700, fontSize: 13, cursor: "pointer", textAlign: "left", display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}><UserPlus size={14} /> Agregar paciente</button>
               </div>
             )}
           </div>
         )}
 
-        {rolUsuario !== "mayor" && <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 20px 0" }}>
+        {rolUsuario !== "mayor" && <div data-tutorial="nav-view" style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 20px 0" }}>
           <button onClick={() => setView("mayor")} className="btn-press-soft" style={{ flex: 1, padding: "11px", borderRadius: 12, border: `1px solid ${view === "mayor" ? "transparent" : C.LINE}`, fontWeight: 700, fontSize: 12.5, cursor: "pointer", background: view === "mayor" ? C.TEAL : C.PAPER, color: view === "mayor" ? "#fff" : C.MUTED, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: view === "mayor" ? `0 4px 12px ${C.TEAL}40` : C.SHADOW }}><User size={14} /> {elderName.split(" ")[0]}</button>
           <button onClick={() => setView("cuidador")} className="btn-press-soft" style={{ flex: 1, padding: "11px", borderRadius: 12, border: `1px solid ${view === "cuidador" ? "transparent" : C.LINE}`, fontWeight: 700, fontSize: 12.5, cursor: "pointer", background: view === "cuidador" ? C.TEAL : C.PAPER, color: view === "cuidador" ? "#fff" : C.MUTED, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: view === "cuidador" ? `0 4px 12px ${C.TEAL}40` : C.SHADOW }}><Users size={14} /> Cuidador {esPremium && "⭐"}</button>
         </div>}
@@ -2095,7 +2192,7 @@ export default function App() {
         <div data-tutorial="codigo" style={{ margin: "10px 20px 0", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 11, color: C.MUTED, padding: 4, borderRadius: 8 }}>
           <KeyRound size={11} /> Código: <strong>{codigo}</strong>
           <button onClick={() => navigator.clipboard?.writeText(codigo)} className="btn-press-soft" style={{ border: "none", background: "transparent", color: C.TEAL, cursor: "pointer", display: "flex", padding: 4 }}><Copy size={12} /></button>
-          <button onClick={() => setShowCompartir(true)} className="btn-press-soft" style={{ border: "none", background: "transparent", color: C.TEAL, cursor: "pointer", display: "flex", padding: 4 }}><Share2 size={12} /></button>
+          <button onClick={() => { const txt = `Hola, te comparto el código de Contigo Siempre para que me ayudes a cuidar a ${elderName.split(" ")[0]}. Únete acá: https://contigo-siempre.vercel.app/?unirse=${codigo}`; window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, "_blank"); }} className="btn-press-soft" style={{ border: "none", background: "transparent", color: C.TEAL, cursor: "pointer", display: "flex", padding: 4 }}><Share2 size={12} /></button>
           {saving && <Loader2 size={11} />}
           {firebaseEstado === "conectado" && isOnline && <span style={{ fontSize: 10, color: C.GREEN, fontWeight: 700 }}>☁️</span>}
         </div>
@@ -2166,7 +2263,7 @@ export default function App() {
               <>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
                   <button data-tutorial="nav-menu" onClick={() => setShowMenuLateral(true)} className="btn-press-soft" style={{ padding: "10px 14px", borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6, boxShadow: C.SHADOW }}><Menu size={16} /> Menú</button>
-                  <button onClick={() => setShowReporteMedico(true)} className="btn-press-soft" style={{ padding: "10px 14px", borderRadius: 12, border: `1px solid ${C.TEAL}`, background: C.TEAL + "10", color: C.TEAL, fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}><FileText size={16} /> Reporte Médico</button>
+                  <button data-tutorial="btn-reporte" onClick={() => setShowReporteMedico(true)} className="btn-press-soft" style={{ padding: "10px 14px", borderRadius: 12, border: `1px solid ${C.TEAL}`, background: C.TEAL + "10", color: C.TEAL, fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}><FileText size={16} /> Reporte Médico</button>
                 </div>
 
                 {meds.length === 0 ? (
@@ -2370,7 +2467,8 @@ export default function App() {
         {showOnboardingPremium && <OnboardingPremium C={C} onCerrar={() => { setShowOnboardingPremium(false); actualizar((prev) => ({ ...prev, settings: { ...prev.settings, onboardingPremiumVisto: true } })); }} />}
         {showAcercaDe && <AcercaDe C={C} onCerrar={() => setShowAcercaDe(false)} />}
         {showPolitica && <PoliticaPrivacidad C={C} onCerrar={() => setShowPolitica(false)} />}
-        {showAdmin && <PanelAdmin C={C} familias={familiasAdmin} onCerrar={() => setShowAdmin(false)} onAbrirDatos={() => { setShowAdmin(false); setShowDatos(true); }} onAbrirEventos={() => { setShowAdmin(false); setShowEventos(true); }} />}
+        
+        {showAdmin && <PanelAdmin C={C} familias={familiasAdmin} onCerrar={() => setShowAdmin(false)} onAbrirDatos={() => { setShowAdmin(false); setShowDatos(true); }} onAbrirEventos={() => { setShowAdmin(false); setShowEventos(true); }} onAbrirMetricas={() => { setShowAdmin(false); setShowMetricasCORFO(true); }} />}
         {showDatos && <DatosAdministrativos C={C} onCerrar={() => setShowDatos(false)} onReset={() => { try { localStorage.removeItem("datos_admin_global"); } catch (e) {} }} />}
         {showEventos && <VerEventos C={C} onCerrar={() => setShowEventos(false)} />}
         {showMetricasCORFO && <PanelMetricasCORFO C={C} onCerrar={() => setShowMetricasCORFO(false)} />}
@@ -2435,7 +2533,7 @@ export default function App() {
         {showAddPersona && (
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 33 }}>
             <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 20, padding: 24, margin: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
-              <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 14 }}>Agregar persona</div>
+              <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 14 }}>Agregar paciente</div>
               <input value={nombrePersonaNueva} onChange={(e) => setNombrePersonaNueva(e.target.value)} placeholder="Ej. Pedro González" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, marginBottom: 10, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
               <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6 }}><Cake size={12} /> EDAD (OPCIONAL)</div>
               <input type="number" min="0" max="120" value={edadPersonaNueva} onChange={(e) => setEdadPersonaNueva(e.target.value)} placeholder="Ej. 82" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, marginBottom: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
@@ -2485,7 +2583,9 @@ export default function App() {
                 <input value={codigoPremium} onChange={(e) => setCodigoPremium(e.target.value)} placeholder="Ingresa tu código" style={{ flex: 1, padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 13, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
                 <button onClick={canjearCodigo} className="btn-press" style={{ padding: "12px 18px", borderRadius: 12, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Canjear</button>
               </div>
-              <button onClick={() => { setShowPremium(false); setShowMetricasCORFO(true); }} className="btn-press-soft" style={{ width: "100%", marginTop: 14, padding: 12, borderRadius: 12, border: `1px solid ${C.TEAL}`, background: "transparent", color: C.TEAL, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><BarChart3 size={16} /> Ver Métricas CORFO</button>
+              {esAdmin && (
+                <button onClick={() => { setShowPremium(false); setShowMetricasCORFO(true); }} className="btn-press-soft" style={{ width: "100%", marginTop: 14, padding: 12, borderRadius: 12, border: `1px solid ${C.TEAL}`, background: "transparent", color: C.TEAL, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><BarChart3 size={16} /> Ver Métricas CORFO</button>
+              )}
             </div>
           </div>
         )}
