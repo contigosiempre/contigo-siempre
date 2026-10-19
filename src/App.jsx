@@ -2047,15 +2047,21 @@ export default function App() {
         )}
 
         {/* Barra Superior (Menú hamburguesa siempre visible) */}
+             {/* Barra Superior (Menú hamburguesa siempre visible) */}
         <div style={{ padding: "16px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <button data-tutorial="nav-menu-top" onClick={() => setShowMenuLateral(true)} className="btn-press-soft" style={{ padding: "10px", borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", boxShadow: C.SHADOW }}>
             <Menu size={20} />
           </button>
-          <div data-tutorial="codigo" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: C.MUTED }}>
-            <KeyRound size={11} /> Código: <strong>{codigo}</strong>
-            <button onClick={() => navigator.clipboard?.writeText(codigo)} className="btn-press-soft" style={{ border: "none", background: "transparent", color: C.TEAL, cursor: "pointer", display: "flex", padding: 4 }}><Copy size={12} /></button>
-            <button onClick={() => { const txt = `Hola, te comparto el código de Contigo Siempre para que me ayudes a cuidar a ${elderName.split(" ")[0]}. Únete acá: https://contigo-siempre.vercel.app/?unirse=${codigo}`; window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, "_blank"); }} className="btn-press-soft" style={{ border: "none", background: "transparent", color: C.TEAL, cursor: "pointer", display: "flex", padding: 4 }}><Share2 size={12} /></button>
-            {saving && <Loader2 size={11} />}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+            <div data-tutorial="codigo" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: C.MUTED }}>
+              <KeyRound size={11} /> Código: <strong>{codigo}</strong>
+              <button onClick={() => navigator.clipboard?.writeText(codigo)} className="btn-press-soft" style={{ border: "none", background: "transparent", color: C.TEAL, cursor: "pointer", display: "flex", padding: 4 }}><Copy size={12} /></button>
+              <button onClick={() => { const txt = `Hola, te comparto el código de Contigo Siempre para que me ayudes a cuidar a ${elderName.split(" ")[0]}. Únete acá: https://contigo-siempre.vercel.app/?unirse=${codigo}`; window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, "_blank"); }} className="btn-press-soft" style={{ border: "none", background: "transparent", color: C.TEAL, cursor: "pointer", display: "flex", padding: 4 }}><Share2 size={12} /></button>
+              {saving && <Loader2 size={11} />}
+            </div>
+            <div style={{ fontSize: 9.5, color: C.MUTED, fontStyle: "italic" }}>
+              Cuidador: {nombreCuidadorInput || "Tú"} · Viendo a: {elderName.split(" ")[0]}
+            </div>
           </div>
         </div>
 
