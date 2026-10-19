@@ -69,7 +69,7 @@ const LIMITES_ESTANDAR = { maxMeds: 4, maxElderly: 1, maxCuidadores: 2 };
 const CODIGOS_PILOTO = ["PILOTO2026", "FUNDADOR", "BETA01", "FAMILIA1", "FAMILIA2", "FAMILIA3", "FAMILIA4", "FAMILIA5"];
 const CODIGO_ADMIN = "ADMIN" + new Date().getFullYear();
 const CODIGO_DATOS = "DATOS" + new Date().getFullYear();
-const APP_VERSION = "2.2.0-piloto-enterprise";
+const APP_VERSION = "2.2.1-estable";
 const MINUTOS_SIN_CONEXION_ALERTA = 5;
 
 const MEDS_CON_RECETA = ["losartan","losartán","metformina","enalapril","amlodipino","atorvastatina","simvastatina","carvedilol","furosemida","hidroclorotiazida","omeprazol","clonazepam","alprazolam","sertralina","fluoxetina","levotiroxina","warfarina","clopidogrel","insulina","gabapentina","pregabalina","tramadol","morfina","fentanilo","metotrexato","prednisona","salbutamol","budesonida","montelukast","alopurinol","colchicina","risperidona","quetiapina","olanzapina","valproato","carbamazepina","fenitoina","levetiracetam","donepezilo","memantina","rivastigmina"];
@@ -118,6 +118,7 @@ function obtenerProductosSugeridos(meds, mesActual) {
 }
 
 const NOMBRE_TEMPORADA = { invierno: "Artículos útiles para el invierno", verano: "Artículos útiles para el verano", otono: "Artículos útiles para el otoño", primavera: "Artículos útiles para la primavera" };
+
 const CSS_GLOBAL = `
   @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -141,9 +142,6 @@ const CSS_GLOBAL = `
   .pulse-alerta { animation: pulseAlerta 2s ease-in-out infinite; }
   ::-webkit-scrollbar { width: 0; height: 0; }
   * { -webkit-tap-highlight-color: transparent; }
-  .bottom-nav { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 420px; background: #fff; border-top: 1px solid #E0E4EB; display: flex; justify-content: space-around; padding: 8px 0 12px 0; z-index: 50; }
-  .bottom-nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; color: #6B7A8F; cursor: pointer; flex: 1; }
-  .bottom-nav-item.active { color: #1976D2; }
 `;
 
 let audioCtxRef = null;
@@ -297,7 +295,6 @@ function calcularRacha(meds, cbd) {
   return racha;
 }
 
-// FÓRMULA BLINDADA DE STOCK
 function diasRestantesReales(med, cbd) {
   if (!med.times || med.times.length === 0) return null;
   const dosisPorToma = Number(med.doseAmount) || 1;
@@ -363,32 +360,6 @@ function generarTextoCompartir(tipo, elderName, meds, confirmedByDate) {
   }
   return "";
 }
-
-function generarDemo() {
-  const hoy = new Date();
-  const personaId = Date.now();
-  const medsDemo = [
-    { id: personaId + 1, name: "Losartán 50mg", dose: "1 pastilla con agua", times: ["08:00", "20:00"], color: "#1F6E63", shape: "●", stock: 24, doseAmount: 1, type: "privada", receta: "con_receta", criticidad: "importante", modoAviso: "inmediato", notas: "No tomarlo con lácteos", recetaVence: new Date(hoy.getTime() + 20 * 86400000).toISOString().slice(0, 10), ventanaMin: 30 },
-    { id: personaId + 2, name: "Metformina 850mg", dose: "1 pastilla con comida", times: ["09:00", "21:00"], color: "#E0654A", shape: "◆", stock: 4, doseAmount: 1, type: "privada", receta: "con_receta", criticidad: "importante", modoAviso: "inmediato", notas: "", recetaVence: "", ventanaMin: 60 },
-    { id: personaId + 3, name: "Vitamina D", dose: "1 cápsula", times: ["13:00"], color: "#D98F2B", shape: "▲", stock: 30, doseAmount: 1, type: "privada", receta: "sin_receta", criticidad: "normal", modoAviso: "final_dia", notas: "Con el almuerzo", recetaVence: "", ventanaMin: 0 },
-    { id: personaId + 4, name: "Insulina", dose: "10 unidades", times: ["07:30", "19:30"], color: "#8A5FA8", shape: "■", stock: 15, doseAmount: 1, type: "privada", receta: "con_receta", criticidad: "vital", modoAviso: "inmediato", notas: "Refrigerada", recetaVence: new Date(hoy.getTime() + 5 * 86400000).toISOString().slice(0, 10), ventanaMin: 0 },
-  ];
-  const confirmedByDate = {};
-  for (let i = 0; i < 14; i++) {
-    const d = new Date(hoy); d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
-    confirmedByDate[key] = {};
-    medsDemo.forEach((m) => { m.times.forEach((t) => { const prob = i >= 7 ? 0.9 : 0.4; if (Math.random() < prob) confirmedByDate[key][occKey(m.id, t)] = true; }); });
-  }
-  return {
-    personas: [{ id: personaId, nombre: "Rosa Pérez (Demo)", edad: 78, meds: medsDemo, confirmedByDate, preferenciasFarmacia: {}, ultimoReconteo: {}, ultimaConexion: Date.now() }],
-    contactos: [{ id: 1, nombre: "Dr. Juan Soto", telefono: "+56912345678", tipo: "médico" }, { id: 2, nombre: "María (hija)", telefono: "+56987654321", tipo: "familia" }],
-    cuidadores: ["Tú"],
-    historialCambios: [{ id: 1, fecha: Date.now() - 86400000, cuidador: "Tú", accion: "Agregó", detalle: "Losartán 50mg" }, { id: 2, fecha: Date.now() - 3600000, cuidador: "Tú", accion: "Cambió stock", detalle: "Metformina 850mg → 4" }],
-    plan: "premium", planInicio: Date.now() - 7 * 86400000,
-    settings: { fontSize: "normal", daltonico: false, darkMode: false, aceptoTerminos: true, onboardingPremiumVisto: true, sonidoActivo: true, vibracionActiva: true, tutorialVisto: true, notificarConfirmacion: true },
-  };
-}
 function LogoContigoSiempre({ size = 64, color = "#1976D2", accent = "#F9A825" }) {
   const s = size;
   return (
@@ -421,7 +392,6 @@ function AvisoSinConexion({ C, offline, ultimaConexion, compacto, nombre }) {
   return null;
 }
 
-// PANTALLA DE ALERTA (Acepta meds como un array para agrupar)
 function PantallaAlertaMedicamento({ C, meds, hora, onConfirmar, onPosponer, escala, daltonico, sonidoActivo, esVital, yaPostergada, esAdultoMayor }) {
   const medPrincipal = meds[0];
   const esMultiple = meds.length > 1;
@@ -464,34 +434,6 @@ function PantallaAlertaMedicamento({ C, meds, hora, onConfirmar, onPosponer, esc
           🔔 Esta alerta suena y vibra hasta que confirmes
         </div>
       )}
-    </div>
-  );
-}
-
-function BottomBar({ C, tabActual, setTabActual, onAbrirMenu, avisosNuevos }) {
-  const items = [
-    { id: "meds", Icono: Pill, label: "Meds", tutorialId: "nav-meds" },
-    { id: "historial", Icono: Calendar, label: "Historial", tutorialId: "nav-historial" },
-    { id: "canasta", Icono: ShoppingCart, label: "Canasta", tutorialId: "nav-canasta" },
-    { id: "avisos", Icono: Bell, label: "Avisos", badge: avisosNuevos, tutorialId: "nav-avisos" },
-  ];
-  return (
-    <div className="bottom-nav">
-      {items.map((it) => {
-        const activo = tabActual === it.id;
-        const Icono = it.Icono;
-        return (
-          <div key={it.id} data-tutorial={it.tutorialId} className={`bottom-nav-item ${activo ? 'active' : ''}`} onClick={() => setTabActual(it.id)} style={{ position: 'relative' }}>
-            <Icono size={22} strokeWidth={activo ? 2.5 : 2} color={activo ? C.TEAL : C.MUTED} />
-            <span>{it.label}</span>
-            {it.badge > 0 && <span style={{ position: "absolute", top: 0, right: "25%", background: C.CORAL, color: "#fff", fontSize: 9, fontWeight: 700, borderRadius: 999, padding: "1px 4px" }}>{it.badge}</span>}
-          </div>
-        );
-      })}
-      <div className="bottom-nav-item" onClick={onAbrirMenu} data-tutorial="nav-menu">
-        <Menu size={22} strokeWidth={2} color={C.MUTED} />
-        <span>Más</span>
-      </div>
     </div>
   );
 }
@@ -776,6 +718,7 @@ function OnboardingPremium({ C, onCerrar }) {
     </div>
   );
 }
+
 function AcercaDe({ C, onCerrar }) {
   return (
     <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 72 }}>
@@ -1188,7 +1131,6 @@ export default function App() {
     if (view !== "mayor" && !(personaActual?.esAutocuidado)) return;
     const confirmedHoy = confirmedByDate?.[todayStr()] || {};
     
-    // NUEVO: Agrupar medicamentos a la misma hora
     const dueTimes = {};
     meds.forEach(m => {
       m.times.forEach(t => {
@@ -1239,7 +1181,6 @@ export default function App() {
     return () => clearInterval(id);
   }, [alertaActiva, settings]);
 
-  // Lógica de Resumen de Final de Día y Avisos
   useEffect(() => {
     if (stage !== "app" || !familia || !personaActual) return;
     if (personaDesconectada) return;
@@ -1356,7 +1297,7 @@ export default function App() {
     localStorage.setItem("codigo_familia", cod);
     localStorage.setItem("nombre_cuidador", nombreCuidadorInput.trim());
     setFamilia(nueva); setCodigo(cod); setPersonaActualId(personaId); setShowSelectorRol(true);
-setStage(nueva.settings.aceptoTerminos ? "app" : "consentimiento");
+    setStage(nueva.settings.aceptoTerminos ? "app" : "consentimiento");
     registrarEvento(cod, "crear_familia", `Familia creada para ${nombreInput.trim()}${edadNum ? ` (${edadNum} años)` : ""}`, { cuidador: nombreCuidadorInput, persona: nombreInput.trim(), edad: edadNum || "" });
     if (tokenFCM) await guardarTokenEnFirestore(cod, tokenFCM, "cuidador");
   };
@@ -1469,8 +1410,8 @@ setStage(nueva.settings.aceptoTerminos ? "app" : "consentimiento");
             if (!aceptoCheck) return;
             const next = { ...familia, settings: { ...familia.settings, aceptoTerminos: true } };
             await guardarFamilia(codigo, next);
-setFamilia(prev => ({ ...prev, settings: { ...prev.settings, aceptoTerminos: true } }));
-setStage("app");
+            setFamilia(prev => ({ ...prev, settings: { ...prev.settings, aceptoTerminos: true } }));
+            setStage("app");
             registrarEvento(codigo, "acepto_terminos", "Términos aceptados", { cuidador: nombreCuidadorInput });
           }} disabled={!aceptoCheck} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: aceptoCheck ? LIGHT.TEAL : "#E0E4EB", color: "#fff", fontWeight: 700, cursor: aceptoCheck ? "pointer" : "not-allowed" }}>Continuar</button>
           {showPolitica && <PoliticaPrivacidad C={LIGHT} onCerrar={() => setShowPolitica(false)} />}
@@ -1909,7 +1850,6 @@ setStage("app");
               <div style={{ textAlign: "center", padding: 20 }}>
                 <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 14 }}>Carro y Farmacias</div>
                 <div style={{ fontSize: 12, color: C.MUTED }}>(Módulo de compras en desarrollo)</div>
-                <button onClick={abrirCarroCompleto} className="btn-press" style={{ marginTop: 14, padding: 10, borderRadius: 10, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Abrir carro completo</button>
               </div>
             )}
 
@@ -1950,9 +1890,6 @@ setStage("app");
             )}
           </div>
         )}
-
-        {/* NUEVO: Se oculta la barra inferior si hay modales abiertos */}
-        {view === "cuidador" && !showAdd && !showAjustes && !showPremium && !showContactos && !showNotas && !showCompartir && !showAddPersona && !diaDetalle && !showLimite && !archivarTarget && !restockTarget && !reconteoTarget && !linkAbierto && !showMenuLateral && !showTutorial && <BottomBar C={C} tabActual={cuidadorTab} setTabActual={setCuidadorTab} onAbrirMenu={() => setShowMenuLateral(true)} avisosNuevos={smsLog.length} />}
 
         <MenuLateral C={C} abierto={showMenuLateral} onCerrar={() => setShowMenuLateral(false)} tabActual={cuidadorTab} setTabActual={setCuidadorTab} avisosNuevos={smsLog.length} oscuro={oscuro} cuidadorNombre={nombreCuidadorInput || familia?.cuidadores?.[0] || "Cuidador"} elderName={elderName} onCompartir={() => setShowCompartir(true)} onModoOscuro={() => { actualizarSettings({ darkMode: !oscuro }); registrarEvento(codigo, "toggle_dark_mode", !oscuro ? "activado" : "desactivado", { cuidador: nombreCuidadorInput }); }} onAyuda={() => setShowComoFunciona(true)} onAcercaDe={() => setShowAcercaDe(true)} onPolitica={() => setShowPolitica(true)} onPremium={() => setShowPremium(true)} onAjustes={() => setShowAjustes(true)} />
 
@@ -2247,4 +2184,3 @@ setStage("app");
     </div>
   );
 }
-  
