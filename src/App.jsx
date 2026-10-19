@@ -1967,16 +1967,47 @@ export default function App() {
               <button onClick={() => { setModoEntrada("elegir"); setError(""); }} style={{ marginTop: 10, width: "100%", background: "transparent", border: "none", color: LIGHT.MUTED, fontSize: 12.5, cursor: "pointer", fontWeight: 600 }}>Volver</button>
             </div>
           )}
-          {modoEntrada === "unirse" && (
+                  {modoEntrada === "unirse" && (
             <div style={{ textAlign: "left" }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: LIGHT.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>TU NOMBRE (CUIDADOR)</div>
-              <input value={nombreCuidadorInput} onChange={(e) => setNombreCuidadorInput(e.target.value)} placeholder="Ej. Juan Larrota" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${LIGHT.LINE}`, fontSize: 14, marginBottom: 12, boxSizing: "border-box", outline: "none" }} />
+              <div style={{ fontSize: 12, fontWeight: 700, color: LIGHT.MUTED, marginBottom: 8, letterSpacing: 0.3 }}>¿CÓMO VAS A ENTRAR?</div>
+              
+              <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                <button 
+                  onClick={() => { setNombreCuidadorInput("Adulto Mayor"); }} 
+                  className="btn-press-soft" 
+                  style={{ flex: 1, padding: "12px 8px", borderRadius: 12, border: nombreCuidadorInput === "Adulto Mayor" ? `2px solid ${LIGHT.TEAL}` : `1.5px solid ${LIGHT.LINE}`, background: LIGHT.PAPER, color: LIGHT.INK, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}
+                >
+                  <User size={20} color={nombreCuidadorInput === "Adulto Mayor" ? LIGHT.TEAL : LIGHT.MUTED} />
+                  Soy el Adulto Mayor
+                </button>
+                <button 
+                  onClick={() => { if (nombreCuidadorInput === "Adulto Mayor") setNombreCuidadorInput(""); }} 
+                  className="btn-press-soft" 
+                  style={{ flex: 1, padding: "12px 8px", borderRadius: 12, border: nombreCuidadorInput !== "Adulto Mayor" ? `2px solid ${LIGHT.TEAL}` : `1.5px solid ${LIGHT.LINE}`, background: LIGHT.PAPER, color: LIGHT.INK, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}
+                >
+                  <Users size={20} color={nombreCuidadorInput !== "Adulto Mayor" ? LIGHT.TEAL : LIGHT.MUTED} />
+                  Soy un Cuidador
+                </button>
+              </div>
+
+              {nombreCuidadorInput !== "Adulto Mayor" && (
+                <>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: LIGHT.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>TU NOMBRE</div>
+                  <input value={nombreCuidadorInput} onChange={(e) => setNombreCuidadorInput(e.target.value)} placeholder="Ej. Juan Larrota" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${LIGHT.LINE}`, fontSize: 14, marginBottom: 12, boxSizing: "border-box", outline: "none" }} />
+                </>
+              )}
+
               <div style={{ fontSize: 12, fontWeight: 700, color: LIGHT.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>CÓDIGO DE LA FAMILIA</div>
               <input value={codigoInput} onChange={(e) => setCodigoInput(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="000000" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${LIGHT.LINE}`, fontSize: 22, letterSpacing: 6, textAlign: "center", marginBottom: 12, boxSizing: "border-box", outline: "none", fontWeight: 700 }} />
+              
               {error && <div style={{ fontSize: 12, color: LIGHT.CORAL, marginBottom: 12 }}>{error}</div>}
-              <button onClick={unirseFamilia} disabled={codigoInput.length !== 6 || !nombreCuidadorInput.trim()} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: (codigoInput.length === 6 && nombreCuidadorInput.trim()) ? LIGHT.TEAL : "#E0E4EB", color: "#fff", fontWeight: 700, cursor: "pointer" }}>Entrar</button>
+              
+              <button onClick={unirseFamilia} disabled={codigoInput.length !== 6 || !nombreCuidadorInput.trim()} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: (codigoInput.length === 6 && nombreCuidadorInput.trim()) ? LIGHT.TEAL : "#E0E4EB", color: "#fff", fontWeight: 700, cursor: "pointer" }}>
+                Entrar
+              </button>
               <button onClick={() => { setModoEntrada("elegir"); setError(""); }} style={{ marginTop: 10, width: "100%", background: "transparent", border: "none", color: LIGHT.MUTED, fontSize: 12.5, cursor: "pointer", fontWeight: 600 }}>Volver</button>
             </div>
+          )}
           )}
         </div>
       </div>
