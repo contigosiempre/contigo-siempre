@@ -2096,7 +2096,7 @@ export default function App() {
           </div>
         )}
 
-        {familia.personas && familia.personas.length > 1 && view === "cuidador" && (
+        {familia.personas && familia.personas.length > 0 && view === "cuidador" && (
           <div style={{ padding: "12px 20px 0", position: "relative" }}>
             <button onClick={() => setShowSelector(!showSelector)} className="btn-press-soft" style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: C.SHADOW }}>
               <span>{elderName}{elderEdad ? ` · ${elderEdad} años` : ""}</span><ChevronDown size={14} />
@@ -2234,7 +2234,17 @@ export default function App() {
 
                 {meds.length === 0 ? (
                   <div style={{ marginTop: 14 }}>
-                    <EstadoVacio C={C} icono={Pill} titulo="Sin medicamentos aún" texto="Agrega el primer medicamento para empezar a cuidar." botonTexto="Agregar medicamento" onBoton={intentarAgregarMed} />
+                                      <EstadoVacio C={C} icono={Pill} titulo="Sin medicamentos aún" texto="Agrega el primer medicamento para empezar a cuidar." botonTexto="Agregar medicamento" onBoton={() => {
+                    if (meds.length >= maxMeds) { setShowLimite("meds"); return; }
+                    addStartRef.current = Date.now();
+                    setEditandoId(null);
+                    setForm({ 
+                      name: "", dose: "", times: ["08:00"], color: PILL_COLORS[0], shape: PILL_SHAPES[0], 
+                      unidad: "pastilla", stock: 30, doseAmount: 1, type: "privada", receta: null, 
+                      criticidad: null, modoAviso: null, notas: "", recetaVence: "", ventanaMin: 0 
+                    });
+                    setShowAdd(true);
+                  }} />
                   </div>
                 ) : (
                   <>
@@ -2277,9 +2287,24 @@ export default function App() {
                     {meds.length > 4 && (
                       <div style={{ textAlign: "center", marginTop: 10, fontSize: 12, color: C.MUTED }}>+ {meds.length - 4} medicamentos más. Hazte Premium para verlos todos.</div>
                     )}
-                    <button onClick={intentarAgregarMed} data-tutorial="add-med" className="btn-press-soft" style={{ marginTop: 18, width: "100%", background: oscuro ? "#1E3A5F" : "#E3F2FD", border: `1.5px dashed ${oscuro ? "#FFFFFF" : "#1976D2"}`, color: oscuro ? "#FFFFFF" : C.TEAL, padding: 13, borderRadius: 14, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 0 15px rgba(255,255,255,0.4)" }}>
-                      {meds.length >= maxMeds ? <><Lock size={16} /> Límite alcanzado — Hazte Premium</> : <><Plus size={16} /> Agregar medicamento</>}
-                    </button>
+                                  <button 
+                  onClick={() => {
+                    if (meds.length >= maxMeds) { setShowLimite("meds"); return; }
+                    addStartRef.current = Date.now();
+                    setEditandoId(null);
+                    setForm({ 
+                      name: "", dose: "", times: ["08:00"], color: PILL_COLORS[0], shape: PILL_SHAPES[0], 
+                      unidad: "pastilla", stock: 30, doseAmount: 1, type: "privada", receta: null, 
+                      criticidad: null, modoAviso: null, notas: "", recetaVence: "", ventanaMin: 0 
+                    });
+                    setShowAdd(true);
+                  }} 
+                  data-tutorial="add-med" 
+                  className="btn-press-soft" 
+                  style={{ marginTop: 18, width: "100%", background: oscuro ? "#1E3A5F" : "#E3F2FD", border: `1.5px dashed ${oscuro ? "#FFFFFF" : "#1976D2"}`, color: oscuro ? "#FFFFFF" : C.TEAL, padding: 13, borderRadius: 14, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 0 15px rgba(255,255,255,0.4)" }}
+                >
+                  {meds.length >= maxMeds ? <><Lock size={16} /> Límite alcanzado — Hazte Premium</> : <><Plus size={16} /> Agregar medicamento</>}
+                </button>
                   </>
                 )}
               </>
