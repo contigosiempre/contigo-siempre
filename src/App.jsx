@@ -1668,11 +1668,8 @@ export default function App() {
         setFamiliasAdmin(todas);
       } catch (e) {}
 
-      // Cerramos Premium primero y le damos 100ms a React para abrir el Admin sin conflictos
-      setShowPremium(false); 
-      setTimeout(() => {
-        setShowAdmin(true); 
-      }, 100);
+           setShowAdmin(true);
+      setShowPremium(false);
     }
     else if (up === CODIGO_DATOS) { 
       setShowDatos(true); 
@@ -1948,6 +1945,225 @@ export default function App() {
   // A PARTIR DE AQUÍ VA EL RENDERIZADO (Parte 7)
   // ==========================================
   // ==================== RENDERIZADO ====================
+
+function PanelAdmin({ C, familias, onCerrar, onAbrirDatos, onAbrirEventos, onAbrirMetricas }) {
+  const [lista, setLista] = useState(familias || []);
+  const [busqueda, setBusqueda] = useState("");
+  const [cargando, setCargando] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      setCargando(true);
+      try {
+        const todas = await storage.listAll();
+        setLista(todas);
+      } catch (e) {}
+      setCargando(false);
+    })();
+  }, []);
+
+  const filtradas = lista.filter((f) => {
+    if (!busqueda) return true;
+    const q = busqueda.toLowerCase();
+    const cod = (f.codigo || "").toLowerCase();
+    const personas = (f.data?.personas || []).map(p => p.nombre?.toLowerCase()).join(" ");
+    return cod.includes(q) || personas.includes(q);
+  });
+
+  return (
+    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.9)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 10 }}>
+      <div className="modal-scale" style={{ width: "100%", maxWidth: 480, background: C.CREAM, borderRadius: 24, padding: 20, maxHeight: "92vh", display: "flex", flexDirection: "column" }}>
+        
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <div style={{ fontWeight: 800, fontSize: 20, color: C.TEAL, display: "flex", alignItems: "center", gap: 8 }}>
+            <ShieldCheck size={22} /> Panel Admin
+          </div>
+          <button onClick={onCerrar} style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer" }}>
+            <X size={16} color={C.INK} />
+          </button>
+        </div>
+
+        <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+          <button onClick={onAbrirMetricas} style={{ flex: 1, padding: 10, borderRadius: 10, border: "none", background: C.GOLD, color: "#fff", fontWeight: 700, fontSize: 11, cursor: "pointer" }}>
+            <BarChart3 size={13} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} /> Métricas
+          </button>
+          <button onClick={onAbrirEventos} style={{ flex: 1, padding: 10, borderRadius: 10, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, fontSize: 11, cursor: "pointer" }}>
+            <Activity size={13} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} /> Eventos
+          </button>
+          <button onClick={onAbrirDatos} style={{ flex: 1, padding: 10, borderRadius: 10, border: "none", background: C.GREEN, color: "#fff", fontWeight: 700, fontSize: 11, cursor: "pointer" }}>
+            <BarChart3 size={13} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} /> Datos
+          </button>
+        </div>
+
+        <input
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          placeholder="Buscar por código o nombre..."
+          style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 13, marginBottom: 12, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }}
+        />
+
+        <div style={{ fontSize: 11, color: C.MUTED, marginBottom: 8, fontWeight: 700 }}>
+          {cargando ? "Cargando..." : `${filtradas.length} familias registradas`}
+        </div>
+
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          {cargando ? (
+            <div style={{ textAlign: "center", padding: 30 }}><Loader2 size={24} color={C.TEAL} /></div>
+          ) : filtradas.length === 0 ? (
+            <div style={{ textAlign: "center", padding: 30, color: C.MUTED, fontSize: 13 }}>Sin resultados</div>
+          ) : (
+            filtradas.map((f) => (
+              <div key={f.codigo} style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 12, padding: 12, marginBottom: 8 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                  <div style={{ fontWeight: 800, fontSize: 13, color: C.TEAL }}>Cod: {f.codigo}</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: f.data?.plan === "premium" || f.data?.esPiloto ? C.GOLD + "20" : C.LINE, color: f.data?.plan === "premium" || f.data?.esPiloto ? C.GOLD : C.MUTED }}>
+                    {f.data?.plan === "premium" ? "PREMIUM" : f.data?.esPiloto ? "PILOTO" : "ESTÁNDAR"}
+                  </div>
+                </div>
+                {(f.data?.personas || []).map((p) => (
+                  <div key={p.id} style={{ fontSize: 12, color: C.INK, marginTop: 2 }}>
+                    👤 <strong>{p.nombre}</strong> {p.edad ? `· ${p.edad} años` : ""} · {p.meds?.filter(m => !m.archivado).length || 0} meds
+                  </div>
+                ))}
+                <div style={{ fontSize: 10, color: C.MUTED, marginTop: 4 }}>
+                  Cuidadores: {(f.data?.cuidadores || []).join(", ") || "—"}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <button onClick={onCerrar} style={{ marginTop: 12, width: "100%", padding: 12, borderRadius: 12, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>
+          Cerrar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DatosAdministrativos({ C, onCerrar, onReset }) {
+  const [datos, setDatos] = useState({});
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("datos_admin_global");
+      setDatos(raw ? JSON.parse(raw) : {});
+    } catch (e) {}
+  }, []);
+
+  return (
+    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 10 }}>
+      <div className="modal-scale" style={{ width: "100%", maxWidth: 400, background: C.CREAM, borderRadius: 24, padding: 20, maxHeight: "90vh", display: "flex", flexDirection: "column" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <div style={{ fontWeight: 800, fontSize: 18, color: C.GREEN, display: "flex", alignItems: "center", gap: 8 }}>
+            <BarChart3 size={20} /> Datos de Uso
+          </div>
+          <button onClick={onCerrar} style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer" }}>
+            <X size={15} color={C.INK} />
+          </button>
+        </div>
+
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          {Object.keys(datos).length === 0 ? (
+            <div style={{ textAlign: "center", padding: 30, color: C.MUTED, fontSize: 13 }}>Sin datos aún</div>
+          ) : (
+            Object.entries(datos).map(([k, v]) => (
+              <div key={k} style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 10, padding: 10, marginBottom: 8 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: C.INK, marginBottom: 4 }}>{k}</div>
+                <pre style={{ fontSize: 10, color: C.MUTED, margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
+                  {typeof v === "object" ? JSON.stringify(v, null, 2) : String(v)}
+                </pre>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+          <button onClick={() => { if (window.confirm("¿Borrar todos los datos de uso?")) { onReset(); setDatos({}); } }} style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: C.CORAL, color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 12 }}>
+            Resetear
+          </button>
+          <button onClick={onCerrar} style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 12 }}>
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VerEventos({ C, onCerrar }) {
+  const [eventos, setEventos] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [filtro, setFiltro] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!db) throw new Error("Sin DB");
+        const snap = await db.collection("eventos").orderBy("timestamp", "desc").limit(200).get();
+        const arr = [];
+        snap.forEach((doc) => arr.push({ id: doc.id, ...doc.data() }));
+        setEventos(arr);
+      } catch (e) {}
+      setCargando(false);
+    })();
+  }, []);
+
+  const filtrados = eventos.filter((e) => {
+    if (!filtro) return true;
+    const q = filtro.toLowerCase();
+    return (e.tipo || "").toLowerCase().includes(q) ||
+           (e.codigo || "").toLowerCase().includes(q) ||
+           (e.cuidador || "").toLowerCase().includes(q) ||
+           (e.detalle || "").toLowerCase().includes(q);
+  });
+
+  return (
+    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.9)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 10 }}>
+      <div className="modal-scale" style={{ width: "100%", maxWidth: 480, background: C.CREAM, borderRadius: 24, padding: 20, maxHeight: "92vh", display: "flex", flexDirection: "column" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div style={{ fontWeight: 800, fontSize: 18, color: C.TEAL, display: "flex", alignItems: "center", gap: 8 }}>
+            <Activity size={20} /> Eventos ({eventos.length})
+          </div>
+          <button onClick={onCerrar} style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer" }}>
+            <X size={15} color={C.INK} />
+          </button>
+        </div>
+
+        <input
+          value={filtro}
+          onChange={(e) => setFiltro(e.target.value)}
+          placeholder="Filtrar por tipo, código, cuidador..."
+          style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 12, marginBottom: 10, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }}
+        />
+
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          {cargando ? (
+            <div style={{ textAlign: "center", padding: 30 }}><Loader2 size={24} color={C.TEAL} /></div>
+          ) : filtrados.length === 0 ? (
+            <div style={{ textAlign: "center", padding: 30, color: C.MUTED, fontSize: 13 }}>Sin eventos</div>
+          ) : (
+            filtrados.map((e) => (
+              <div key={e.id} style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 10, padding: 10, marginBottom: 6 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: C.MUTED, marginBottom: 3 }}>
+                  <span style={{ fontWeight: 700, color: C.TEAL }}>{e.tipo}</span>
+                  <span>{e.fecha ? new Date(e.fecha).toLocaleString("es-CL") : ""}</span>
+                </div>
+                <div style={{ fontSize: 12, color: C.INK }}>{e.detalle}</div>
+                <div style={{ fontSize: 10, color: C.MUTED, marginTop: 2 }}>
+                  Cod: {e.codigo} {e.cuidador ? `· ${e.cuidador}` : ""} {e.persona ? `· ${e.persona}` : ""}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <button onClick={onCerrar} style={{ marginTop: 10, width: "100%", padding: 12, borderRadius: 12, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>
+          Cerrar
+        </button>
+      </div>
+    </div>
+  );
+}
   const scale = FONT_SCALE[settings.fontSize] || 1;
   const confirmedHoy = confirmedByDate?.[todayStr()] || {};
   const occurrences = meds.flatMap((m) => (m.times || []).map((t) => ({ med: m, time: t, key: occKey(m.id, t) })));
