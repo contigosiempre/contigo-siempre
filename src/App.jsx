@@ -1831,7 +1831,17 @@ export default function App() {
   const maxMeds = esPremium ? Infinity : LIMITES_ESTANDAR.maxMeds;
   const maxPersonas = esPremium ? 3 : LIMITES_ESTANDAR.maxElderly;
 
-  const intentarAgregarMed = () => { if (meds.length >= maxMeds) { setShowLimite("meds"); return; } addStartRef.current = Date.now(); setShowAdd(true); };
+    const intentarAgregarMed = () => { 
+    if (meds.length >= maxMeds) { setShowLimite("meds"); return; } 
+    addStartRef.current = Date.now(); 
+    setEditandoId(null);
+    setForm({ 
+      name: "", dose: "", times: ["08:00"], color: PILL_COLORS[0], shape: PILL_SHAPES[0], 
+      unidad: "pastilla", stock: 30, doseAmount: 1, type: "privada", receta: null, 
+      criticidad: null, modoAviso: null, notas: "", recetaVence: "", ventanaMin: 0 
+    });
+    setShowAdd(true); 
+  };
   const intentarAgregarPersona = () => { if ((familia.personas?.length || 0) >= maxPersonas) { setShowLimite("personas"); return; } setShowAddPersona(true); };
 
   const archivarMed = (id) => {
@@ -1891,7 +1901,7 @@ export default function App() {
   };
 
   const agregarPersona = () => {
-    if (!nombrePersonaNueva.trim()) return;
+        if (!nombrePersonaNueva || !nombrePersonaNueva.trim()) return;
     if (edadPersonaNueva && (isNaN(Number(edadPersonaNueva)) || Number(edadPersonaNueva) < 0 || Number(edadPersonaNueva) > 120)) { alert("La edad debe ser un número entre 0 y 120"); return; }
     const edadNum = edadPersonaNueva ? Number(edadPersonaNueva) : null;
     const nueva = { id: Date.now(), nombre: nombrePersonaNueva.trim(), edad: edadNum, meds: [], confirmedByDate: {}, preferenciasFarmacia: {}, ultimoReconteo: {}, ultimaConexion: Date.now() };
@@ -2535,7 +2545,7 @@ export default function App() {
               <input type="number" min="0" max="120" value={edadPersonaNueva} onChange={(e) => setEdadPersonaNueva(e.target.value)} placeholder="Ej. 82" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, marginBottom: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => { setShowAddPersona(false); setNombrePersonaNueva(""); setEdadPersonaNueva(""); }} className="btn-press-soft" style={{ flex: 1, padding: 12, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.MUTED, fontWeight: 700, cursor: "pointer" }}>Cancelar</button>
-                <button onClick={agregarPersona} disabled={!nombrePersonaNueva.trim()} className="btn-press" style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: nombrePersonaNueva.trim() ? C.TEAL : C.LINE, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Agregar</button>
+                <button onClick={agregarPersona} disabled={!nombrePersonaNueva || !nombrePersonaNueva.trim()} className="btn-press" style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: (nombrePersonaNueva && nombrePersonaNueva.trim()) ? C.TEAL : C.LINE, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Agregar</button>
               </div>
             </div>
           </div>
@@ -2674,7 +2684,7 @@ export default function App() {
                   <input type="number" min="0" value={form.stock} onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value === "" ? "" : Number(e.target.value) }))} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
                 </div>
               </div>
-              <button onClick={agregarMed} disabled={!form.name.trim()} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", fontWeight: 700, fontSize: 15, background: form.name.trim() ? C.TEAL : C.LINE, color: "#fff", cursor: "pointer" }}>Agregar</button>
+              <button onClick={agregarMed} disabled={!form.name || !form.name.trim()} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", fontWeight: 700, fontSize: 15, background: (form.name && form.name.trim()) ? C.TEAL : C.LINE, color: "#fff", cursor: "pointer" }}>Agregar</button>
             </div>
           </div>
         )}
