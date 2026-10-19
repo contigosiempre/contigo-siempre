@@ -1468,7 +1468,9 @@ setStage(nueva.settings.aceptoTerminos ? "app" : "consentimiento");
           <button onClick={async () => {
             if (!aceptoCheck) return;
             const next = { ...familia, settings: { ...familia.settings, aceptoTerminos: true } };
-            await guardarFamilia(codigo, next); setFamilia(next); setStage("app");
+            await guardarFamilia(codigo, next);
+setFamilia(prev => ({ ...prev, settings: { ...prev.settings, aceptoTerminos: true } }));
+setStage("app");
             registrarEvento(codigo, "acepto_terminos", "Términos aceptados", { cuidador: nombreCuidadorInput });
           }} disabled={!aceptoCheck} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: aceptoCheck ? LIGHT.TEAL : "#E0E4EB", color: "#fff", fontWeight: 700, cursor: aceptoCheck ? "pointer" : "not-allowed" }}>Continuar</button>
           {showPolitica && <PoliticaPrivacidad C={LIGHT} onCerrar={() => setShowPolitica(false)} />}
