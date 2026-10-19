@@ -1645,9 +1645,11 @@ export default function App() {
         setNombreCuidadorInput(nombreCuidador);
         setStage(data.settings?.aceptoTerminos ? "app" : "consentimiento");
         
-        // Forzamos a que muestre el selector de rol si el que entró es el adulto mayor
+             // Si es el adulto mayor, guardamos su rol y lo mandamos directo a su vista, sin preguntar de nuevo
         if (isElder) {
-           setShowSelectorRol(true);
+           setRolUsuario("mayor");
+           localStorage.setItem("rol_usuario", "mayor");
+           setView("mayor");
         }
 
         registrarEvento(cod, "unirse_familia", `Usuario ${nombreCuidador} se unió`, { cuidador: nombreCuidador, persona: data.personas[0]?.nombre || "", edad: data.personas[0]?.edad || "" });
@@ -2094,18 +2096,20 @@ export default function App() {
           </div>
         )}
 
-        {/* Barra Superior (Menú hamburguesa siempre visible) */}
-             {/* Barra Superior (Menú hamburguesa siempre visible) */}
+               {/* Barra Superior (Menú hamburguesa siempre visible) */}
         <div style={{ padding: "16px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <button data-tutorial="nav-menu-top" onClick={() => setShowMenuLateral(true)} className="btn-press-soft" style={{ padding: "10px", borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", boxShadow: C.SHADOW }}>
-            <Menu size={20} />
-          </button>
+          {rolUsuario !== "mayor" && (
+            <button data-tutorial="nav-menu-top" onClick={() => setShowMenuLateral(true)} className="btn-press-soft" style={{ padding: "10px", borderRadius: 12, border: "none", background: "transparent", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <Menu size={20} />
+            </button>
+          )}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
             <div data-tutorial="codigo" style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: C.MUTED }}>
               <KeyRound size={11} /> Código: <strong>{codigo}</strong>
               <button onClick={() => navigator.clipboard?.writeText(codigo)} className="btn-press-soft" style={{ border: "none", background: "transparent", color: C.TEAL, cursor: "pointer", display: "flex", padding: 4 }}><Copy size={12} /></button>
-              <button onClick={() => { const txt = `Hola, te comparto el código de Contigo Siempre para que me ayudes a cuidar a ${elderName.split(" ")[0]}. Únete acá: https://contigo-siempre.vercel.app/?unirse=${codigo}`; window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, "_blank"); }} className="btn-press-soft" style={{ border: "none", background: "transparent", color: C.TEAL, cursor: "pointer", display: "flex", padding: 4 }}><Share2 size={12} /></button>
+              <button onClick={() => { const txt = `Hola ${elderName.split(" ")[0]}, toca este link para ver tus remedios en Contigo Siempre: https://contigo-siempre.vercel.app/?unirse=${codigo}&rol=mayor`; window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, "_blank"); }} className="btn-press-soft" style={{ border: "none", background: "transparent", color: C.TEAL, cursor: "pointer", display: "flex", padding: 4 }}><Share2 size={12} /></button>
               {saving && <Loader2 size={11} />}
+              {firebaseEstado === "conectado" && isOnline && <span style={{ fontSize: 10, color: C.GREEN, fontWeight: 700 }}>☁️</span>}
             </div>
             <div style={{ fontSize: 9.5, color: C.MUTED, fontStyle: "italic" }}>
               Cuidador: {nombreCuidadorInput || "Tú"} · Viendo a: {elderName.split(" ")[0]}
@@ -2384,7 +2388,9 @@ export default function App() {
         )}
 
         {/* MODALES GLOBALES */}
-        <MenuLateral C={C} abierto={showMenuLateral} onCerrar={() => setShowMenuLateral(false)} tabActual={cuidadorTab} setTabActual={setCuidadorTab} avisosNuevos={smsLog.length} oscuro={oscuro} cuidadorNombre={nombreCuidadorInput || familia?.cuidadores?.[0] || "Cuidador"} elderName={elderName} onCompartir={() => setShowCompartir(true)} onModoOscuro={() => { actualizarSettings({ darkMode: !oscuro }); registrarEvento(codigo, "toggle_dark_mode", !oscuro ? "activado" : "desactivado", { cuidador: nombreCuidadorInput }); }} onAyuda={() => setShowComoFunciona(true)} onSoporte={() => setShowSoporte(true)} onAcercaDe={() => setShowAcercaDe(true)} onPolitica={() => setShowPolitica(true)} onPremium={() => setShowPremium(true)} onAjustes={() => setShowAjustes(true)} />
+                {rolUsuario !== "mayor" && (
+          <MenuLateral C={C} abierto={showMenuLateral} onCerrar={() => setShowMenuLateral(false)} tabActual={cuidadorTab} setTabActual={setCuidadorTab} avisosNuevos={smsLog.length} oscuro={oscuro} cuidadorNombre={nombreCuidadorInput || familia?.cuidadores?.[0] || "Cuidador"} elderName={elderName} onCompartir={() => setShowCompartir(true)} onModoOscuro={() => { actualizarSettings({ darkMode: !oscuro }); registrarEvento(codigo, "toggle_dark_mode", !oscuro ? "activado" : "desactivado", { cuidador: nombreCuidadorInput }); }} onAyuda={() => setShowComoFunciona(true)} onAcercaDe={() => setShowAcercaDe(true)} onPolitica={() => setShowPolitica(true)} onPremium={() => setShowPremium(true)} onAjustes={() => setShowAjustes(true)} />
+        )}
         
         {showComoFunciona && <ComoFunciona C={C} onCerrar={() => setShowComoFunciona(false)} />}
         {showSoporte && <ModalSoporte C={C} onCerrar={() => setShowSoporte(false)} />}
