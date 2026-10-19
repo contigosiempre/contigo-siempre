@@ -2025,24 +2025,31 @@ export default function App() {
         )}
 
         {/* Banner para invitar al adulto mayor a conectarse */}
-        {familia.personas && familia.personas.length === 1 && view === "cuidador" && (
-          <div className="modal-scale" style={{ margin: "14px 20px 0", background: "linear-gradient(135deg, #E3F2FD, #BBDEFB)", border: `1px solid ${C.TEAL}`, borderRadius: 16, padding: 16, display: "flex", flexDirection: "column", gap: 10, boxShadow: "0 4px 12px rgba(25,118,210,0.15)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, color: C.TEAL, fontWeight: 800, fontSize: 14 }}>
-              <Share2 size={18} /> ¡Falta conectar el celular de {elderName.split(" ")[0]}!
+               {/* Banner compacto para conectar al adulto mayor */}
+        {familia.personas && familia.personas.length === 1 && view === "cuidador" && !localStorage.getItem(`banner_cerrado_${codigo}`) && (
+          <div style={{ margin: "12px 20px 0", background: C.TEAL + "10", border: `1px solid ${C.TEAL}40`, borderRadius: 12, padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: C.TEAL, lineHeight: 1.3 }}>
+              📲 Conecta el celular de <strong>{elderName.split(" ")[0]}</strong>
             </div>
-            <div style={{ fontSize: 12.5, color: C.INK, lineHeight: 1.4 }}>
-              Comparte este código para que {elderName.split(" ")[0]} reciba las alertas en su celular.
+            <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+              <button 
+                onClick={() => { 
+                  const txt = `Hola, te comparto el código de Contigo Siempre para que recibas tus alertas de medicamentos. Únete acá: https://contigo-siempre.vercel.app/?unirse=${codigo}`; 
+                  window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, "_blank"); 
+                }} 
+                className="btn-press" 
+                style={{ padding: "6px 10px", borderRadius: 8, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
+              >
+                <MessageSquare size={12} /> Enviar
+              </button>
+              <button 
+                onClick={() => { localStorage.setItem(`banner_cerrado_${codigo}`, "true"); setTriggerPostergacion(t => t + 1); }} 
+                className="btn-press-soft" 
+                style={{ padding: "6px", borderRadius: 8, border: "none", background: "transparent", color: C.MUTED, cursor: "pointer", display: "flex", alignItems: "center" }}
+              >
+                <X size={14} />
+              </button>
             </div>
-            <button 
-              onClick={() => { 
-                const txt = `Hola, te comparto el código de Contigo Siempre para que recibas tus alertas de medicamentos. Únete acá: https://contigo-siempre.vercel.app/?unirse=${codigo}`; 
-                window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, "_blank"); 
-              }} 
-              className="btn-press" 
-              style={{ width: "100%", padding: 12, borderRadius: 10, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, fontSize: 13.5, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
-            >
-              <MessageSquare size={16} /> Enviar código por WhatsApp
-            </button>
           </div>
         )}
 
