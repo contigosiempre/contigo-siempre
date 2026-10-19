@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Clock, Check, AlertTriangle, Plus, X, ArrowRight, User, Users, Heart, PackageOpen, RotateCcw, KeyRound, Loader2, Copy, Truck, Store, ShoppingCart, ExternalLink, Sparkles, ShieldCheck, MessageSquare, Camera, Calendar, TrendingDown, Award, MapPin, Lock, Crown, Moon, Sun, Phone, FileText, Share2, StickyNote, UserPlus, ChevronDown, Info, ScrollText, BarChart3, Trash2, Menu, Pill, Bell, HelpCircle, Settings, Flame, Tag, Download, Activity, WifiOff, Wifi, Volume2, VolumeX, Vibrate, BellRing, Cake, RefreshCw, History, Home } from "lucide-react";
+import { Clock, Check, AlertTriangle, Plus, X, ArrowRight, User, Users, Heart, PackageOpen, RotateCcw, KeyRound, Loader2, Copy, Truck, Store, ShoppingCart, ExternalLink, Sparkles, ShieldCheck, MessageSquare, Camera, Calendar, TrendingDown, Award, MapPin, Lock, Crown, Moon, Sun, Phone, FileText, Share2, StickyNote, UserPlus, ChevronDown, Info, ScrollText, BarChart3, Trash2, Menu, Pill, Bell, HelpCircle, Settings, Flame, Tag, Download, Activity, WifiOff, Wifi, Volume2, VolumeX, Vibrate, BellRing, Cake, RefreshCw, History } from "lucide-react";
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAGxIGYqifeb5qGlVTQaVVpmKjZ9E1__TU",
@@ -69,7 +69,7 @@ const LIMITES_ESTANDAR = { maxMeds: 4, maxElderly: 1, maxCuidadores: 2 };
 const CODIGOS_PILOTO = ["PILOTO2026", "FUNDADOR", "BETA01", "FAMILIA1", "FAMILIA2", "FAMILIA3", "FAMILIA4", "FAMILIA5"];
 const CODIGO_ADMIN = "ADMIN" + new Date().getFullYear();
 const CODIGO_DATOS = "DATOS" + new Date().getFullYear();
-const APP_VERSION = "2.1.0-piloto-enterprise";
+const APP_VERSION = "2.2.0-piloto-enterprise";
 const MINUTOS_SIN_CONEXION_ALERTA = 5;
 
 const MEDS_CON_RECETA = ["losartan","losartán","metformina","enalapril","amlodipino","atorvastatina","simvastatina","carvedilol","furosemida","hidroclorotiazida","omeprazol","clonazepam","alprazolam","sertralina","fluoxetina","levotiroxina","warfarina","clopidogrel","insulina","gabapentina","pregabalina","tramadol","morfina","fentanilo","metotrexato","prednisona","salbutamol","budesonida","montelukast","alopurinol","colchicina","risperidona","quetiapina","olanzapina","valproato","carbamazepina","fenitoina","levetiracetam","donepezilo","memantina","rivastigmina"];
@@ -84,61 +84,21 @@ const FARMACIAS = [
 ];
 
 const PRODUCTOS_POR_TEMPORADA = {
-  invierno: [
-    { nombre: "Vitamina C 500mg", sku: "vitamina-c-30" },
-    { nombre: "Pañuelos desechables", sku: "panuelos-100" },
-    { nombre: "Suero oral", sku: "suero-10" },
-    { nombre: "Humidificador ultrasónico", sku: "humidificador" },
-  ],
-  verano: [
-    { nombre: "Protector solar FPS 50+", sku: "protector-solar" },
-    { nombre: "Sales de rehidratación", sku: "sales-10" },
-    { nombre: "Gorro con protección UV", sku: "gorro-uv" },
-    { nombre: "Repelente de insectos", sku: "repelente" },
-  ],
-  otono: [
-    { nombre: "Vitamina D 1000 UI", sku: "vitamina-d" },
-    { nombre: "Miel de abeja pura 500g", sku: "miel-500" },
-    { nombre: "Pañuelos desechables", sku: "panuelos-100" },
-  ],
-  primavera: [
-    { nombre: "Antialérgico loratadina", sku: "loratadina-10" },
-    { nombre: "Pañuelos desechables", sku: "panuelos-100" },
-    { nombre: "Purificador de aire", sku: "purificador" },
-  ],
+  invierno: [{ nombre: "Vitamina C 500mg", sku: "vitamina-c-30" }, { nombre: "Pañuelos desechables", sku: "panuelos-100" }, { nombre: "Suero oral", sku: "suero-10" }, { nombre: "Humidificador ultrasónico", sku: "humidificador" }],
+  verano: [{ nombre: "Protector solar FPS 50+", sku: "protector-solar" }, { nombre: "Sales de rehidratación", sku: "sales-10" }, { nombre: "Gorro con protección UV", sku: "gorro-uv" }, { nombre: "Repelente de insectos", sku: "repelente" }],
+  otono: [{ nombre: "Vitamina D 1000 UI", sku: "vitamina-d" }, { nombre: "Miel de abeja pura 500g", sku: "miel-500" }, { nombre: "Pañuelos desechables", sku: "panuelos-100" }],
+  primavera: [{ nombre: "Antialérgico loratadina", sku: "loratadina-10" }, { nombre: "Pañuelos desechables", sku: "panuelos-100" }, { nombre: "Purificador de aire", sku: "purificador" }],
 };
 
 const PRODUCTOS_POR_MEDICAMENTO = [
-  { keywords: ["insulina", "inyectable", "inyección"], productos: [
-    { nombre: "Bolso térmico para insulina", sku: "bolso-insulina" },
-    { nombre: "Contenedor de agujas", sku: "contenedor-agujas" },
-  ]},
-  { keywords: ["warfarina", "clopidogrel", "rivaroxaban", "apixaban", "dabigatran"], productos: [
-    { nombre: "Cepillo dental cerdas suaves", sku: "cepillo-suave" },
-    { nombre: "Rasuradora eléctrica", sku: "rasuradora" },
-  ]},
-  { keywords: ["furosemida", "hidroclorotiazida"], productos: [
-    { nombre: "Calcetines de compresión", sku: "calcetines-comp" },
-    { nombre: "Crema para piernas cansadas", sku: "crema-piernas" },
-  ]},
-  { keywords: ["metformina", "glibenclamida", "insulina"], productos: [
-    { nombre: "Pastillero semanal", sku: "pastillero-semanal" },
-    { nombre: "Glucómetro digital", sku: "glucometro" },
-  ]},
-  { keywords: ["losartán", "losartan", "enalapril", "amlodipino", "carvedilol"], productos: [
-    { nombre: "Salero bajo en sodio", sku: "salero-sodio" },
-    { nombre: "Pastillero semanal", sku: "pastillero-semanal" },
-  ]},
-  { keywords: ["omeprazol", "esomeprazol"], productos: [
-    { nombre: "Vaso medidor de agua", sku: "vaso-medidor" },
-  ]},
-  { keywords: ["donepezilo", "memantina", "rivastigmina"], productos: [
-    { nombre: "Pastillero semanal", sku: "pastillero-semanal" },
-    { nombre: "Pizarra de rutinas diarias", sku: "pizarra-rutinas" },
-  ]},
-  { keywords: ["levotiroxina"], productos: [
-    { nombre: "Pastillero semanal", sku: "pastillero-semanal" },
-  ]},
+  { keywords: ["insulina", "inyectable", "inyección"], productos: [{ nombre: "Bolso térmico para insulina", sku: "bolso-insulina" }, { nombre: "Contenedor de agujas", sku: "contenedor-agujas" }] },
+  { keywords: ["warfarina", "clopidogrel", "rivaroxaban", "apixaban", "dabigatran"], productos: [{ nombre: "Cepillo dental cerdas suaves", sku: "cepillo-suave" }, { nombre: "Rasuradora eléctrica", sku: "rasuradora" }] },
+  { keywords: ["furosemida", "hidroclorotiazida"], productos: [{ nombre: "Calcetines de compresión", sku: "calcetines-comp" }, { nombre: "Crema para piernas cansadas", sku: "crema-piernas" }] },
+  { keywords: ["metformina", "glibenclamida", "insulina"], productos: [{ nombre: "Pastillero semanal", sku: "pastillero-semanal" }, { nombre: "Glucómetro digital", sku: "glucometro" }] },
+  { keywords: ["losartán", "losartan", "enalapril", "amlodipino", "carvedilol"], productos: [{ nombre: "Salero bajo en sodio", sku: "salero-sodio" }, { nombre: "Pastillero semanal", sku: "pastillero-semanal" }] },
+  { keywords: ["omeprazol", "esomeprazol"], productos: [{ nombre: "Vaso medidor de agua", sku: "vaso-medidor" }] },
+  { keywords: ["donepezilo", "memantina", "rivastigmina"], productos: [{ nombre: "Pastillero semanal", sku: "pastillero-semanal" }, { nombre: "Pizarra de rutinas diarias", sku: "pizarra-rutinas" }] },
+  { keywords: ["levotiroxina"], productos: [{ nombre: "Pastillero semanal", sku: "pastillero-semanal" }] },
 ];
 function obtenerProductosSugeridos(meds, mesActual) {
   let temporada = "otono";
@@ -157,12 +117,7 @@ function obtenerProductosSugeridos(meds, mesActual) {
   return { temporada, productos: [...porMeds, ...porTemporada].slice(0, 5) };
 }
 
-const NOMBRE_TEMPORADA = {
-  invierno: "Artículos útiles para el invierno",
-  verano: "Artículos útiles para el verano",
-  otono: "Artículos útiles para el otoño",
-  primavera: "Artículos útiles para la primavera",
-};
+const NOMBRE_TEMPORADA = { invierno: "Artículos útiles para el invierno", verano: "Artículos útiles para el verano", otono: "Artículos útiles para el otoño", primavera: "Artículos útiles para la primavera" };
 const CSS_GLOBAL = `
   @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -341,20 +296,18 @@ function calcularRacha(meds, cbd) {
   for (let i = 1; i <= 60; i++) { const key = dateKeyOffset(i); const dia = cbd[key]; if (!dia) break; const conf = Object.keys(dia).filter((k) => dia[k]).length; if (conf >= totalPorDia) racha++; else break; }
   return racha;
 }
-function consumoPromedioReal(med, cbd) {
-  if (!med.times || med.times.length === 0) return null;
-  let total = 0, dias = 0;
-  for (let i = 0; i < 14; i++) { const dia = cbd?.[dateKeyOffset(i)] || {}; let c = 0; med.times.forEach((t) => { if (dia[occKey(med.id, t)]) c++; }); if (c > 0 || i === 0) { total += c; dias++; } }
-  return dias === 0 ? null : total / Math.max(1, dias);
-}
+
+// FÓRMULA BLINDADA DE STOCK
 function diasRestantesReales(med, cbd) {
-  const cd = consumoPromedioReal(med, cbd);
-  const teorico = med.doseAmount * med.times.length;
-  const consumo = cd && cd > 0 ? cd * med.doseAmount : teorico;
-  if (consumo === 0) return null;
-  const raw = med.stock / consumo;
-  return Number.isInteger(raw) ? raw : Math.round(raw * 10) / 10;
+  if (!med.times || med.times.length === 0) return null;
+  const dosisPorToma = Number(med.doseAmount) || 1;
+  const tomasAlDia = med.times.length;
+  const consumoDiarioTotal = dosisPorToma * tomasAlDia;
+  if (consumoDiarioTotal === 0) return null;
+  const dias = med.stock / consumoDiarioTotal;
+  return Number.isInteger(dias) ? dias : Math.round(dias * 10) / 10;
 }
+
 function semaforoRiesgo(med, cbd) {
   const d = diasRestantesReales(med, cbd);
   if (d === null) return { color: "MUTED", nivel: "sin datos", dias: null };
@@ -468,34 +421,36 @@ function AvisoSinConexion({ C, offline, ultimaConexion, compacto, nombre }) {
   return null;
 }
 
+// PANTALLA DE ALERTA (Acepta meds como un array para agrupar)
 function PantallaAlertaMedicamento({ C, meds, hora, onConfirmar, onPosponer, escala, daltonico, sonidoActivo, esVital, yaPostergada, esAdultoMayor }) {
   const medPrincipal = meds[0];
+  const esMultiple = meds.length > 1;
+
   return (
     <div className="modal-fade" style={{ position: "fixed", inset: 0, background: `linear-gradient(160deg, ${dispColor(medPrincipal.color, daltonico)}, #0D47A1)`, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
       <div style={{ fontSize: 16 * escala, fontWeight: 700, color: "rgba(255,255,255,0.85)", letterSpacing: 2, textTransform: "uppercase", marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
-        <BellRing size={20} /> Es hora de tu medicamento
+        <BellRing size={20} /> {esMultiple ? "Es hora de tus medicamentos" : "Es hora de tu medicamento"}
       </div>
       
-      <div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 30, width: "100%", maxWidth: 360 }}>
         {meds.map((m, i) => (
-          <div key={i} className="pulse-alerta" style={{ width: meds.length > 1 ? 100 : 160, height: meds.length > 1 ? 100 : 160, borderRadius: 999, background: "rgba(255,255,255,0.95)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: meds.length > 1 ? 50 : 80, color: dispColor(m.color, daltonico), boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
-            {m.shape}
+          <div key={i} style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 20, padding: 16, display: "flex", alignItems: "center", gap: 16, backdropFilter: "blur(10px)" }}>
+            <div style={{ width: 60, height: 60, borderRadius: 999, background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, color: dispColor(m.color, daltonico), flexShrink: 0, boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }}>
+              {m.shape}
+            </div>
+            <div style={{ textAlign: "left", flex: 1 }}>
+              <div style={{ fontSize: 22 * escala, fontWeight: 900, color: "#FFFFFF", lineHeight: 1.1 }}>{m.name}</div>
+              <div style={{ fontSize: 14 * escala, color: "rgba(255,255,255,0.9)", fontWeight: 600 }}>{m.dose}</div>
+              {m.notas && <div style={{ fontSize: 12 * escala, color: "rgba(255,255,255,0.75)", fontStyle: "italic", marginTop: 2 }}>📝 {m.notas}</div>}
+            </div>
           </div>
         ))}
       </div>
 
-      {meds.map((m, i) => (
-        <div key={i} style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: meds.length > 1 ? 32 * escala : 42 * escala, fontWeight: 900, color: "#FFFFFF", lineHeight: 1.1, textShadow: "0 2px 10px rgba(0,0,0,0.2)" }}>{m.name}</div>
-          <div style={{ fontSize: meds.length > 1 ? 18 * escala : 24 * escala, color: "rgba(255,255,255,0.9)", fontWeight: 600 }}>{m.dose}</div>
-          {m.notas && <div style={{ fontSize: 14 * escala, color: "rgba(255,255,255,0.85)", fontStyle: "italic" }}>📝 {m.notas}</div>}
-        </div>
-      ))}
-
       <div style={{ fontSize: 20 * escala, color: "rgba(255,255,255,0.9)", marginBottom: 30, fontWeight: 700 }}>🕐 {fmtHoraConAmPm(hora)}</div>
 
-      <button onClick={onConfirmar} className="btn-press" style={{ width: "100%", maxWidth: 360, padding: "26px 20px", borderRadius: 24, border: "none", background: "#FFFFFF", color: dispColor(medPrincipal.color, daltonico), fontWeight: 900, fontSize: 28 * escala, cursor: "pointer", marginBottom: 14, boxShadow: "0 12px 30px rgba(0,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
-        <Check size={32} strokeWidth={3} /> SÍ, YA LO TOMÉ
+      <button onClick={onConfirmar} className="btn-press" style={{ width: "100%", maxWidth: 360, padding: "24px 20px", borderRadius: 24, border: "none", background: "#FFFFFF", color: dispColor(medPrincipal.color, daltonico), fontWeight: 900, fontSize: 26 * escala, cursor: "pointer", marginBottom: 14, boxShadow: "0 12px 30px rgba(0,0,0,0.25)", display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
+        <Check size={32} strokeWidth={3} /> {esMultiple ? "SÍ, YA LOS TOMÉ" : "SÍ, YA LO TOMÉ"}
       </button>
 
       {!esVital && !yaPostergada && !esAdultoMayor && (
@@ -587,7 +542,9 @@ function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
     zIndex: 9998,
   };
 
-   const tooltipStyle = rect && rect.top > window.innerHeight / 2 ? { top: rect.top - 220 } : { bottom: 100 };
+  const tooltipStyle = rect && rect.top > (window.innerHeight / 2) 
+    ? { top: Math.max(10, rect.top - 180) } 
+    : { bottom: 100 };
 
   return (
     <>
@@ -913,7 +870,6 @@ function PanelAdmin({ C, familias, onCerrar, onAbrirDatos, onAbrirEventos }) {
   const totalMeds = familias.reduce((a, f) => a + (f.data?.personas?.reduce((b, p) => b + (p.meds?.length || 0), 0) || 0), 0);
   const ingresos = premium * 3990;
   
-  // NUEVO: Cálculo de adherencia y familias activas (simulado para el admin)
   let totalConfirmaciones = 0;
   let totalEsperadas = 0;
   const hoyStr = todayStr();
@@ -941,7 +897,6 @@ function PanelAdmin({ C, familias, onCerrar, onAbrirDatos, onAbrirEventos }) {
           <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, boxShadow: C.SHADOW }}><div style={{ fontSize: 11, color: C.MUTED }}>Medicamentos</div><div style={{ fontSize: 22, fontWeight: 800, color: C.INK }}>{fmtN(totalMeds)}</div></div>
         </div>
 
-        {/* NUEVO: Métricas para CORFO */}
         <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 16, marginBottom: 14, boxShadow: C.SHADOW }}>
           <div style={{ fontSize: 11, color: C.MUTED, fontWeight: 700, marginBottom: 4 }}>ADHERENCIA HOY (Global)</div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -955,7 +910,6 @@ function PanelAdmin({ C, familias, onCerrar, onAbrirDatos, onAbrirEventos }) {
         <button onClick={onAbrirEventos} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: `linear-gradient(135deg, ${C.GOLD}, #E65100)`, color: "#fff", fontWeight: 700, cursor: "pointer", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Activity size={18} /> Ver Eventos (Firebase)</button>
         <button onClick={onAbrirDatos} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer", marginBottom: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><BarChart3 size={18} /> Datos Administrativos</button>
         
-        {/* NUEVO: Botón Exportar para CORFO */}
         <button onClick={() => alert("Función de exportación para CORFO en desarrollo. Usa 'Ver Eventos' por ahora.")} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: `1px solid ${C.TEAL}`, background: "transparent", color: C.TEAL, fontWeight: 700, cursor: "pointer", marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Download size={18} /> Exportar Reporte CORFO</button>
 
         <button onClick={onCerrar} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, cursor: "pointer" }}>Cerrar</button>
@@ -1285,7 +1239,7 @@ export default function App() {
     return () => clearInterval(id);
   }, [alertaActiva, settings]);
 
-  // NUEVO: Lógica de Resumen de Final de Día y Avisos
+  // Lógica de Resumen de Final de Día y Avisos
   useEffect(() => {
     if (stage !== "app" || !familia || !personaActual) return;
     if (personaDesconectada) return;
@@ -1333,7 +1287,6 @@ export default function App() {
       const textoResumen = `Resumen ${elderName.split(" ")[0]}: ${conf}/${esp} tomas confirmadas.`;
       setSmsLog((prev) => [...prev, { tipo: "ok", hora: smsTime(), texto: textoResumen }]);
       
-      // NUEVO: Notificación Push del resumen (simulada localmente)
       if (Notification.permission === "granted") {
         new Notification("Resumen del día - Contigo Siempre", { body: textoResumen, icon: "/icon-192.png" });
       }
@@ -1552,7 +1505,6 @@ export default function App() {
     registrarEvento(codigo, "confirmar_toma", `${nombresMeds} a las ${fmtHoraConAmPm(occData.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: nombresMeds, hora: occData.time });
     setAlertaActiva(null);
 
-    // NUEVO: Notificación de confirmación al cuidador (si la configuró)
     if (familia?.settings?.notificarConfirmacion && Notification.permission === "granted") {
       new Notification("✅ Toma confirmada", { body: `${elderName.split(" ")[0]} confirmó: ${nombresMeds}`, icon: "/icon-192.png" });
     }
@@ -1725,8 +1677,7 @@ export default function App() {
   const mostrarAvisoRenovacion = esPremium && diasPremium >= 27 && diasPremium <= 30;
   const medsCarro = meds.filter((m) => { const s = semaforoRiesgo(m, confirmedByDate); return s.nivel === "urgente" || s.nivel === "atención"; });
   const medsArchivados = (personaActual?.meds || []).filter(m => m.archivado);
-
-  return (
+    return (
     <div style={{ minHeight: "100vh", background: C.BG, fontFamily: "'Space Grotesk','Segoe UI',sans-serif", color: C.INK, display: "flex", justifyContent: "center" }}>
       <style>{CSS_GLOBAL}</style>
       <div style={{ width: "100%", maxWidth: 420, minHeight: "100vh", background: C.CREAM, display: "flex", flexDirection: "column", position: "relative" }}>
@@ -1900,6 +1851,7 @@ export default function App() {
             {cuidadorTab === "archivados" && (
               <>
                 <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 12 }}>Medicamentos Anteriores</div>
+                <div style={{ fontSize: 11, color: C.MUTED, marginBottom: 12, fontStyle: "italic" }}>(Medicamentos que ya no se usan porque terminó el tratamiento o fueron suspendidos por el médico).</div>
                 {medsArchivados.length === 0 ? (
                   <EstadoVacio C={C} icono={History} titulo="Sin historial" texto="Los medicamentos que archives aparecerán aquí." />
                 ) : (
@@ -1943,8 +1895,10 @@ export default function App() {
             {cuidadorTab === "historial" && (
               <div style={{ textAlign: "center", padding: 20 }}>
                 <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 14 }}>Historial de Adherencia</div>
-                <div style={{ fontSize: 12, color: C.MUTED }}>(Calendario de adherencia disponible. Haz scroll o consulta los avisos)</div>
-                <button onClick={() => setDiaDetalle({ fecha: todayStr(), dia: new Date().getDate(), confirmadas: 0, esperadas: meds.length, olvidos: 0, diaData: confirmedHoy })} className="btn-press" style={{ marginTop: 14, padding: 10, borderRadius: 10, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Ver detalle de hoy</button>
+                <div style={{ fontSize: 12, color: C.MUTED, marginBottom: 10 }}>(Calendario de adherencia disponible. Haz scroll o consulta los avisos)</div>
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: 14 }}>
+                  <button onClick={() => setDiaDetalle({ fecha: todayStr(), dia: new Date().getDate(), confirmadas: Object.keys(confirmedHoy).filter(k => confirmedHoy[k]).length, esperadas: meds.reduce((a, m) => a + m.times.length, 0), olvidos: Math.max(0, meds.reduce((a, m) => a + m.times.length, 0) - Object.keys(confirmedHoy).filter(k => confirmedHoy[k]).length), diaData: confirmedHoy })} className="btn-press" style={{ padding: 10, borderRadius: 10, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Ver detalle de hoy</button>
+                </div>
               </div>
             )}
 
@@ -1955,10 +1909,47 @@ export default function App() {
                 <button onClick={abrirCarroCompleto} className="btn-press" style={{ marginTop: 14, padding: 10, borderRadius: 10, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Abrir carro completo</button>
               </div>
             )}
+
+            {cuidadorTab === "contactos" && (
+              <>
+                <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 12 }}>Contactos de emergencia</div>
+                {contactos.length === 0 ? (
+                  <div style={{ marginBottom: 14 }}>
+                    <EstadoVacio C={C} icono={Phone} titulo="Sin contactos aún" texto="Agrega el médico tratante o un familiar para emergencias." />
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
+                    {contactos.map((c) => (
+                      <div key={c.id} style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, display: "flex", alignItems: "center", gap: 12, boxShadow: C.SHADOW }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 999, background: C.TEAL + "20", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{c.tipo === "médico" ? "🩺" : c.tipo === "familia" ? "👨‍👩‍👧" : "🏥"}</div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 700, fontSize: 14 }}>{c.nombre}</div>
+                          <div style={{ fontSize: 12, color: C.MUTED }}>{c.telefono} · {c.tipo}</div>
+                        </div>
+                        <a href={`tel:${c.telefono}`} className="btn-press-soft" style={{ padding: "8px 14px", borderRadius: 10, background: C.TEAL, color: "#fff", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Llamar</a>
+                        <button onClick={() => eliminarContacto(c.id)} className="btn-press-soft" style={{ border: "none", background: "transparent", color: C.CORAL, cursor: "pointer", padding: 6 }}><X size={16} /></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 16, padding: 16, boxShadow: C.SHADOW }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}>Agregar contacto</div>
+                  <input value={formContacto.nombre} onChange={(e) => setFormContacto({ ...formContacto, nombre: e.target.value })} placeholder="Nombre" style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${C.LINE}`, fontSize: 13, marginBottom: 8, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
+                  <input value={formContacto.telefono} onChange={(e) => setFormContacto({ ...formContacto, telefono: e.target.value })} placeholder="Teléfono" style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${C.LINE}`, fontSize: 13, marginBottom: 8, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
+                  <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+                    {[{ v: "médico", l: "🩺 Médico" }, { v: "familia", l: "👨‍👩‍👧 Familia" }, { v: "centro", l: "🏥 Centro" }].map((t) => (
+                      <button key={t.v} onClick={() => setFormContacto({ ...formContacto, tipo: t.v })} className="btn-press-soft" style={{ flex: 1, padding: 8, borderRadius: 10, border: formContacto.tipo === t.v ? `2px solid ${C.TEAL}` : `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 11, cursor: "pointer" }}>{t.l}</button>
+                    ))}
+                  </div>
+                  <button onClick={agregarContacto} disabled={!formContacto.nombre.trim() || !formContacto.telefono.trim()} className="btn-press" style={{ width: "100%", padding: 12, borderRadius: 12, border: "none", background: (formContacto.nombre.trim() && formContacto.telefono.trim()) ? C.TEAL : C.LINE, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Agregar</button>
+                </div>
+              </>
+            )}
           </div>
         )}
 
-        {view === "cuidador" && <BottomBar C={C} tabActual={cuidadorTab} setTabActual={setCuidadorTab} onAbrirMenu={() => setShowMenuLateral(true)} avisosNuevos={smsLog.length} />}
+        {/* NUEVO: Se oculta la barra inferior si hay modales abiertos */}
+        {view === "cuidador" && !showAdd && !showAjustes && !showPremium && !showContactos && !showNotas && !showCompartir && !showAddPersona && !diaDetalle && !showLimite && !archivarTarget && !restockTarget && !reconteoTarget && !linkAbierto && !showMenuLateral && !showTutorial && <BottomBar C={C} tabActual={cuidadorTab} setTabActual={setCuidadorTab} onAbrirMenu={() => setShowMenuLateral(true)} avisosNuevos={smsLog.length} />}
 
         <MenuLateral C={C} abierto={showMenuLateral} onCerrar={() => setShowMenuLateral(false)} tabActual={cuidadorTab} setTabActual={setCuidadorTab} avisosNuevos={smsLog.length} oscuro={oscuro} cuidadorNombre={nombreCuidadorInput || familia?.cuidadores?.[0] || "Cuidador"} elderName={elderName} onCompartir={() => setShowCompartir(true)} onModoOscuro={() => { actualizarSettings({ darkMode: !oscuro }); registrarEvento(codigo, "toggle_dark_mode", !oscuro ? "activado" : "desactivado", { cuidador: nombreCuidadorInput }); }} onAyuda={() => setShowComoFunciona(true)} onAcercaDe={() => setShowAcercaDe(true)} onPolitica={() => setShowPolitica(true)} onPremium={() => setShowPremium(true)} onAjustes={() => setShowAjustes(true)} />
 
@@ -2152,7 +2143,6 @@ export default function App() {
                     <option value="cápsula">cápsula</option>
                     <option value="unidad">unidad</option>
                     <option value="sobre">sobre</option>
-                    <option value="parche">parche</option>
                   </select>
                 </div>
                 <div style={{ flex: "1 1 100px" }}>
@@ -2254,3 +2244,4 @@ export default function App() {
     </div>
   );
 }
+  
