@@ -365,7 +365,6 @@ function AvisoSinConexion({ C, offline, ultimaConexion, compacto, nombre }) {
 }
 
 function PantallaAlertaMedicamento({ C, meds, hora, onConfirmar, onPosponer, escala, daltonico, sonidoActivo, esVital, yaPostergada, esAdultoMayor }) {
-  const medPrincipal = meds[0];
   const esMultiple = meds.length > 1;
   const [confirmados, setConfirmados] = useState([]);
 
@@ -781,6 +780,8 @@ function ModalSoporte({ C, onCerrar }) {
 
 function DatosAdministrativos({ C, onCerrar, onReset }) {
   const [datos, setDatos] = useState({});
+  const [detalleAbierto, setDetalleAbierto] = useState(null);
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem("datos_admin_global");
@@ -804,14 +805,20 @@ function DatosAdministrativos({ C, onCerrar, onReset }) {
           {Object.keys(datos).length === 0 ? (
             <div style={{ textAlign: "center", padding: 30, color: "#90A4BE", fontSize: 13 }}>Sin datos aún</div>
           ) : (
-            Object.entries(datos).map(([k, v]) => (
-              <div key={k} style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 10, padding: 10, marginBottom: 8 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", marginBottom: 4 }}>{k}</div>
-                <pre style={{ fontSize: 10, color: "#90A4BE", margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
-                  {typeof v === "object" ? JSON.stringify(v, null, 2) : String(v)}
-                </pre>
-              </div>
-            ))
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {Object.entries(datos).map(([k, v]) => (
+                <div 
+                  key={k} 
+                  onClick={() => setDetalleAbierto({ titulo: k, datos: v, esObjeto: typeof v === "object" })}
+                  style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 16, padding: 16, cursor: "pointer" }}
+                >
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "#FFFFFF", marginBottom: 4 }}>{k}</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: "#64B5F6" }}>
+                    {typeof v === "object" ? "Ver detalle" : v}
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
 
@@ -824,6 +831,34 @@ function DatosAdministrativos({ C, onCerrar, onReset }) {
           </button>
         </div>
       </div>
+
+      {detalleAbierto && (
+        <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 310, padding: 20 }}>
+          <div className="modal-scale" style={{ width: "100%", maxWidth: 400, background: "#16243A", borderRadius: 24, padding: 20, border: "1px solid #2A3A52", maxHeight: "85vh", display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div style={{ fontWeight: 800, fontSize: 18, color: "#FFFFFF" }}>Detalle: {detalleAbierto.titulo}</div>
+              <button onClick={() => setDetalleAbierto(null)} style={{ border: "none", background: "#1E2F48", borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <X size={16} color="#90A4BE" />
+              </button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+              {!detalleAbierto.esObjeto ? (
+                <div style={{ color: "#FFFFFF", fontSize: 14 }}>Total: {detalleAbierto.datos}</div>
+              ) : (
+                Object.entries(detalleAbierto.datos).map(([subK, subV], i) => (
+                  <div key={i} style={{ background: "#0F1B2E", border: "1px solid #2A3A52", borderRadius: 12, padding: 12 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#64B5F6", marginBottom: 4 }}>{subK}</div>
+                    <div style={{ fontSize: 12, color: "#FFFFFF" }}>
+                      {typeof subV === "object" ? `Clics: ${subV.clics || 0} · Total: $${subV.precioTotal || 0}` : `Cantidad: ${subV}`}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -880,97 +915,99 @@ function VerEventos({ C, onCerrar }) {
     <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(15,27,46,0.95)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: 10 }}>
       <div className="modal-scale" style={{ width: "100%", maxWidth: 480, background: "#0F1B2E", borderRadius: 24, padding: 20, maxHeight: "92vh", display: "flex", flexDirection: "column", border: "1px solid #2A3A52" }}>
         
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <div style={{ fontWeight: 800, fontSize: 18, color: "#FF9800", display: "flex", alignItems: "center", gap: 8 }}>
-            <Activity size={20} /> Eventos ({eventos.length})
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div style={{ fontWeight: 800, fontSize: 22, color: "#FF9800", display: "flex", alignItems: "center", gap: 8 }}>
+            <Activity size={24} /> Eventos ({eventos.length})
           </div>
-          <button onClick={onCerrar} style={{ border: "none", background: "#1E2F48", borderRadius: 999, width: 30, height: 30, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <X size={15} color="#90A4BE" />
+          <button onClick={onCerrar} style={{ border: "none", background: "#1E2F48", borderRadius: 999, width: 36, height: 36, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <X size={18} color="#90A4BE" />
           </button>
         </div>
 
-        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
           <input
             value={filtro}
             onChange={(e) => setFiltro(e.target.value)}
             placeholder="Filtrar por tipo, código, cuidador..."
-            style={{ flex: 1, padding: "10px 14px", borderRadius: 12, border: "1.5px solid #2A3A52", fontSize: 12, boxSizing: "border-box", background: "#16243A", color: "#FFFFFF", outline: "none" }}
+            style={{ flex: 1, padding: "12px 14px", borderRadius: 12, border: "1.5px solid #2A3A52", fontSize: 13, boxSizing: "border-box", background: "#16243A", color: "#FFFFFF", outline: "none" }}
           />
-          <button onClick={descargarCSV} style={{ padding: "0 16px", borderRadius: 12, border: "none", background: "#66BB6A", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
-            <Download size={14} /> CSV
+          <button onClick={descargarCSV} style={{ padding: "0 16px", borderRadius: 12, border: "none", background: "#66BB6A", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+            <Download size={16} /> CSV
           </button>
         </div>
 
         <div style={{ flex: 1, overflowY: "auto" }}>
           {cargando ? (
-            <div style={{ textAlign: "center", padding: 30 }}><Loader2 size={24} color="#64B5F6" /></div>
+            <div style={{ textAlign: "center", padding: 40 }}><Loader2 size={30} color="#64B5F6" /></div>
           ) : filtrados.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 30, color: "#90A4BE", fontSize: 13 }}>Sin eventos</div>
+            <div style={{ textAlign: "center", padding: 40, color: "#90A4BE", fontSize: 14 }}>Sin eventos registrados</div>
           ) : (
-            filtrados.map((e) => (
-              <div 
-                key={e.id} 
-                onClick={() => setEventoSeleccionado(e)}
-                style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 10, padding: 10, marginBottom: 6, cursor: "pointer" }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#90A4BE", marginBottom: 3 }}>
-                  <span style={{ fontWeight: 700, color: "#64B5F6" }}>{e.tipo}</span>
-                  <span>{e.fecha ? new Date(e.fecha).toLocaleString("es-CL") : ""}</span>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {filtrados.map((e) => (
+                <div 
+                  key={e.id} 
+                  onClick={() => setEventoSeleccionado(e)}
+                  style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 16, padding: 16, cursor: "pointer", display: "flex", flexDirection: "column", gap: 4 }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: "#64B5F6" }}>{e.tipo}</span>
+                    <span style={{ fontSize: 11, color: "#90A4BE" }}>{e.fecha ? new Date(e.fecha).toLocaleString("es-CL") : ""}</span>
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: "#FFFFFF" }}>{e.detalle}</div>
+                  <div style={{ fontSize: 11, color: "#90A4BE", marginTop: 4 }}>
+                    Cod: {e.codigo} {e.cuidador ? `· ${e.cuidador}` : ""} {e.persona ? `· ${e.persona}` : ""}
+                  </div>
                 </div>
-                <div style={{ fontSize: 12, color: "#FFFFFF" }}>{e.detalle}</div>
-                <div style={{ fontSize: 10, color: "#90A4BE", marginTop: 2 }}>
-                  Cod: {e.codigo} {e.cuidador ? `· ${e.cuidador}` : ""} {e.persona ? `· ${e.persona}` : ""}
-                </div>
-              </div>
-            ))
+              ))}
+            </div>
           )}
         </div>
 
-        <button onClick={onCerrar} style={{ marginTop: 10, width: "100%", padding: 12, borderRadius: 12, border: "none", background: "#FF9800", color: "#fff", fontWeight: 700, cursor: "pointer" }}>
+        <button onClick={onCerrar} style={{ marginTop: 16, width: "100%", padding: 16, borderRadius: 16, border: "none", background: "#FF9800", color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>
           Cerrar
         </button>
       </div>
 
       {eventoSeleccionado && (
         <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 310, padding: 20 }}>
-          <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: "#16243A", borderRadius: 20, padding: 20, border: "1px solid #2A3A52" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-              <div style={{ fontWeight: 700, fontSize: 16, color: "#FFFFFF" }}>Detalle del Evento</div>
-              <button onClick={() => setEventoSeleccionado(null)} style={{ border: "none", background: "#1E2F48", borderRadius: 999, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <X size={14} color="#90A4BE" />
+          <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: "#16243A", borderRadius: 24, padding: 24, border: "1px solid #2A3A52" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div style={{ fontWeight: 800, fontSize: 18, color: "#FFFFFF" }}>Detalle del Evento</div>
+              <button onClick={() => setEventoSeleccionado(null)} style={{ border: "none", background: "#1E2F48", borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <X size={16} color="#90A4BE" />
               </button>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, borderBottom: "1px solid #2A3A52", paddingBottom: 6 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, borderBottom: "1px solid #2A3A52", paddingBottom: 8 }}>
                 <span style={{ color: "#90A4BE" }}>Tipo:</span>
                 <span style={{ color: "#64B5F6", fontWeight: 700 }}>{eventoSeleccionado.tipo}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, borderBottom: "1px solid #2A3A52", paddingBottom: 6 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, borderBottom: "1px solid #2A3A52", paddingBottom: 8 }}>
                 <span style={{ color: "#90A4BE" }}>Fecha:</span>
                 <span style={{ color: "#FFFFFF" }}>{new Date(eventoSeleccionado.fecha).toLocaleString("es-CL")}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, borderBottom: "1px solid #2A3A52", paddingBottom: 6 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, borderBottom: "1px solid #2A3A52", paddingBottom: 8 }}>
                 <span style={{ color: "#90A4BE" }}>Código Familia:</span>
                 <span style={{ color: "#FFFFFF" }}>{eventoSeleccionado.codigo}</span>
               </div>
               {eventoSeleccionado.cuidador && (
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, borderBottom: "1px solid #2A3A52", paddingBottom: 6 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, borderBottom: "1px solid #2A3A52", paddingBottom: 8 }}>
                   <span style={{ color: "#90A4BE" }}>Cuidador:</span>
                   <span style={{ color: "#FFFFFF" }}>{eventoSeleccionado.cuidador}</span>
                 </div>
               )}
               {eventoSeleccionado.persona && (
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, borderBottom: "1px solid #2A3A52", paddingBottom: 6 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, borderBottom: "1px solid #2A3A52", paddingBottom: 8 }}>
                   <span style={{ color: "#90A4BE" }}>Persona Mayor:</span>
                   <span style={{ color: "#FFFFFF" }}>{eventoSeleccionado.persona}</span>
                 </div>
               )}
-              <div style={{ display: "flex", flexDirection: "column", fontSize: 12, borderBottom: "1px solid #2A3A52", paddingBottom: 6 }}>
-                <span style={{ color: "#90A4BE", marginBottom: 4 }}>Detalle:</span>
+              <div style={{ display: "flex", flexDirection: "column", fontSize: 13, borderBottom: "1px solid #2A3A52", paddingBottom: 8 }}>
+                <span style={{ color: "#90A4BE", marginBottom: 6 }}>Detalle:</span>
                 <span style={{ color: "#FFFFFF" }}>{eventoSeleccionado.detalle}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginTop: 6 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginTop: 6 }}>
                 <span style={{ color: "#90A4BE" }}>Versión App:</span>
                 <span style={{ color: "#FFFFFF" }}>{eventoSeleccionado.appVersion}</span>
               </div>
@@ -1048,6 +1085,7 @@ function OnboardingCORFO({ C, onCerrar, onGuardar }) {
 function PanelAdmin({ C, familias, onCerrar, onAbrirDatos, onAbrirEventos, onAbrirMetricas }) {
   const [lista, setLista] = useState(familias || []);
   const [cargando, setCargando] = useState(false);
+  const [detalleAbierto, setDetalleAbierto] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -1067,12 +1105,25 @@ function PanelAdmin({ C, familias, onCerrar, onAbrirDatos, onAbrirEventos, onAbr
   let tomasEsperadas = 0;
   let tomasConfirmadas = 0;
 
+  const familiasPremium = [];
+  const personasLista = [];
+  const medsLista = [];
+
   lista.forEach(f => {
-    if (f.data?.plan === "premium" || f.data?.esPiloto) totalPremium++;
+    const esPrem = f.data?.plan === "premium" || f.data?.esPiloto;
+    if (esPrem) {
+      totalPremium++;
+      familiasPremium.push({ codigo: f.codigo, ...f.data });
+    }
     (f.data?.personas || []).forEach(p => {
       totalPersonas++;
+      personasLista.push({ nombre: p.nombre, edad: p.edad, familiaCodigo: f.codigo, familiaNombre: f.data?.personas?.[0]?.nombre || "Familia" });
+      
       const medsActivos = (p.meds || []).filter(m => !m.archivado);
       totalMeds += medsActivos.length;
+      medsActivos.forEach(m => {
+        medsLista.push({ nombre: m.name, paciente: p.nombre, familiaCodigo: f.codigo, stock: m.stock });
+      });
       
       const hoy = todayStr();
       const confHoy = p.confirmedByDate?.[hoy] || {};
@@ -1106,22 +1157,22 @@ function PanelAdmin({ C, familias, onCerrar, onAbrirDatos, onAbrirEventos, onAbr
         ) : (
           <div style={{ flex: 1, overflowY: "auto" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-              <div style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 16, padding: 16 }}>
+              <div onClick={() => setDetalleAbierto({ titulo: "Todas las Familias", lista: lista.map(f => ({ codigo: f.codigo, ...f.data })) })} style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 16, padding: 16, cursor: "pointer" }}>
                 <div style={{ fontSize: 11, color: "#90A4BE" }}>Familias Totales</div>
                 <div style={{ fontSize: 26, fontWeight: 800, color: "#64B5F6" }}>{totalFamilias}</div>
               </div>
-              <div style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 16, padding: 16 }}>
+              <div onClick={() => setDetalleAbierto({ titulo: "Familias Premium", lista: familiasPremium })} style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 16, padding: 16, cursor: "pointer" }}>
                 <div style={{ fontSize: 11, color: "#90A4BE" }}>Premium</div>
                 <div style={{ fontSize: 26, fontWeight: 800, color: "#FFB74D" }}>{totalPremium}</div>
               </div>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-              <div style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 16, padding: 16 }}>
+              <div onClick={() => setDetalleAbierto({ titulo: "Personas Registradas", lista: personasLista })} style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 16, padding: 16, cursor: "pointer" }}>
                 <div style={{ fontSize: 11, color: "#90A4BE" }}>Personas</div>
                 <div style={{ fontSize: 26, fontWeight: 800, color: "#FFFFFF" }}>{totalPersonas}</div>
               </div>
-              <div style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 16, padding: 16 }}>
+              <div onClick={() => setDetalleAbierto({ titulo: "Medicamentos Activos", lista: medsLista })} style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 16, padding: 16, cursor: "pointer" }}>
                 <div style={{ fontSize: 11, color: "#90A4BE" }}>Medicamentos</div>
                 <div style={{ fontSize: 26, fontWeight: 800, color: "#FFFFFF" }}>{totalMeds}</div>
               </div>
@@ -1157,6 +1208,53 @@ function PanelAdmin({ C, familias, onCerrar, onAbrirDatos, onAbrirEventos, onAbr
           Cerrar
         </button>
       </div>
+
+      {detalleAbierto && (
+        <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 310, padding: 20 }}>
+          <div className="modal-scale" style={{ width: "100%", maxWidth: 400, background: "#16243A", borderRadius: 24, padding: 20, border: "1px solid #2A3A52", maxHeight: "85vh", display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div style={{ fontWeight: 800, fontSize: 18, color: "#FFFFFF" }}>{detalleAbierto.titulo}</div>
+              <button onClick={() => setDetalleAbierto(null)} style={{ border: "none", background: "#1E2F48", borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <X size={16} color="#90A4BE" />
+              </button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+              {detalleAbierto.lista.length === 0 ? (
+                <div style={{ textAlign: "center", padding: 20, color: "#90A4BE" }}>No hay datos en esta categoría.</div>
+              ) : (
+                detalleAbierto.lista.map((item, i) => {
+                  if (item.codigo && item.personas) {
+                    return (
+                      <div key={i} style={{ background: "#0F1B2E", border: "1px solid #2A3A52", borderRadius: 12, padding: 12 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#64B5F6" }}>Cod: {item.codigo}</div>
+                        {item.personas.map((p, j) => (
+                          <div key={j} style={{ fontSize: 12, color: "#FFFFFF", marginTop: 4 }}>👤 {p.nombre} {p.edad ? `· ${p.edad} años` : ""}</div>
+                        ))}
+                      </div>
+                    );
+                  }
+                  if (item.paciente) {
+                    return (
+                      <div key={i} style={{ background: "#0F1B2E", border: "1px solid #2A3A52", borderRadius: 12, padding: 12 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#FFFFFF" }}>{item.nombre}</div>
+                        <div style={{ fontSize: 11, color: "#90A4BE", marginTop: 4 }}>Paciente: {item.paciente} (Cod: {item.familiaCodigo})</div>
+                        <div style={{ fontSize: 11, color: "#66BB6A", marginTop: 2 }}>Stock actual: {item.stock} unid.</div>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div key={i} style={{ background: "#0F1B2E", border: "1px solid #2A3A52", borderRadius: 12, padding: 12 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#FFFFFF" }}>👤 {item.nombre} {item.edad ? `· ${item.edad} años` : ""}</div>
+                      <div style={{ fontSize: 11, color: "#90A4BE", marginTop: 4 }}>Familia: {item.familiaCodigo}</div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1165,6 +1263,7 @@ function PanelMetricasCORFO({ C, onCerrar }) {
   const [data, setData] = useState(null);
   const [cargando, setCargando] = useState(true);
   const [tab, setTab] = useState("resumen");
+  const [detalleAbierto, setDetalleAbierto] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -1178,12 +1277,31 @@ function PanelMetricasCORFO({ C, onCerrar }) {
         let clicsFarmacia = {};
         let solicitudesPremium = [];
         
+        let listaFamilias = [];
+        let listaPremium = [];
+        let listaQR = [];
+        let listaPiloto = [];
+
         famSnap.forEach(doc => {
           const f = doc.data();
+          const cod = doc.id.replace("familia_", "");
+          const infoFam = { codigo: cod, ...f };
+          
           total++;
-          if (f.plan === "premium" || f.esPiloto) premium++;
-          if (f.origen === "qr") organicas++;
-          if (f.origen === "piloto") piloto++;
+          listaFamilias.push(infoFam);
+
+          if (f.plan === "premium" || f.esPiloto) { 
+            premium++; 
+            listaPremium.push(infoFam);
+          }
+          if (f.origen === "qr") { 
+            organicas++; 
+            listaQR.push(infoFam);
+          }
+          if (f.origen === "piloto") { 
+            piloto++; 
+            listaPiloto.push(infoFam);
+          }
           
           f.personas?.forEach(p => {
             p.meds?.forEach(m => {
@@ -1205,7 +1323,7 @@ function PanelMetricasCORFO({ C, onCerrar }) {
         const topMedsArray = Object.entries(topMeds).sort((a, b) => b[1] - a[1]).slice(0, 10);
         const topFarmaciasArray = Object.entries(clicsFarmacia).sort((a, b) => b[1] - a[1]);
 
-        setData({ total, premium, organicas, piloto, topMedsArray, topFarmaciasArray, solicitudesPremium });
+        setData({ total, premium, organicas, piloto, topMedsArray, topFarmaciasArray, solicitudesPremium, listaFamilias, listaPremium, listaQR, listaPiloto });
       } catch (e) {
         console.error(e);
       }
@@ -1254,14 +1372,14 @@ function PanelMetricasCORFO({ C, onCerrar }) {
             <>
               {tab === "resumen" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <div style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 14, padding: 16 }}><div style={{ fontSize: 11, color: "#90A4BE" }}>FAMILIAS TOTALES</div><div style={{ fontSize: 28, fontWeight: 800, color: "#FFFFFF" }}>{data.total}</div></div>
+                  <div onClick={() => setDetalleAbierto({ titulo: "Todas las Familias", lista: data.listaFamilias })} style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 14, padding: 16, cursor: "pointer" }}><div style={{ fontSize: 11, color: "#90A4BE" }}>FAMILIAS TOTALES</div><div style={{ fontSize: 28, fontWeight: 800, color: "#FFFFFF" }}>{data.total}</div></div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <div style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 14, padding: 16 }}><div style={{ fontSize: 11, color: "#90A4BE" }}>PREMIUM</div><div style={{ fontSize: 24, fontWeight: 800, color: "#FFB74D" }}>{data.premium}</div></div>
+                    <div onClick={() => setDetalleAbierto({ titulo: "Familias Premium", lista: data.listaPremium })} style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 14, padding: 16, cursor: "pointer" }}><div style={{ fontSize: 11, color: "#90A4BE" }}>PREMIUM</div><div style={{ fontSize: 24, fontWeight: 800, color: "#FFB74D" }}>{data.premium}</div></div>
                     <div style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 14, padding: 16 }}><div style={{ fontSize: 11, color: "#90A4BE" }}>ESTÁNDAR</div><div style={{ fontSize: 24, fontWeight: 800, color: "#64B5F6" }}>{data.total - data.premium}</div></div>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <div style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 14, padding: 16 }}><div style={{ fontSize: 11, color: "#90A4BE" }}>ORIGEN: QR</div><div style={{ fontSize: 24, fontWeight: 800, color: "#FFFFFF" }}>{data.organicas}</div></div>
-                    <div style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 14, padding: 16 }}><div style={{ fontSize: 11, color: "#90A4BE" }}>ORIGEN: PILOTO</div><div style={{ fontSize: 24, fontWeight: 800, color: "#FFFFFF" }}>{data.piloto}</div></div>
+                    <div onClick={() => setDetalleAbierto({ titulo: "Familias por QR", lista: data.listaQR })} style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 14, padding: 16, cursor: "pointer" }}><div style={{ fontSize: 11, color: "#90A4BE" }}>ORIGEN: QR</div><div style={{ fontSize: 24, fontWeight: 800, color: "#FFFFFF" }}>{data.organicas}</div></div>
+                    <div onClick={() => setDetalleAbierto({ titulo: "Familias Piloto", lista: data.listaPiloto })} style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 14, padding: 16, cursor: "pointer" }}><div style={{ fontSize: 11, color: "#90A4BE" }}>ORIGEN: PILOTO</div><div style={{ fontSize: 24, fontWeight: 800, color: "#FFFFFF" }}>{data.piloto}</div></div>
                   </div>
                 </div>
               )}
@@ -1303,6 +1421,34 @@ function PanelMetricasCORFO({ C, onCerrar }) {
 
         <button onClick={descargarCSV} style={{ width: "100%", padding: 12, borderRadius: 12, border: "none", background: "#66BB6A", color: "#fff", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Download size={16} /> Descargar CSV</button>
       </div>
+
+      {detalleAbierto && (
+        <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 310, padding: 20 }}>
+          <div className="modal-scale" style={{ width: "100%", maxWidth: 400, background: "#16243A", borderRadius: 24, padding: 20, border: "1px solid #2A3A52", maxHeight: "85vh", display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <div style={{ fontWeight: 800, fontSize: 18, color: "#FFFFFF" }}>{detalleAbierto.titulo}</div>
+              <button onClick={() => setDetalleAbierto(null)} style={{ border: "none", background: "#1E2F48", borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <X size={16} color="#90A4BE" />
+              </button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+              {detalleAbierto.lista.length === 0 ? (
+                <div style={{ textAlign: "center", padding: 20, color: "#90A4BE" }}>No hay datos en esta categoría.</div>
+              ) : (
+                detalleAbierto.lista.map((f, i) => (
+                  <div key={i} style={{ background: "#0F1B2E", border: "1px solid #2A3A52", borderRadius: 12, padding: 12 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#64B5F6" }}>Cod: {f.codigo}</div>
+                    {(f.personas || []).map((p, j) => (
+                      <div key={j} style={{ fontSize: 12, color: "#FFFFFF", marginTop: 4 }}>👤 {p.nombre}</div>
+                    ))}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
