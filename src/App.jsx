@@ -832,12 +832,13 @@ function VerEventos({ C, onCerrar }) {
   const [eventos, setEventos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [filtro, setFiltro] = useState("");
+  const [eventoSeleccionado, setEventoSeleccionado] = useState(null);
 
   useEffect(() => {
     (async () => {
       try {
         if (!db) throw new Error("Sin DB");
-        const snap = await db.collection("eventos").orderBy("timestamp", "desc").limit(200).get();
+        const snap = await db.collection("eventos").orderBy("timestamp", "desc").limit(500).get();
         const arr = [];
         snap.forEach((doc) => arr.push({ id: doc.id, ...doc.data() }));
         setEventos(arr);
@@ -855,9 +856,30 @@ function VerEventos({ C, onCerrar }) {
            (e.detalle || "").toLowerCase().includes(q);
   });
 
+  const descargarCSV = () => {
+    let csv = "Fecha,Tipo,Codigo Familia,Cuidador,Persona,Detalle,Version\n";
+    filtrados.forEach(e => {
+      const fecha = e.fecha ? new Date(e.fecha).toLocaleString("es-CL") : "";
+      const tipo = e.tipo || "";
+      const codigo = e.codigo || "";
+      const cuidador = e.cuidador || "";
+      const persona = e.persona || "";
+      const detalle = (e.detalle || "").replace(/"/g, '""');
+      const version = e.appVersion || "";
+      csv += `"${fecha}","${tipo}","${codigo}","${cuidador}","${persona}","${detalle}","${version}"\n`;
+    });
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `eventos_contigo_siempre_${todayStr()}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(15,27,46,0.95)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: 10 }}>
       <div className="modal-scale" style={{ width: "100%", maxWidth: 480, background: "#0F1B2E", borderRadius: 24, padding: 20, maxHeight: "92vh", display: "flex", flexDirection: "column", border: "1px solid #2A3A52" }}>
+        
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <div style={{ fontWeight: 800, fontSize: 18, color: "#FF9800", display: "flex", alignItems: "center", gap: 8 }}>
             <Activity size={20} /> Eventos ({eventos.length})
@@ -867,12 +889,17 @@ function VerEventos({ C, onCerrar }) {
           </button>
         </div>
 
-        <input
-          value={filtro}
-          onChange={(e) => setFiltro(e.target.value)}
-          placeholder="Filtrar por tipo, código, cuidador..."
-          style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1.5px solid #2A3A52", fontSize: 12, marginBottom: 10, boxSizing: "border-box", background: "#16243A", color: "#FFFFFF", outline: "none" }}
-        />
+        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+          <input
+            value={filtro}
+            onChange={(e) => setFiltro(e.target.value)}
+            placeholder="Filtrar por tipo, código, cuidador..."
+            style={{ flex: 1, padding: "10px 14px", borderRadius: 12, border: "1.5px solid #2A3A52", fontSize: 12, boxSizing: "border-box", background: "#16243A", color: "#FFFFFF", outline: "none" }}
+          />
+          <button onClick={descargarCSV} style={{ padding: "0 16px", borderRadius: 12, border: "none", background: "#66BB6A", color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
+            <Download size={14} /> CSV
+          </button>
+        </div>
 
         <div style={{ flex: 1, overflowY: "auto" }}>
           {cargando ? (
@@ -881,7 +908,11 @@ function VerEventos({ C, onCerrar }) {
             <div style={{ textAlign: "center", padding: 30, color: "#90A4BE", fontSize: 13 }}>Sin eventos</div>
           ) : (
             filtrados.map((e) => (
-              <div key={e.id} style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 10, padding: 10, marginBottom: 6 }}>
+              <div 
+                key={e.id} 
+                onClick={() => setEventoSeleccionado(e)}
+                style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 10, padding: 10, marginBottom: 6, cursor: "pointer" }}
+              >
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#90A4BE", marginBottom: 3 }}>
                   <span style={{ fontWeight: 700, color: "#64B5F6" }}>{e.tipo}</span>
                   <span>{e.fecha ? new Date(e.fecha).toLocaleString("es-CL") : ""}</span>
@@ -899,6 +930,54 @@ function VerEventos({ C, onCerrar }) {
           Cerrar
         </button>
       </div>
+
+      {eventoSeleccionado && (
+        <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 310, padding: 20 }}>
+          <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: "#16243A", borderRadius: 20, padding: 20, border: "1px solid #2A3A52" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+              <div style={{ fontWeight: 700, fontSize: 16, color: "#FFFFFF" }}>Detalle del Evento</div>
+              <button onClick={() => setEventoSeleccionado(null)} style={{ border: "none", background: "#1E2F48", borderRadius: 999, width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <X size={14} color="#90A4BE" />
+              </button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, borderBottom: "1px solid #2A3A52", paddingBottom: 6 }}>
+                <span style={{ color: "#90A4BE" }}>Tipo:</span>
+                <span style={{ color: "#64B5F6", fontWeight: 700 }}>{eventoSeleccionado.tipo}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, borderBottom: "1px solid #2A3A52", paddingBottom: 6 }}>
+                <span style={{ color: "#90A4BE" }}>Fecha:</span>
+                <span style={{ color: "#FFFFFF" }}>{new Date(eventoSeleccionado.fecha).toLocaleString("es-CL")}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, borderBottom: "1px solid #2A3A52", paddingBottom: 6 }}>
+                <span style={{ color: "#90A4BE" }}>Código Familia:</span>
+                <span style={{ color: "#FFFFFF" }}>{eventoSeleccionado.codigo}</span>
+              </div>
+              {eventoSeleccionado.cuidador && (
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, borderBottom: "1px solid #2A3A52", paddingBottom: 6 }}>
+                  <span style={{ color: "#90A4BE" }}>Cuidador:</span>
+                  <span style={{ color: "#FFFFFF" }}>{eventoSeleccionado.cuidador}</span>
+                </div>
+              )}
+              {eventoSeleccionado.persona && (
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, borderBottom: "1px solid #2A3A52", paddingBottom: 6 }}>
+                  <span style={{ color: "#90A4BE" }}>Persona Mayor:</span>
+                  <span style={{ color: "#FFFFFF" }}>{eventoSeleccionado.persona}</span>
+                </div>
+              )}
+              <div style={{ display: "flex", flexDirection: "column", fontSize: 12, borderBottom: "1px solid #2A3A52", paddingBottom: 6 }}>
+                <span style={{ color: "#90A4BE", marginBottom: 4 }}>Detalle:</span>
+                <span style={{ color: "#FFFFFF" }}>{eventoSeleccionado.detalle}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginTop: 6 }}>
+                <span style={{ color: "#90A4BE" }}>Versión App:</span>
+                <span style={{ color: "#FFFFFF" }}>{eventoSeleccionado.appVersion}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -966,7 +1045,6 @@ function OnboardingCORFO({ C, onCerrar, onGuardar }) {
   );
 }
 
-// NUEVO PANEL ADMIN
 function PanelAdmin({ C, familias, onCerrar, onAbrirDatos, onAbrirEventos, onAbrirMetricas }) {
   const [lista, setLista] = useState(familias || []);
   const [cargando, setCargando] = useState(false);
