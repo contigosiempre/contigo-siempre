@@ -779,6 +779,130 @@ function ModalSoporte({ C, onCerrar }) {
 }
 // ==================== ONBOARDING Y PANELES ADMIN ====================
 
+function DatosAdministrativos({ C, onCerrar, onReset }) {
+  const [datos, setDatos] = useState({});
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("datos_admin_global");
+      setDatos(raw ? JSON.parse(raw) : {});
+    } catch (e) {}
+  }, []);
+
+  return (
+    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(15,27,46,0.95)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: 10 }}>
+      <div className="modal-scale" style={{ width: "100%", maxWidth: 400, background: "#0F1B2E", borderRadius: 24, padding: 20, maxHeight: "90vh", display: "flex", flexDirection: "column", border: "1px solid #2A3A52" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <div style={{ fontWeight: 800, fontSize: 18, color: "#66BB6A", display: "flex", alignItems: "center", gap: 8 }}>
+            <BarChart3 size={20} /> Datos de Uso
+          </div>
+          <button onClick={onCerrar} style={{ border: "none", background: "#1E2F48", borderRadius: 999, width: 30, height: 30, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <X size={15} color="#90A4BE" />
+          </button>
+        </div>
+
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          {Object.keys(datos).length === 0 ? (
+            <div style={{ textAlign: "center", padding: 30, color: "#90A4BE", fontSize: 13 }}>Sin datos aún</div>
+          ) : (
+            Object.entries(datos).map(([k, v]) => (
+              <div key={k} style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 10, padding: 10, marginBottom: 8 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#FFFFFF", marginBottom: 4 }}>{k}</div>
+                <pre style={{ fontSize: 10, color: "#90A4BE", margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
+                  {typeof v === "object" ? JSON.stringify(v, null, 2) : String(v)}
+                </pre>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+          <button onClick={() => { if (window.confirm("¿Borrar todos los datos de uso?")) { onReset(); setDatos({}); } }} style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: "#EF5350", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 12 }}>
+            Resetear
+          </button>
+          <button onClick={onCerrar} style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: "#64B5F6", color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 12 }}>
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VerEventos({ C, onCerrar }) {
+  const [eventos, setEventos] = useState([]);
+  const [cargando, setCargando] = useState(true);
+  const [filtro, setFiltro] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        if (!db) throw new Error("Sin DB");
+        const snap = await db.collection("eventos").orderBy("timestamp", "desc").limit(200).get();
+        const arr = [];
+        snap.forEach((doc) => arr.push({ id: doc.id, ...doc.data() }));
+        setEventos(arr);
+      } catch (e) {}
+      setCargando(false);
+    })();
+  }, []);
+
+  const filtrados = eventos.filter((e) => {
+    if (!filtro) return true;
+    const q = filtro.toLowerCase();
+    return (e.tipo || "").toLowerCase().includes(q) ||
+           (e.codigo || "").toLowerCase().includes(q) ||
+           (e.cuidador || "").toLowerCase().includes(q) ||
+           (e.detalle || "").toLowerCase().includes(q);
+  });
+
+  return (
+    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(15,27,46,0.95)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: 10 }}>
+      <div className="modal-scale" style={{ width: "100%", maxWidth: 480, background: "#0F1B2E", borderRadius: 24, padding: 20, maxHeight: "92vh", display: "flex", flexDirection: "column", border: "1px solid #2A3A52" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div style={{ fontWeight: 800, fontSize: 18, color: "#FF9800", display: "flex", alignItems: "center", gap: 8 }}>
+            <Activity size={20} /> Eventos ({eventos.length})
+          </div>
+          <button onClick={onCerrar} style={{ border: "none", background: "#1E2F48", borderRadius: 999, width: 30, height: 30, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <X size={15} color="#90A4BE" />
+          </button>
+        </div>
+
+        <input
+          value={filtro}
+          onChange={(e) => setFiltro(e.target.value)}
+          placeholder="Filtrar por tipo, código, cuidador..."
+          style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: "1.5px solid #2A3A52", fontSize: 12, marginBottom: 10, boxSizing: "border-box", background: "#16243A", color: "#FFFFFF", outline: "none" }}
+        />
+
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          {cargando ? (
+            <div style={{ textAlign: "center", padding: 30 }}><Loader2 size={24} color="#64B5F6" /></div>
+          ) : filtrados.length === 0 ? (
+            <div style={{ textAlign: "center", padding: 30, color: "#90A4BE", fontSize: 13 }}>Sin eventos</div>
+          ) : (
+            filtrados.map((e) => (
+              <div key={e.id} style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 10, padding: 10, marginBottom: 6 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#90A4BE", marginBottom: 3 }}>
+                  <span style={{ fontWeight: 700, color: "#64B5F6" }}>{e.tipo}</span>
+                  <span>{e.fecha ? new Date(e.fecha).toLocaleString("es-CL") : ""}</span>
+                </div>
+                <div style={{ fontSize: 12, color: "#FFFFFF" }}>{e.detalle}</div>
+                <div style={{ fontSize: 10, color: "#90A4BE", marginTop: 2 }}>
+                  Cod: {e.codigo} {e.cuidador ? `· ${e.cuidador}` : ""} {e.persona ? `· ${e.persona}` : ""}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <button onClick={onCerrar} style={{ marginTop: 10, width: "100%", padding: 12, borderRadius: 12, border: "none", background: "#FF9800", color: "#fff", fontWeight: 700, cursor: "pointer" }}>
+          Cerrar
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function OnboardingCORFO({ C, onCerrar, onGuardar }) {
   const [paso, setPaso] = useState(1);
   const [cantidadPersonas, setCantidadPersonas] = useState("");
