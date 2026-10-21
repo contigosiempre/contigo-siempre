@@ -26,7 +26,7 @@ const PILL_COLORS_CB = ["#D55E00", "#0072B2", "#009E73", "#E69F00", "#CC79A7"];
 const PILL_SHAPES = ["●", "◆", "▲", "■", "⬤"];
 const FONT_SCALE = { normal: 1, grande: 1.2, muy_grande: 1.45 };
 const UMBRAL_MIN = { vital: 2, importante: 10, normal: 30 };
-const LIMITES_ESTANDAR = { maxMeds: 4, maxElderly: 1, maxCuidadores: 1 };
+const LIMITES_ESTANDAR = { maxMeds: 4, maxElderly: 1, maxCuidadores: 2 };
 
 const MEDS_CON_RECETA = ["losartan","losartán","metformina","enalapril","amlodipino","atorvastatina","simvastatina","carvedilol","furosemida","hidroclorotiazida","omeprazol","clonazepam","alprazolam","sertralina","fluoxetina","levotiroxina","warfarina","clopidogrel","insulina","gabapentina","pregabalina","tramadol","morfina","fentanilo","metotrexato","prednisona","salbutamol","budesonida","montelukast","alopurinol","colchicina","risperidona","quetiapina","olanzapina","valproato","carbamazepina","fenitoina","levetiracetam","donepezilo","memantina","rivastigmina"];
 const MEDS_SIN_RECETA = ["paracetamol","ibuprofeno","aspirina","naproxeno","diclofenaco","loratadina","cetirizina","clorfenamina","vitamina","multivitaminico","calcio","hierro","omega","magnesio","zinc","complejo b","sales de rehidratacion","suero","carbon activado"];
@@ -102,7 +102,7 @@ const storage = {
     catch (e) { localStorage.setItem(k, v); }
   },
   async listAll() {
-    try { if (db) { const snapshot = await db.collection("familias").get(); const out = []; snapshot.forEach((doc) => { out.push({ codigo: doc.id, data: doc.data() }); }); return out; } const out = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(STORAGE_PREFIX)) { const v = localStorage.getItem(k); try { out.push({ codigo: k.replace(STORAGE_PREFIX, ""), data: JSON.parse(v) }); } catch (e) {} } } return out; }
+    try { if (db) { const snapshot = await db.collection("familias").get(); const out = []; snapshot.forEach((doc) => { out.push({ codigo: doc.id.replace(STORAGE_PREFIX, ""), data: doc.data() }); }); return out; } const out = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith(STORAGE_PREFIX)) { const v = localStorage.getItem(k); try { out.push({ codigo: k.replace(STORAGE_PREFIX, ""), data: JSON.parse(v) }); } catch (e) {} } } return out; }
     catch (e) { return []; }
   },
 };
@@ -330,7 +330,6 @@ function registrarDato(clave, valor = 1, detalle = null) {
     localStorage.setItem("datos_admin_global", JSON.stringify(datos));
   } catch (e) {}
 }
-// ===== FIN PARTE 1 =====
 // ==================== COMPONENTES UI BASE ====================
 
 function LogoContigoSiempre({ size = 64, color = "#1976D2", accent = "#F9A825" }) {
@@ -582,8 +581,7 @@ function CampoHora({ C, valor, onCambio, oscuro }) {
     </>
   );
 }
-// ===== FIN PARTE 2 =====
-// ==================== MODALES INFORMATIVOS Y ADMIN ====================
+// ==================== MODALES INFORMATIVOS Y MENÚ LATERAL ====================
 
 function MenuLateral({ C, abierto, onCerrar, tabActual, setTabActual, avisosNuevos, onCompartir, onModoOscuro, onAyuda, onAcercaDe, onPolitica, onPremium, onAjustes, onSoporte, onSalir, oscuro, cuidadorNombre, elderName }) {
   if (!abierto) return null;
@@ -648,11 +646,11 @@ function ComoFunciona({ C, onCerrar }) {
       <div className="modal-slide" style={{ width: "100%", maxWidth: 420, background: C.CREAM, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 -8px 30px rgba(0,0,0,0.2)" }}>
         <div style={{ width: 40, height: 4, background: C.LINE, borderRadius: 999, margin: "0 auto 16px" }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-          <div style={{ fontWeight: 700, fontSize: 20 }}>¿Cómo funciona?</div>
+          <div style={{ fontWeight: 700, fontSize: 20, color: C.INK }}>¿Cómo funciona?</div>
           <button onClick={onCerrar} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
         </div>
         <div style={{ textAlign: "center", marginBottom: 18 }}><LogoContigoSiempre size={80} color={C.TEAL} accent={C.GOLD} /></div>
-        {pasos.map((p, i) => { const Icono = p.Icono; return (<div key={i} style={{ display: "flex", gap: 14, padding: 14, borderRadius: 14, background: C.PAPER, border: `1px solid ${C.LINE}`, marginBottom: 10, boxShadow: C.SHADOW }}><div style={{ width: 40, height: 40, borderRadius: 12, background: C.TEAL + "12", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icono size={20} color={C.TEAL} strokeWidth={2.2} /></div><div style={{ flex: 1 }}><div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>{p.titulo}</div><div style={{ fontSize: 12.5, color: C.MUTED, lineHeight: 1.5 }}>{p.texto}</div></div></div>); })}
+        {pasos.map((p, i) => { const Icono = p.Icono; return (<div key={i} style={{ display: "flex", gap: 14, padding: 14, borderRadius: 14, background: C.PAPER, border: `1px solid ${C.LINE}`, marginBottom: 10, boxShadow: C.SHADOW }}><div style={{ width: 40, height: 40, borderRadius: 12, background: C.TEAL + "12", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icono size={20} color={C.TEAL} strokeWidth={2.2} /></div><div style={{ flex: 1 }}><div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4, color: C.INK }}>{p.titulo}</div><div style={{ fontSize: 12.5, color: C.MUTED, lineHeight: 1.5 }}>{p.texto}</div></div></div>); })}
         <button onClick={onCerrar} className="btn-press" style={{ marginTop: 18, width: "100%", padding: 14, borderRadius: 14, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>Entendido</button>
       </div>
     </div>
@@ -673,10 +671,10 @@ function OnboardingPremium({ C, onCerrar }) {
       <div className="modal-scale" style={{ width: "100%", maxWidth: 400, background: C.CREAM, borderRadius: 24, padding: 26, margin: 20, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
         <div style={{ textAlign: "center", marginBottom: 16 }}>
           <div style={{ width: 64, height: 64, borderRadius: 999, background: `linear-gradient(135deg, ${C.GOLD}, #E65100)`, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", boxShadow: "0 8px 20px rgba(249,168,37,0.4)" }}><Crown size={32} color="#fff" /></div>
-          <div style={{ fontWeight: 800, fontSize: 22, marginBottom: 6 }}>Bienvenido a Premium</div>
+          <div style={{ fontWeight: 800, fontSize: 22, marginBottom: 6, color: C.INK }}>Bienvenido a Premium</div>
           <div style={{ fontSize: 13, color: C.MUTED, lineHeight: 1.5 }}>Desbloqueaste todas las funciones.</div>
         </div>
-        {beneficios.map((b, i) => { const Icono = b.Icono; return (<div key={i} style={{ display: "flex", gap: 12, padding: 14, borderRadius: 14, background: C.PAPER, border: `1px solid ${C.LINE}`, marginBottom: 8, boxShadow: C.SHADOW }}><div style={{ width: 36, height: 36, borderRadius: 10, background: C.GOLD + "15", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icono size={18} color={C.GOLD} strokeWidth={2.2} /></div><div style={{ flex: 1 }}><div style={{ fontWeight: 700, fontSize: 13.5, marginBottom: 2 }}>{b.titulo}</div><div style={{ fontSize: 11.5, color: C.MUTED, lineHeight: 1.4 }}>{b.texto}</div></div></div>); })}
+        {beneficios.map((b, i) => { const Icono = b.Icono; return (<div key={i} style={{ display: "flex", gap: 12, padding: 14, borderRadius: 14, background: C.PAPER, border: `1px solid ${C.LINE}`, marginBottom: 8, boxShadow: C.SHADOW }}><div style={{ width: 36, height: 36, borderRadius: 10, background: C.GOLD + "15", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><Icono size={18} color={C.GOLD} strokeWidth={2.2} /></div><div style={{ flex: 1 }}><div style={{ fontWeight: 700, fontSize: 13.5, marginBottom: 2, color: C.INK }}>{b.titulo}</div><div style={{ fontSize: 11.5, color: C.MUTED, lineHeight: 1.4 }}>{b.texto}</div></div></div>); })}
         <button onClick={onCerrar} className="btn-press" style={{ marginTop: 18, width: "100%", padding: 14, borderRadius: 14, border: "none", background: `linear-gradient(135deg, ${C.GOLD}, #E65100)`, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>Empezar a usarlo</button>
       </div>
     </div>
@@ -689,16 +687,16 @@ function AcercaDe({ C, onCerrar }) {
       <div className="modal-slide" style={{ width: "100%", maxWidth: 420, background: C.CREAM, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 -8px 30px rgba(0,0,0,0.2)" }}>
         <div style={{ width: 40, height: 4, background: C.LINE, borderRadius: 999, margin: "0 auto 16px" }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <div style={{ fontWeight: 700, fontSize: 20 }}>Acerca de</div>
+          <div style={{ fontWeight: 700, fontSize: 20, color: C.INK }}>Acerca de</div>
           <button onClick={onCerrar} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
         </div>
         <div style={{ textAlign: "center", marginBottom: 18 }}>
           <LogoContigoSiempre size={72} color={C.TEAL} accent={C.GOLD} />
-          <div style={{ fontWeight: 700, fontSize: 18, marginTop: 10 }}>Contigo Siempre</div>
+          <div style={{ fontWeight: 700, fontSize: 18, marginTop: 10, color: C.INK }}>Contigo Siempre</div>
           <div style={{ fontSize: 12, color: C.MUTED, marginTop: 2 }}>Versión {APP_VERSION}</div>
         </div>
-        <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, marginBottom: 12, boxShadow: C.SHADOW }}><div style={{ fontSize: 13, lineHeight: 1.6 }}><strong>Contigo Siempre</strong> es una plataforma de apoyo al cuidado de la salud para adultos mayores y sus familias.</div></div>
-        <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, marginBottom: 12, boxShadow: C.SHADOW }}><div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8 }}>Contacto</div><div style={{ fontSize: 12.5, color: C.MUTED, lineHeight: 1.6 }}>hola.contigosiempre@gmail.com<br />www.contigosiempre.cl</div></div>
+        <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, marginBottom: 12, boxShadow: C.SHADOW }}><div style={{ fontSize: 13, lineHeight: 1.6, color: C.INK }}><strong>Contigo Siempre</strong> es una plataforma de apoyo al cuidado de la salud para adultos mayores y sus familias.</div></div>
+        <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, marginBottom: 12, boxShadow: C.SHADOW }}><div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: C.INK }}>Contacto</div><div style={{ fontSize: 12.5, color: C.MUTED, lineHeight: 1.6 }}>hola.contigosiempre@gmail.com<br />www.contigosiempre.cl</div></div>
         <div style={{ fontSize: 11, color: C.MUTED, textAlign: "center", marginTop: 14 }}>Hecho en Chile con amor - 2026</div>
         <button onClick={onCerrar} className="btn-press" style={{ marginTop: 16, width: "100%", padding: 14, borderRadius: 14, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>Cerrar</button>
       </div>
@@ -712,7 +710,7 @@ function PoliticaPrivacidad({ C, onCerrar }) {
       <div className="modal-slide" style={{ width: "100%", maxWidth: 420, background: C.CREAM, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 -8px 30px rgba(0,0,0,0.2)" }}>
         <div style={{ width: 40, height: 4, background: C.LINE, borderRadius: 999, margin: "0 auto 16px" }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <div style={{ fontWeight: 700, fontSize: 20 }}>Política de Privacidad</div>
+          <div style={{ fontWeight: 700, fontSize: 20, color: C.INK }}>Política de Privacidad</div>
           <button onClick={onCerrar} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
         </div>
         <div style={{ fontSize: 12.5, color: C.MUTED, lineHeight: 1.7 }}>
@@ -740,7 +738,7 @@ function ModalSoporte({ C, onCerrar }) {
     <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 75 }}>
       <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 24, padding: 24, margin: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <div style={{ fontWeight: 700, fontSize: 18, display: "flex", alignItems: "center", gap: 8 }}><MessageSquare size={20} color={C.TEAL} /> Ayuda y Sugerencias</div>
+          <div style={{ fontWeight: 700, fontSize: 18, display: "flex", alignItems: "center", gap: 8, color: C.INK }}><MessageSquare size={20} color={C.TEAL} /> Ayuda y Sugerencias</div>
           <button onClick={onCerrar} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={15} color={C.INK} /></button>
         </div>
         <div style={{ fontSize: 12, color: C.MUTED, marginBottom: 16 }}>Cuéntanos qué problema tuviste o qué idea tienes para mejorar Contigo Siempre. Te leeremos atentamente.</div>
@@ -779,8 +777,7 @@ function ModalSoporte({ C, onCerrar }) {
     </div>
   );
 }
-// ===== FIN PARTE 3 =====
-// ==================== ONBOARDING Y MÉTRICAS CORFO ====================
+// ==================== ONBOARDING Y PANELES ADMIN ====================
 
 function OnboardingCORFO({ C, onCerrar, onGuardar }) {
   const [paso, setPaso] = useState(1);
@@ -839,6 +836,123 @@ function OnboardingCORFO({ C, onCerrar, onGuardar }) {
           }}
         >
           {paso === 2 ? "Finalizar" : "Siguiente"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// NUEVO PANEL ADMIN
+function PanelAdmin({ C, familias, onCerrar, onAbrirDatos, onAbrirEventos, onAbrirMetricas }) {
+  const [lista, setLista] = useState(familias || []);
+  const [cargando, setCargando] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      setCargando(true);
+      try {
+        const todas = await storage.listAll();
+        setLista(todas);
+      } catch (e) {}
+      setCargando(false);
+    })();
+  }, []);
+
+  let totalFamilias = lista.length;
+  let totalPremium = 0;
+  let totalPersonas = 0;
+  let totalMeds = 0;
+  let tomasEsperadas = 0;
+  let tomasConfirmadas = 0;
+
+  lista.forEach(f => {
+    if (f.data?.plan === "premium" || f.data?.esPiloto) totalPremium++;
+    (f.data?.personas || []).forEach(p => {
+      totalPersonas++;
+      const medsActivos = (p.meds || []).filter(m => !m.archivado);
+      totalMeds += medsActivos.length;
+      
+      const hoy = todayStr();
+      const confHoy = p.confirmedByDate?.[hoy] || {};
+      medsActivos.forEach(m => {
+        tomasEsperadas += (m.times || []).length;
+        (m.times || []).forEach(t => {
+          if (confHoy[occKey(m.id, t)]) tomasConfirmadas++;
+        });
+      });
+    });
+  });
+
+  const porcentajeAdherencia = tomasEsperadas > 0 ? Math.round((tomasConfirmadas / tomasEsperadas) * 100) : 0;
+  const ingresoEstimado = totalPremium * 3990;
+
+  return (
+    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(15,27,46,0.95)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 10 }}>
+      <div className="modal-scale" style={{ width: "100%", maxWidth: 400, background: "#0F1B2E", borderRadius: 24, padding: 20, maxHeight: "95vh", display: "flex", flexDirection: "column", border: "1px solid #2A3A52" }}>
+        
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div style={{ fontWeight: 800, fontSize: 22, color: "#FFFFFF", display: "flex", alignItems: "center", gap: 8 }}>
+            <ShieldCheck size={24} color="#64B5F6" /> Panel Admin
+          </div>
+          <button onClick={onCerrar} style={{ border: "none", background: "#1E2F48", borderRadius: 999, width: 36, height: 36, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <X size={18} color="#90A4BE" />
+          </button>
+        </div>
+
+        {cargando ? (
+          <div style={{ textAlign: "center", padding: 40 }}><Loader2 size={30} color="#64B5F6" /></div>
+        ) : (
+          <div style={{ flex: 1, overflowY: "auto" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+              <div style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 16, padding: 16 }}>
+                <div style={{ fontSize: 11, color: "#90A4BE" }}>Familias Totales</div>
+                <div style={{ fontSize: 26, fontWeight: 800, color: "#64B5F6" }}>{totalFamilias}</div>
+              </div>
+              <div style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 16, padding: 16 }}>
+                <div style={{ fontSize: 11, color: "#90A4BE" }}>Premium</div>
+                <div style={{ fontSize: 26, fontWeight: 800, color: "#FFB74D" }}>{totalPremium}</div>
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+              <div style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 16, padding: 16 }}>
+                <div style={{ fontSize: 11, color: "#90A4BE" }}>Personas</div>
+                <div style={{ fontSize: 26, fontWeight: 800, color: "#FFFFFF" }}>{totalPersonas}</div>
+              </div>
+              <div style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 16, padding: 16 }}>
+                <div style={{ fontSize: 11, color: "#90A4BE" }}>Medicamentos</div>
+                <div style={{ fontSize: 26, fontWeight: 800, color: "#FFFFFF" }}>{totalMeds}</div>
+              </div>
+            </div>
+
+            <div style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 16, padding: 16, marginBottom: 16 }}>
+              <div style={{ fontSize: 11, color: "#90A4BE", fontWeight: 700, marginBottom: 6 }}>ADHERENCIA HOY (Global)</div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                <div style={{ fontSize: 28, fontWeight: 800, color: porcentajeAdherencia > 80 ? "#66BB6A" : "#EF5350" }}>{porcentajeAdherencia}%</div>
+                <div style={{ fontSize: 12, color: "#90A4BE" }}>({tomasConfirmadas} de {tomasEsperadas} tomas)</div>
+              </div>
+            </div>
+
+            <div style={{ background: "linear-gradient(135deg, #FF9800, #E65100)", borderRadius: 16, padding: 16, marginBottom: 16, boxShadow: "0 8px 20px rgba(255,152,0,0.3)" }}>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.9)", marginBottom: 4 }}>Ingresos estimados</div>
+              <div style={{ fontSize: 32, fontWeight: 800, color: "#FFFFFF" }}>${ingresoEstimado.toLocaleString("es-CL")}</div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+              <button onClick={onAbrirMetricas} style={{ padding: 16, borderRadius: 16, border: "none", background: "#42A5F5", color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                <BarChart3 size={20} /> Ver Métricas CORFO
+              </button>
+              <button onClick={onAbrirEventos} style={{ padding: 16, borderRadius: 16, border: "none", background: "#FF9800", color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                <Activity size={20} /> Ver Eventos (Firebase)
+              </button>
+              <button onClick={onAbrirDatos} style={{ padding: 16, borderRadius: 16, border: "none", background: "#64B5F6", color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                <BarChart3 size={20} /> Datos Administrativos
+              </button>
+            </div>
+          </div>
+        )}
+        <button onClick={onCerrar} style={{ width: "100%", padding: 16, borderRadius: 16, border: "1px solid #2A3A52", background: "transparent", color: "#90A4BE", fontWeight: 700, cursor: "pointer" }}>
+          Cerrar
         </button>
       </div>
     </div>
@@ -920,42 +1034,42 @@ function PanelMetricasCORFO({ C, onCerrar }) {
   };
 
   return (
-    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 80 }}>
-      <div className="modal-scale" style={{ width: "100%", maxWidth: 420, background: C.CREAM, borderRadius: 24, padding: 24, margin: 20, maxHeight: "90vh", display: "flex", flexDirection: "column", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
+    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(15,27,46,0.95)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: 10 }}>
+      <div className="modal-scale" style={{ width: "100%", maxWidth: 420, background: "#0F1B2E", borderRadius: 24, padding: 20, maxHeight: "92vh", display: "flex", flexDirection: "column", border: "1px solid #2A3A52" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <div style={{ fontWeight: 800, fontSize: 20, color: C.TEAL }}>Dashboard CORFO</div>
-          <button onClick={onCerrar} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
+          <div style={{ fontWeight: 800, fontSize: 20, color: "#64B5F6" }}>Dashboard CORFO</div>
+          <button onClick={onCerrar} style={{ border: "none", background: "#1E2F48", borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color="#90A4BE" /></button>
         </div>
 
         <div style={{ display: "flex", gap: 6, marginBottom: 16 }}>
-          <button onClick={() => setTab("resumen")} style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", background: tab === "resumen" ? C.TEAL : C.LINE, color: tab === "resumen" ? "#fff" : C.MUTED, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Resumen</button>
-          <button onClick={() => setTab("medicos")} style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", background: tab === "medicos" ? C.TEAL : C.LINE, color: tab === "medicos" ? "#fff" : C.MUTED, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Médicos</button>
-          <button onClick={() => setTab("negocio")} style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", background: tab === "negocio" ? C.TEAL : C.LINE, color: tab === "negocio" ? "#fff" : C.MUTED, fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Negocio</button>
+          <button onClick={() => setTab("resumen")} style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", background: tab === "resumen" ? "#42A5F5" : "#1E2F48", color: tab === "resumen" ? "#fff" : "#90A4BE", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Resumen</button>
+          <button onClick={() => setTab("medicos")} style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", background: tab === "medicos" ? "#42A5F5" : "#1E2F48", color: tab === "medicos" ? "#fff" : "#90A4BE", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Médicos</button>
+          <button onClick={() => setTab("negocio")} style={{ flex: 1, padding: "8px", borderRadius: 8, border: "none", background: tab === "negocio" ? "#42A5F5" : "#1E2F48", color: tab === "negocio" ? "#fff" : "#90A4BE", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>Negocio</button>
         </div>
 
         <div style={{ flex: 1, overflowY: "auto", marginBottom: 16 }}>
-          {cargando ? <div style={{ textAlign: "center", padding: 40 }}><Loader2 size={30} color={C.TEAL} /></div> : data && (
+          {cargando ? <div style={{ textAlign: "center", padding: 40 }}><Loader2 size={30} color="#64B5F6" /></div> : data && (
             <>
               {tab === "resumen" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 16 }}><div style={{ fontSize: 11, color: C.MUTED }}>FAMILIAS TOTALES</div><div style={{ fontSize: 28, fontWeight: 800 }}>{data.total}</div></div>
+                  <div style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 14, padding: 16 }}><div style={{ fontSize: 11, color: "#90A4BE" }}>FAMILIAS TOTALES</div><div style={{ fontSize: 28, fontWeight: 800, color: "#FFFFFF" }}>{data.total}</div></div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 16 }}><div style={{ fontSize: 11, color: C.MUTED }}>PREMIUM</div><div style={{ fontSize: 24, fontWeight: 800, color: C.GOLD }}>{data.premium}</div></div>
-                    <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 16 }}><div style={{ fontSize: 11, color: C.MUTED }}>ESTÁNDAR</div><div style={{ fontSize: 24, fontWeight: 800, color: C.TEAL }}>{data.total - data.premium}</div></div>
+                    <div style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 14, padding: 16 }}><div style={{ fontSize: 11, color: "#90A4BE" }}>PREMIUM</div><div style={{ fontSize: 24, fontWeight: 800, color: "#FFB74D" }}>{data.premium}</div></div>
+                    <div style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 14, padding: 16 }}><div style={{ fontSize: 11, color: "#90A4BE" }}>ESTÁNDAR</div><div style={{ fontSize: 24, fontWeight: 800, color: "#64B5F6" }}>{data.total - data.premium}</div></div>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 16 }}><div style={{ fontSize: 11, color: C.MUTED }}>ORIGEN: QR</div><div style={{ fontSize: 24, fontWeight: 800, color: C.INK }}>{data.organicas}</div></div>
-                    <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 16 }}><div style={{ fontSize: 11, color: C.MUTED }}>ORIGEN: PILOTO</div><div style={{ fontSize: 24, fontWeight: 800, color: C.INK }}>{data.piloto}</div></div>
+                    <div style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 14, padding: 16 }}><div style={{ fontSize: 11, color: "#90A4BE" }}>ORIGEN: QR</div><div style={{ fontSize: 24, fontWeight: 800, color: "#FFFFFF" }}>{data.organicas}</div></div>
+                    <div style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 14, padding: 16 }}><div style={{ fontSize: 11, color: "#90A4BE" }}>ORIGEN: PILOTO</div><div style={{ fontSize: 24, fontWeight: 800, color: "#FFFFFF" }}>{data.piloto}</div></div>
                   </div>
                 </div>
               )}
 
               {tab === "medicos" && (
-                <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 16 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>Top 10 Medicamentos</div>
+                <div style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 14, padding: 16 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10, color: "#FFFFFF" }}>Top 10 Medicamentos</div>
                   {data.topMedsArray.map((m, i) => (
-                    <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "8px 0", borderBottom: i < data.topMedsArray.length - 1 ? `1px solid ${C.LINE}` : "none" }}>
-                      <span>{i + 1}. {m[0]}</span><span style={{ fontWeight: 700, color: C.MUTED }}>{m[1]} reg.</span>
+                    <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "8px 0", borderBottom: i < data.topMedsArray.length - 1 ? "1px solid #2A3A52" : "none", color: "#FFFFFF" }}>
+                      <span>{i + 1}. {m[0]}</span><span style={{ fontWeight: 700, color: "#90A4BE" }}>{m[1]} reg.</span>
                     </div>
                   ))}
                 </div>
@@ -963,18 +1077,18 @@ function PanelMetricasCORFO({ C, onCerrar }) {
 
               {tab === "negocio" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 16 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>Clics en Farmacias</div>
-                    {data.topFarmaciasArray.length === 0 ? <div style={{ fontSize: 12, color: C.MUTED }}>Sin datos</div> : data.topFarmaciasArray.map((f, i) => (
-                      <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "8px 0", borderBottom: `1px solid ${C.LINE}` }}>
-                        <span>{f[0]}</span><span style={{ fontWeight: 700, color: C.TEAL }}>{f[1]} clics</span>
+                  <div style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 14, padding: 16 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10, color: "#FFFFFF" }}>Clics en Farmacias</div>
+                    {data.topFarmaciasArray.length === 0 ? <div style={{ fontSize: 12, color: "#90A4BE" }}>Sin datos</div> : data.topFarmaciasArray.map((f, i) => (
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "8px 0", borderBottom: "1px solid #2A3A52", color: "#FFFFFF" }}>
+                        <span>{f[0]}</span><span style={{ fontWeight: 700, color: "#64B5F6" }}>{f[1]} clics</span>
                       </div>
                     ))}
                   </div>
-                  <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 16 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10 }}>Solicitudes Premium ({data.solicitudesPremium.length})</div>
+                  <div style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 14, padding: 16 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 10, color: "#FFFFFF" }}>Solicitudes Premium ({data.solicitudesPremium.length})</div>
                     {data.solicitudesPremium.map((s, i) => (
-                      <div key={i} style={{ fontSize: 12, padding: "6px 0", borderBottom: `1px solid ${C.LINE}` }}>
+                      <div key={i} style={{ fontSize: 12, padding: "6px 0", borderBottom: "1px solid #2A3A52", color: "#FFFFFF" }}>
                         <strong>{s.cuidador}</strong> (Cod: {s.codigo})
                       </div>
                     ))}
@@ -985,7 +1099,7 @@ function PanelMetricasCORFO({ C, onCerrar }) {
           )}
         </div>
 
-        <button onClick={descargarCSV} className="btn-press" style={{ width: "100%", padding: 12, borderRadius: 12, border: "none", background: C.GREEN, color: "#fff", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Download size={16} /> Descargar CSV</button>
+        <button onClick={descargarCSV} style={{ width: "100%", padding: 12, borderRadius: 12, border: "none", background: "#66BB6A", color: "#fff", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><Download size={16} /> Descargar CSV</button>
       </div>
     </div>
   );
@@ -1042,7 +1156,7 @@ function CalendarioHistorial({ C, meds, confirmedByDate, onCerrar }) {
       <div className="modal-slide" style={{ width: "100%", maxWidth: 420, background: C.CREAM, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "90vh", overflowY: "auto" }}>
         <div style={{ width: 40, height: 4, background: C.LINE, borderRadius: 999, margin: "0 auto 16px" }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <div style={{ fontWeight: 700, fontSize: 18 }}>{MESES[mes]} {año}</div>
+          <div style={{ fontWeight: 700, fontSize: 18, color: C.INK }}>{MESES[mes]} {año}</div>
           <button onClick={onCerrar} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
         </div>
         
@@ -1079,7 +1193,7 @@ function CalendarioHistorial({ C, meds, confirmedByDate, onCerrar }) {
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
             <div className="modal-scale" style={{ width: "100%", maxWidth: 320, background: C.CREAM, borderRadius: 20, padding: 20, margin: 20 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                <div style={{ fontWeight: 700, fontSize: 16 }}>{diaSeleccionado.dia} de {MESES[mes]}</div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: C.INK }}>{diaSeleccionado.dia} de {MESES[mes]}</div>
                 <button onClick={() => setDiaSeleccionado(null)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 28, height: 28, cursor: "pointer" }}><X size={14} color={C.INK} /></button>
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -1087,7 +1201,7 @@ function CalendarioHistorial({ C, meds, confirmedByDate, onCerrar }) {
                   const k = occKey(m.id, t);
                   const tomado = diaSeleccionado.data[k];
                   return (
-                    <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, background: C.PAPER, padding: 8, borderRadius: 8 }}>
+                    <div key={k} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, background: C.PAPER, padding: 8, borderRadius: 8, color: C.INK }}>
                       <span>{m.name} ({fmtHoraConAmPm(t)})</span>
                       <span style={{ fontWeight: 700, color: tomado ? C.GREEN : C.CORAL }}>{tomado ? "✓" : "✗"}</span>
                     </div>
@@ -1115,14 +1229,14 @@ function CarroCompleto({ C, meds, onCerrar, onElegirFarmacia }) {
       <div className="modal-slide" style={{ width: "100%", maxWidth: 420, background: C.CREAM, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "90vh", overflowY: "auto" }}>
         <div style={{ width: 40, height: 4, background: C.LINE, borderRadius: 999, margin: "0 auto 16px" }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <div style={{ fontWeight: 700, fontSize: 18 }}>Canasta ({meds.length})</div>
+          <div style={{ fontWeight: 700, fontSize: 18, color: C.INK }}>Canasta ({meds.length})</div>
           <button onClick={onCerrar} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
         </div>
         
         <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 10 }}>MEDICAMENTOS A COMPRAR</div>
           {meds.map(m => (
-            <div key={m.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "6px 0", borderBottom: `1px solid ${C.LINE}` }}>
+            <div key={m.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, padding: "6px 0", borderBottom: `1px solid ${C.LINE}`, color: C.INK }}>
               <span>{m.name}</span>
               <span style={{ color: C.MUTED }}>Quedan {semaforoRiesgo(m).dias} días</span>
             </div>
@@ -1150,8 +1264,7 @@ function CarroCompleto({ C, meds, onCerrar, onElegirFarmacia }) {
     </div>
   );
 }
-// ===== FIN PARTE 4 =====
-// ==================== COMPONENTE PRINCIPAL APP ====================
+// ==================== COMPONENTE PRINCIPAL APP (ESTADO Y EFECTOS) ====================
 
 export default function App() {
   const [stage, setStage] = useState("cargando");
@@ -1279,11 +1392,17 @@ export default function App() {
     if (unirseCodigo && unirseCodigo.length === 6) {
       setModoEntrada("unirse");
       setCodigoInput(unirseCodigo);
-      if (rolParam === "mayor") setNombreCuidadorInput("Adulto Mayor");
+      if (rolParam === "mayor") {
+        setNombreCuidadorInput("Adulto Mayor");
+        localStorage.setItem("nombre_cuidador", "Adulto Mayor");
+      }
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (premiumParam) {
       setShowPremium(true);
       setCodigoPremium(premiumParam);
+      setTimeout(() => {
+        document.getElementById("btn-canjear-qr")?.click();
+      }, 1000);
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
@@ -1327,10 +1446,19 @@ export default function App() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const accion = params.get("accion");
-    if (accion === "confirmar" && alertaActiva) {
-      setTimeout(() => { if (alertaActiva) confirmar(alertaActiva); }, 2000);
+    const confirmarParam = params.get("confirmar");
+    if (confirmarParam === "1") {
+      localStorage.setItem("confirmacion_pendiente", String(Date.now()));
       window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!alertaActiva) return;
+    const pendiente = localStorage.getItem("confirmacion_pendiente");
+    if (pendiente) {
+      localStorage.removeItem("confirmacion_pendiente");
+      setTimeout(() => { if (alertaActiva) confirmar(alertaActiva); }, 1500);
     }
   }, [alertaActiva]);
 
@@ -1404,7 +1532,7 @@ export default function App() {
     }
   }, [stage, familia, showSelectorRol, showOnboarding]);
 
-  // Efecto de alertas y sonidos (Arpa cada 3 min en normales, 1 min en vitales)
+  // Efecto de alertas y sonidos
   useEffect(() => {
     if (stage !== "app" || !familia || !personaActual) return;
     if (view !== "mayor" && !(personaActual?.esAutocuidado)) return;
@@ -1528,11 +1656,7 @@ export default function App() {
 
     if (nuevas.length > 0) setSmsLog((prev) => [...prev, ...nuevas]);
   }, [nowMin, stage, familia, personaActual, alertasDisparadas, resumenEnviadoHoy, esPremium, elderName, meds, confirmedByDate, personaDesconectada]);
-
-  // ==========================================
-  // A PARTIR DE AQUÍ VAN LOS HANDLERS (Parte 6)
-  // ==========================================
-  // ==================== HANDLERS PRINCIPALES ====================
+  // ==================== HANDLERS Y LÓGICA DE ACCIONES ====================
 
   const guardarFamilia = useCallback(async (cod, data) => {
     setSaving(true);
@@ -1584,8 +1708,9 @@ export default function App() {
         const isElder = nombreCuidador.toLowerCase() === data.personas[0]?.nombre.toLowerCase() || nombreCuidador === "Adulto Mayor";
         
         if (!isElder && !data.cuidadores.includes(nombreCuidador)) {
-          if (data.cuidadores.length >= LIMITES_ESTANDAR.maxCuidadores && !(data.plan === "premium" || data.esPiloto)) {
-            setError("Esta familia tiene el Plan Estándar (1 cuidador). Pide al creador que active Premium para unirse.");
+          const maxCuidadores = data.plan === "premium" || data.esPiloto ? 3 : LIMITES_ESTANDAR.maxCuidadores;
+          if (data.cuidadores.length >= maxCuidadores) {
+            setError(`Esta familia tiene el límite de ${maxCuidadores} cuidadores en su plan actual.`);
             return;
           }
           data.cuidadores = [...data.cuidadores, nombreCuidador];
@@ -1668,7 +1793,7 @@ export default function App() {
         setFamiliasAdmin(todas);
       } catch (e) {}
 
-           setShowAdmin(true);
+      setShowAdmin(true);
       setShowPremium(false);
     }
     else if (up === CODIGO_DATOS) { 
@@ -1677,7 +1802,7 @@ export default function App() {
       setShowPremium(false); 
     }
     else if (up === "PILOTO2026") {
-         try {
+      try {
         if (!db) throw new Error("Sin DB");
         
         const snapshot = await db.collection("familias").where("esPiloto", "==", true).get();
@@ -1770,7 +1895,7 @@ export default function App() {
     setShowSelectorRol(false);
     setView(rol === "mayor" ? "mayor" : "cuidador");
     if (!familia?.settings?.aceptoTerminos) { setStage("consentimiento"); } 
-    else if (!familia?.settings?.onboardingCORFOVisto) { setShowOnboarding(true); } 
+    else if (rol === "cuidador" && !familia?.settings?.onboardingCORFOVisto) { setShowOnboarding(true); } 
     else { setStage("app"); }
     registrarEvento(codigo, "seleccionar_rol", rol, { cuidador: nombreCuidadorInput, rol: rol });
   };
@@ -1953,230 +2078,8 @@ export default function App() {
       window.location.reload();
     }
   };
+  // ==================== RENDERIZADO VISUAL ====================
 
-  // ==========================================
-  // A PARTIR DE AQUÍ VA EL RENDERIZADO (Parte 7)
-  // ==========================================
-  // ==================== RENDERIZADO ====================
-
-function PanelAdmin({ C, familias, onCerrar, onAbrirDatos, onAbrirEventos, onAbrirMetricas }) {
-  const [lista, setLista] = useState(familias || []);
-  const [busqueda, setBusqueda] = useState("");
-  const [cargando, setCargando] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      setCargando(true);
-      try {
-        const todas = await storage.listAll();
-        setLista(todas);
-      } catch (e) {}
-      setCargando(false);
-    })();
-  }, []);
-
-  const filtradas = lista.filter((f) => {
-    if (!busqueda) return true;
-    const q = busqueda.toLowerCase();
-    const cod = (f.codigo || "").toLowerCase();
-    const personas = (f.data?.personas || []).map(p => p.nombre?.toLowerCase()).join(" ");
-    return cod.includes(q) || personas.includes(q);
-  });
-
-  return (
-    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.9)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 10 }}>
-      <div className="modal-scale" style={{ width: "100%", maxWidth: 480, background: C.CREAM, borderRadius: 24, padding: 20, maxHeight: "92vh", display: "flex", flexDirection: "column" }}>
-        
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <div style={{ fontWeight: 800, fontSize: 20, color: C.TEAL, display: "flex", alignItems: "center", gap: 8 }}>
-            <ShieldCheck size={22} /> Panel Admin
-          </div>
-          <button onClick={onCerrar} style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer" }}>
-            <X size={16} color={C.INK} />
-          </button>
-        </div>
-
-        <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-          <button onClick={onAbrirMetricas} style={{ flex: 1, padding: 10, borderRadius: 10, border: "none", background: C.GOLD, color: "#fff", fontWeight: 700, fontSize: 11, cursor: "pointer" }}>
-            <BarChart3 size={13} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} /> Métricas
-          </button>
-          <button onClick={onAbrirEventos} style={{ flex: 1, padding: 10, borderRadius: 10, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, fontSize: 11, cursor: "pointer" }}>
-            <Activity size={13} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} /> Eventos
-          </button>
-          <button onClick={onAbrirDatos} style={{ flex: 1, padding: 10, borderRadius: 10, border: "none", background: C.GREEN, color: "#fff", fontWeight: 700, fontSize: 11, cursor: "pointer" }}>
-            <BarChart3 size={13} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} /> Datos
-          </button>
-        </div>
-
-        <input
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          placeholder="Buscar por código o nombre..."
-          style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 13, marginBottom: 12, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }}
-        />
-
-        <div style={{ fontSize: 11, color: C.MUTED, marginBottom: 8, fontWeight: 700 }}>
-          {cargando ? "Cargando..." : `${filtradas.length} familias registradas`}
-        </div>
-
-        <div style={{ flex: 1, overflowY: "auto" }}>
-          {cargando ? (
-            <div style={{ textAlign: "center", padding: 30 }}><Loader2 size={24} color={C.TEAL} /></div>
-          ) : filtradas.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 30, color: C.MUTED, fontSize: 13 }}>Sin resultados</div>
-          ) : (
-            filtradas.map((f) => (
-              <div key={f.codigo} style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 12, padding: 12, marginBottom: 8 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                  <div style={{ fontWeight: 800, fontSize: 13, color: C.TEAL }}>Cod: {f.codigo}</div>
-                  <div style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: f.data?.plan === "premium" || f.data?.esPiloto ? C.GOLD + "20" : C.LINE, color: f.data?.plan === "premium" || f.data?.esPiloto ? C.GOLD : C.MUTED }}>
-                    {f.data?.plan === "premium" ? "PREMIUM" : f.data?.esPiloto ? "PILOTO" : "ESTÁNDAR"}
-                  </div>
-                </div>
-                {(f.data?.personas || []).map((p) => (
-                  <div key={p.id} style={{ fontSize: 12, color: C.INK, marginTop: 2 }}>
-                    👤 <strong>{p.nombre}</strong> {p.edad ? `· ${p.edad} años` : ""} · {p.meds?.filter(m => !m.archivado).length || 0} meds
-                  </div>
-                ))}
-                <div style={{ fontSize: 10, color: C.MUTED, marginTop: 4 }}>
-                  Cuidadores: {(f.data?.cuidadores || []).join(", ") || "—"}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        <button onClick={onCerrar} style={{ marginTop: 12, width: "100%", padding: 12, borderRadius: 12, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>
-          Cerrar
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function DatosAdministrativos({ C, onCerrar, onReset }) {
-  const [datos, setDatos] = useState({});
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("datos_admin_global");
-      setDatos(raw ? JSON.parse(raw) : {});
-    } catch (e) {}
-  }, []);
-
-  return (
-    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 10 }}>
-      <div className="modal-scale" style={{ width: "100%", maxWidth: 400, background: C.CREAM, borderRadius: 24, padding: 20, maxHeight: "90vh", display: "flex", flexDirection: "column" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-          <div style={{ fontWeight: 800, fontSize: 18, color: C.GREEN, display: "flex", alignItems: "center", gap: 8 }}>
-            <BarChart3 size={20} /> Datos de Uso
-          </div>
-          <button onClick={onCerrar} style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer" }}>
-            <X size={15} color={C.INK} />
-          </button>
-        </div>
-
-        <div style={{ flex: 1, overflowY: "auto" }}>
-          {Object.keys(datos).length === 0 ? (
-            <div style={{ textAlign: "center", padding: 30, color: C.MUTED, fontSize: 13 }}>Sin datos aún</div>
-          ) : (
-            Object.entries(datos).map(([k, v]) => (
-              <div key={k} style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 10, padding: 10, marginBottom: 8 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: C.INK, marginBottom: 4 }}>{k}</div>
-                <pre style={{ fontSize: 10, color: C.MUTED, margin: 0, whiteSpace: "pre-wrap", wordBreak: "break-all" }}>
-                  {typeof v === "object" ? JSON.stringify(v, null, 2) : String(v)}
-                </pre>
-              </div>
-            ))
-          )}
-        </div>
-
-        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-          <button onClick={() => { if (window.confirm("¿Borrar todos los datos de uso?")) { onReset(); setDatos({}); } }} style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: C.CORAL, color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 12 }}>
-            Resetear
-          </button>
-          <button onClick={onCerrar} style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer", fontSize: 12 }}>
-            Cerrar
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function VerEventos({ C, onCerrar }) {
-  const [eventos, setEventos] = useState([]);
-  const [cargando, setCargando] = useState(true);
-  const [filtro, setFiltro] = useState("");
-
-  useEffect(() => {
-    (async () => {
-      try {
-        if (!db) throw new Error("Sin DB");
-        const snap = await db.collection("eventos").orderBy("timestamp", "desc").limit(200).get();
-        const arr = [];
-        snap.forEach((doc) => arr.push({ id: doc.id, ...doc.data() }));
-        setEventos(arr);
-      } catch (e) {}
-      setCargando(false);
-    })();
-  }, []);
-
-  const filtrados = eventos.filter((e) => {
-    if (!filtro) return true;
-    const q = filtro.toLowerCase();
-    return (e.tipo || "").toLowerCase().includes(q) ||
-           (e.codigo || "").toLowerCase().includes(q) ||
-           (e.cuidador || "").toLowerCase().includes(q) ||
-           (e.detalle || "").toLowerCase().includes(q);
-  });
-
-  return (
-    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.9)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: 10 }}>
-      <div className="modal-scale" style={{ width: "100%", maxWidth: 480, background: C.CREAM, borderRadius: 24, padding: 20, maxHeight: "92vh", display: "flex", flexDirection: "column" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <div style={{ fontWeight: 800, fontSize: 18, color: C.TEAL, display: "flex", alignItems: "center", gap: 8 }}>
-            <Activity size={20} /> Eventos ({eventos.length})
-          </div>
-          <button onClick={onCerrar} style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer" }}>
-            <X size={15} color={C.INK} />
-          </button>
-        </div>
-
-        <input
-          value={filtro}
-          onChange={(e) => setFiltro(e.target.value)}
-          placeholder="Filtrar por tipo, código, cuidador..."
-          style={{ width: "100%", padding: "10px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 12, marginBottom: 10, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }}
-        />
-
-        <div style={{ flex: 1, overflowY: "auto" }}>
-          {cargando ? (
-            <div style={{ textAlign: "center", padding: 30 }}><Loader2 size={24} color={C.TEAL} /></div>
-          ) : filtrados.length === 0 ? (
-            <div style={{ textAlign: "center", padding: 30, color: C.MUTED, fontSize: 13 }}>Sin eventos</div>
-          ) : (
-            filtrados.map((e) => (
-              <div key={e.id} style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 10, padding: 10, marginBottom: 6 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: C.MUTED, marginBottom: 3 }}>
-                  <span style={{ fontWeight: 700, color: C.TEAL }}>{e.tipo}</span>
-                  <span>{e.fecha ? new Date(e.fecha).toLocaleString("es-CL") : ""}</span>
-                </div>
-                <div style={{ fontSize: 12, color: C.INK }}>{e.detalle}</div>
-                <div style={{ fontSize: 10, color: C.MUTED, marginTop: 2 }}>
-                  Cod: {e.codigo} {e.cuidador ? `· ${e.cuidador}` : ""} {e.persona ? `· ${e.persona}` : ""}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        <button onClick={onCerrar} style={{ marginTop: 10, width: "100%", padding: 12, borderRadius: 12, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>
-          Cerrar
-        </button>
-      </div>
-    </div>
-  );
-}
   const scale = FONT_SCALE[settings.fontSize] || 1;
   const confirmedHoy = confirmedByDate?.[todayStr()] || {};
   const occurrences = meds.flatMap((m) => (m.times || []).map((t) => ({ med: m, time: t, key: occKey(m.id, t) })));
@@ -2219,11 +2122,11 @@ function VerEventos({ C, onCerrar }) {
           {modoEntrada === "crear" && (
             <div style={{ textAlign: "left" }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: LIGHT.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>TU NOMBRE (CUIDADOR)</div>
-              <input value={nombreCuidadorInput} onChange={(e) => setNombreCuidadorInput(e.target.value)} placeholder="Ej. Juan Larrota" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${LIGHT.LINE}`, fontSize: 14, marginBottom: 12, boxSizing: "border-box", outline: "none" }} />
+              <input value={nombreCuidadorInput} onChange={(e) => setNombreCuidadorInput(e.target.value)} placeholder="Ej. Juan Larrota" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${LIGHT.LINE}`, fontSize: 14, marginBottom: 12, boxSizing: "border-box", outline: "none", color: LIGHT.INK, background: LIGHT.PAPER }} />
               <div style={{ fontSize: 12, fontWeight: 700, color: LIGHT.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>NOMBRE DE LA PERSONA MAYOR</div>
-              <input value={nombreInput} onChange={(e) => setNombreInput(e.target.value)} placeholder="Ej. Rosa Pérez" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${LIGHT.LINE}`, fontSize: 14, marginBottom: 12, boxSizing: "border-box", outline: "none" }} />
+              <input value={nombreInput} onChange={(e) => setNombreInput(e.target.value)} placeholder="Ej. Rosa Pérez" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${LIGHT.LINE}`, fontSize: 14, marginBottom: 12, boxSizing: "border-box", outline: "none", color: LIGHT.INK, background: LIGHT.PAPER }} />
               <div style={{ fontSize: 12, fontWeight: 700, color: LIGHT.MUTED, marginBottom: 6, letterSpacing: 0.3, display: "flex", alignItems: "center", gap: 6 }}><Cake size={12} /> EDAD (OPCIONAL)</div>
-              <input type="number" min="0" max="120" value={edadInput} onChange={(e) => setEdadInput(e.target.value)} placeholder="Ej. 78" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${LIGHT.LINE}`, fontSize: 14, marginBottom: 16, boxSizing: "border-box", outline: "none" }} />
+              <input type="number" min="0" max="120" value={edadInput} onChange={(e) => setEdadInput(e.target.value)} placeholder="Ej. 78" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${LIGHT.LINE}`, fontSize: 14, marginBottom: 16, boxSizing: "border-box", outline: "none", color: LIGHT.INK, background: LIGHT.PAPER }} />
               {error && <div style={{ fontSize: 12, color: LIGHT.CORAL, marginBottom: 12 }}>{error}</div>}
               <button onClick={crearFamilia} disabled={!nombreInput.trim() || !nombreCuidadorInput.trim()} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: (nombreInput.trim() && nombreCuidadorInput.trim()) ? LIGHT.TEAL : "#E0E4EB", color: "#fff", fontWeight: 700, cursor: "pointer" }}>Crear</button>
               <button onClick={() => { setModoEntrada("elegir"); setError(""); }} style={{ marginTop: 10, width: "100%", background: "transparent", border: "none", color: LIGHT.MUTED, fontSize: 12.5, cursor: "pointer", fontWeight: 600 }}>Volver</button>
@@ -2232,9 +2135,9 @@ function VerEventos({ C, onCerrar }) {
           {modoEntrada === "unirse" && (
             <div style={{ textAlign: "left" }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: LIGHT.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>TU NOMBRE</div>
-              <input value={nombreCuidadorInput} onChange={(e) => setNombreCuidadorInput(e.target.value)} placeholder="Ej. Juan Larrota (o 'Adulto Mayor')" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${LIGHT.LINE}`, fontSize: 14, marginBottom: 12, boxSizing: "border-box", outline: "none" }} />
+              <input value={nombreCuidadorInput} onChange={(e) => setNombreCuidadorInput(e.target.value)} placeholder="Ej. Juan Larrota (o 'Adulto Mayor')" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${LIGHT.LINE}`, fontSize: 14, marginBottom: 12, boxSizing: "border-box", outline: "none", color: LIGHT.INK, background: LIGHT.PAPER }} />
               <div style={{ fontSize: 12, fontWeight: 700, color: LIGHT.MUTED, marginBottom: 6, letterSpacing: 0.3 }}>CÓDIGO DE LA FAMILIA</div>
-              <input value={codigoInput} onChange={(e) => setCodigoInput(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="000000" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${LIGHT.LINE}`, fontSize: 22, letterSpacing: 6, textAlign: "center", marginBottom: 12, boxSizing: "border-box", outline: "none", fontWeight: 700 }} />
+              <input value={codigoInput} onChange={(e) => setCodigoInput(e.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="000000" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${LIGHT.LINE}`, fontSize: 22, letterSpacing: 6, textAlign: "center", marginBottom: 12, boxSizing: "border-box", outline: "none", fontWeight: 700, color: LIGHT.INK, background: LIGHT.PAPER }} />
               {error && <div style={{ fontSize: 12, color: LIGHT.CORAL, marginBottom: 12 }}>{error}</div>}
               <button onClick={unirseFamilia} disabled={codigoInput.length !== 6 || !nombreCuidadorInput.trim()} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: (codigoInput.length === 6 && nombreCuidadorInput.trim()) ? LIGHT.TEAL : "#E0E4EB", color: "#fff", fontWeight: 700, cursor: "pointer" }}>Entrar</button>
               <button onClick={() => { setModoEntrada("elegir"); setError(""); }} style={{ marginTop: 10, width: "100%", background: "transparent", border: "none", color: LIGHT.MUTED, fontSize: 12.5, cursor: "pointer", fontWeight: 600 }}>Volver</button>
@@ -2273,7 +2176,6 @@ function VerEventos({ C, onCerrar }) {
     );
   }
 
-  // RENDERIZADO PRINCIPAL DE LA APP
   return (
     <div style={{ minHeight: "100vh", background: C.BG, fontFamily: "'Inter', sans-serif", color: C.INK, display: "flex", justifyContent: "center" }}>
       <style>{CSS_GLOBAL}</style>
@@ -2425,12 +2327,32 @@ function VerEventos({ C, onCerrar }) {
                 </div>
 
                 {esPremium && view === "cuidador" && (
-                  <button onClick={intentarAgregarPersona} className="btn-press-soft" style={{ width: "100%", padding: "12px", borderRadius: 12, border: `1.5px dashed ${C.TEAL}`, background: C.TEAL + "08", color: C.TEAL, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginBottom: 16 }}>
-                    <UserPlus size={16} /> Agregar otro paciente (Premium)
-                  </button>
+                  <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+                    <button onClick={intentarAgregarPersona} className="btn-press-soft" style={{ flex: 1, padding: "12px", borderRadius: 12, border: `1.5px dashed ${C.TEAL}`, background: C.TEAL + "08", color: C.TEAL, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                      <UserPlus size={16} /> Agregar paciente
+                    </button>
+                    <button onClick={() => {
+                      const mensaje = `Hola, únete a Contigo Siempre para cuidar a ${elderName.split(" ")[0]}. Toca este link, descarga la app y pon este código: ${codigo}`;
+                      const url = `https://wa.me/?text=${encodeURIComponent(mensaje + " https://contigo-siempre.vercel.app/")}`;
+                      window.open(url, "_blank");
+                    }} className="btn-press-soft" style={{ flex: 1, padding: "12px", borderRadius: 12, border: `1.5px dashed ${C.GREEN}`, background: C.GREEN + "08", color: C.GREEN, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                      <Users size={16} /> Invitar cuidador
+                    </button>
+                  </div>
                 )}
 
-                {meds.length === 0 ? (
+                {!esPremium && view === "cuidador" && (
+                  <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+                    <button onClick={() => {
+                      const mensaje = `Hola, únete a Contigo Siempre para cuidar a ${elderName.split(" ")[0]}. Toca este link, descarga la app y pon este código: ${codigo}`;
+                      const url = `https://wa.me/?text=${encodeURIComponent(mensaje + " https://contigo-siempre.vercel.app/")}`;
+                      window.open(url, "_blank");
+                    }} className="btn-press-soft" style={{ flex: 1, padding: "12px", borderRadius: 12, border: `1.5px dashed ${C.GREEN}`, background: C.GREEN + "08", color: C.GREEN, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                      <Users size={16} /> Invitar cuidador
+                    </button>
+                  </div>
+                )}
+                                {meds.length === 0 ? (
                   <div style={{ marginTop: 14 }}>
                     <EstadoVacio C={C} icono={Pill} titulo="Sin medicamentos aún" texto="Agrega el primer medicamento para empezar a cuidar." botonTexto="Agregar medicamento" onBoton={intentarAgregarMed} />
                   </div>
@@ -2451,7 +2373,7 @@ function VerEventos({ C, onCerrar }) {
                             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                               <div style={{ width: 36, height: 36, borderRadius: 999, background: dispColor(m.color, settings.daltonico), display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, color: "#fff", flexShrink: 0 }}>{m.shape}</div>
                               <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: 14.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                                <div style={{ fontSize: 14.5, fontWeight: 700, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", color: C.INK }}>
                                   {m.name}
                                   <span style={{ fontSize: 9, background: colorCrit + "20", color: colorCrit, padding: "2px 7px", borderRadius: 999, fontWeight: 700 }}>{labelCrit}</span>
                                   <span style={{ width: 8, height: 8, borderRadius: 999, background: semColor, marginLeft: "auto" }} />
@@ -2496,7 +2418,7 @@ function VerEventos({ C, onCerrar }) {
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {medsArchivados.map((m) => (
                       <div key={m.id} style={{ padding: "14px", borderRadius: 16, background: C.PAPER, border: `1px solid ${C.LINE}` }}>
-                        <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>{m.name}</div>
+                        <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4, color: C.INK }}>{m.name}</div>
                         <div style={{ fontSize: 11, color: C.MUTED, marginBottom: 8 }}>Desde: {new Date(m.fechaInicio).toLocaleDateString("es-CL")} — Hasta: {m.fechaArchivado ? new Date(m.fechaArchivado).toLocaleDateString("es-CL") : "N/A"}</div>
                         <div style={{ display: "flex", gap: 8 }}>
                           <button onClick={() => reactivarMed(m.id)} className="btn-press-soft" style={{ flex: 1, padding: 8, borderRadius: 8, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, fontSize: 12 }}>Reactivar</button>
@@ -2525,7 +2447,7 @@ function VerEventos({ C, onCerrar }) {
                     {[...smsLog].reverse().map((s, i) => (
                       <div key={i} style={{ background: C.PAPER, borderRadius: 14, padding: 14, borderLeft: `4px solid ${s.tipo === "alerta" ? C.CORAL : C.TEAL}`, boxShadow: C.SHADOW }}>
                         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.MUTED, marginBottom: 6 }}><span>CuidaMed</span><span>{s.hora}</span></div>
-                        <div style={{ fontSize: 13, lineHeight: 1.5 }}>{s.texto}</div>
+                        <div style={{ fontSize: 13, lineHeight: 1.5, color: C.INK }}>{s.texto}</div>
                       </div>
                     ))}
                   </div>
@@ -2539,7 +2461,7 @@ function VerEventos({ C, onCerrar }) {
                   <button onClick={() => setShowMenuLateral(true)} className="btn-press-soft" style={{ padding: "10px 14px", borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6, boxShadow: C.SHADOW }}><Menu size={16} /> Menú</button>
                 </div>
                 <div style={{ textAlign: "center", padding: 20 }}>
-                  <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Historial de Adherencia</div>
+                  <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8, color: C.INK }}>Historial de Adherencia</div>
                   <div style={{ fontSize: 12, color: C.MUTED, marginBottom: 20 }}>Revisa el cumplimiento de los medicamentos.</div>
                   <button onClick={() => setShowCalendario(true)} className="btn-press" style={{ padding: "14px 24px", borderRadius: 14, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, margin: "0 auto" }}><Calendar size={18} /> Ver Calendario del Mes</button>
                 </div>
@@ -2552,7 +2474,7 @@ function VerEventos({ C, onCerrar }) {
                   <button onClick={() => setShowMenuLateral(true)} className="btn-press-soft" style={{ padding: "10px 14px", borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 13, display: "flex", alignItems: "center", gap: 6, boxShadow: C.SHADOW }}><Menu size={16} /> Menú</button>
                 </div>
                 <div style={{ textAlign: "center", padding: "20px 0" }}>
-                  <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Carro y Farmacias</div>
+                  <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8, color: C.INK }}>Carro y Farmacias</div>
                   {medsCarro.length === 0 ? (
                     <div style={{ background: C.PAPER, padding: 40, borderRadius: 20, border: `1px dashed ${C.LINE}`, color: C.MUTED }}>No hay medicamentos por reabastecer aún.</div>
                   ) : (
@@ -2580,7 +2502,7 @@ function VerEventos({ C, onCerrar }) {
                           {c.tipo === "médico" ? <Activity size={18} color={C.TEAL} /> : c.tipo === "familia" ? <Users size={18} color={C.TEAL} /> : <MapPin size={18} color={C.TEAL} />}
                         </div>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontWeight: 700, fontSize: 14 }}>{c.nombre}</div>
+                          <div style={{ fontWeight: 700, fontSize: 14, color: C.INK }}>{c.nombre}</div>
                           <div style={{ fontSize: 12, color: C.MUTED }}>{c.telefono} · {c.tipo}</div>
                         </div>
                         <a href={`tel:${c.telefono}`} className="btn-press-soft" style={{ padding: "8px 14px", borderRadius: 10, background: C.TEAL, color: "#fff", fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Llamar</a>
@@ -2590,7 +2512,7 @@ function VerEventos({ C, onCerrar }) {
                   </div>
                 )}
                 <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 16, padding: 16, boxShadow: C.SHADOW }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}>Agregar contacto</div>
+                  <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10, color: C.INK }}>Agregar contacto</div>
                   <input value={formContacto.nombre} onChange={(e) => setFormContacto({ ...formContacto, nombre: e.target.value })} placeholder="Nombre" style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${C.LINE}`, fontSize: 13, marginBottom: 8, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
                   <input value={formContacto.telefono} onChange={(e) => setFormContacto({ ...formContacto, telefono: e.target.value })} placeholder="Teléfono" style={{ width: "100%", padding: "10px 12px", borderRadius: 10, border: `1.5px solid ${C.LINE}`, fontSize: 13, marginBottom: 8, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
                   <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
@@ -2616,7 +2538,7 @@ function VerEventos({ C, onCerrar }) {
                     {[...(familia.historialCambios || [])].reverse().map((h) => (
                       <div key={h.id} style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 12, padding: 12 }}>
                         <div style={{ fontSize: 11, color: C.MUTED, marginBottom: 4 }}>{new Date(h.fecha).toLocaleString("es-CL")} · {h.cuidador}</div>
-                        <div style={{ fontSize: 13, fontWeight: 600 }}>{h.accion}: {h.detalle}</div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: C.INK }}>{h.accion}: {h.detalle}</div>
                       </div>
                     ))}
                   </div>
@@ -2635,7 +2557,7 @@ function VerEventos({ C, onCerrar }) {
         {showAcercaDe && <AcercaDe C={C} onCerrar={() => setShowAcercaDe(false)} />}
         {showPolitica && <PoliticaPrivacidad C={C} onCerrar={() => setShowPolitica(false)} />}
         
-        {showAdmin && <PanelAdmin C={C} familias={familiasAdmin} onCerrar={() => setShowAdmin(false)} onAbrirDatos={() => { setShowAdmin(false); setShowDatos(true); }} onAbrirEventos={() => { setShowAdmin(false); setShowEventos(true); }} onAbrirMetricas={() => { setShowAdmin(false); setShowMetricasCORFO(true); }} />}
+        {showAdmin && <PanelAdmin C={C} familias={familiasAdmin} onCerrar={() => setShowAdmin(false)} onAbrirDatos={() => setShowDatos(true)} onAbrirEventos={() => setShowEventos(true)} onAbrirMetricas={() => setShowMetricasCORFO(true)} />}
         {showDatos && <DatosAdministrativos C={C} onCerrar={() => setShowDatos(false)} onReset={() => { try { localStorage.removeItem("datos_admin_global"); } catch (e) {} }} />}
         {showEventos && <VerEventos C={C} onCerrar={() => setShowEventos(false)} />}
         {showMetricasCORFO && <PanelMetricasCORFO C={C} onCerrar={() => setShowMetricasCORFO(false)} />}
@@ -2644,7 +2566,7 @@ function VerEventos({ C, onCerrar }) {
         {showCarroCompleto && <CarroCompleto C={C} meds={medsCarro} onCerrar={() => setShowCarroCompleto(false)} onElegirFarmacia={abrirFarmaciaCarro} />}
 
         {showSelectorRol && <SelectorRol C={C} onSeleccionar={(rol) => seleccionarRol(rol)} onCerrar={() => setShowSelectorRol(false)} />}
-        {showOnboarding && <OnboardingCORFO C={C} onCerrar={completarOnboarding} onGuardar={completarOnboarding} />}
+        {showOnboarding && rolUsuario !== "mayor" && <OnboardingCORFO C={C} onCerrar={completarOnboarding} onGuardar={completarOnboarding} />}
 
         {showTutorial && <TutorialInteractivo pasos={PASOS_TUTORIAL} onCerrar={() => { setShowTutorial(false); actualizar((prev) => ({ ...prev, settings: { ...prev.settings, tutorialVisto: true } })); registrarEvento(codigo, "tutorial_completado", "Tutorial finalizado", { cuidador: nombreCuidadorInput }); }} C={C} onAbrirMenu={() => setShowMenuLateral(true)} />}
 
@@ -2652,7 +2574,7 @@ function VerEventos({ C, onCerrar }) {
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 35 }}>
             <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 24, padding: 24, margin: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <div style={{ fontWeight: 700, fontSize: 18, display: "flex", alignItems: "center", gap: 8 }}><Phone size={18} color={C.CORAL} /> Emergencia</div>
+                <div style={{ fontWeight: 700, fontSize: 18, display: "flex", alignItems: "center", gap: 8, color: C.INK }}><Phone size={18} color={C.CORAL} /> Emergencia</div>
                 <button onClick={() => setShowContactos(false)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer" }}><X size={15} color={C.INK} /></button>
               </div>
               {contactos.length === 0 ? (<div style={{ textAlign: "center", fontSize: 13, color: C.MUTED, padding: 20 }}>Aún no hay contactos cargados.</div>) : (
@@ -2676,7 +2598,7 @@ function VerEventos({ C, onCerrar }) {
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 34 }}>
             <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 20, padding: 24, margin: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                <div style={{ fontWeight: 700, fontSize: 16 }}>Notas de {showNotas.name}</div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: C.INK }}>Notas de {showNotas.name}</div>
                 <button onClick={() => setShowNotas(null)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer" }}><X size={15} color={C.INK} /></button>
               </div>
               <textarea defaultValue={showNotas.notas || ""} onChange={(e) => setShowNotas({ ...showNotas, _n: e.target.value })} placeholder="Ej. No tomarlo con lácteos" rows={4} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, marginBottom: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, fontFamily: "inherit", resize: "vertical", outline: "none" }} />
@@ -2690,7 +2612,7 @@ function VerEventos({ C, onCerrar }) {
             <div className="modal-slide" style={{ width: "100%", maxWidth: 420, background: C.CREAM, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, boxShadow: "0 -8px 30px rgba(0,0,0,0.2)" }}>
               <div style={{ width: 40, height: 4, background: C.LINE, borderRadius: 999, margin: "0 auto 16px" }} />
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                <div style={{ fontWeight: 700, fontSize: 18 }}>Compartir por WhatsApp</div>
+                <div style={{ fontWeight: 700, fontSize: 18, color: C.INK }}>Compartir por WhatsApp</div>
                 <button onClick={() => setShowCompartir(false)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer" }}><X size={16} color={C.INK} /></button>
               </div>
               <button onClick={() => compartirWhatsApp("resumen")} className="btn-press-soft" style={{ width: "100%", padding: 14, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.INK, fontWeight: 700, fontSize: 14, cursor: "pointer", marginBottom: 10, textAlign: "left", display: "flex", alignItems: "center", gap: 12 }}><FileText size={18} color={C.TEAL} /> Resumen del día</button>
@@ -2702,7 +2624,7 @@ function VerEventos({ C, onCerrar }) {
         {showAddPersona && (
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 33 }}>
             <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 20, padding: 24, margin: 20, boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
-              <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 14 }}>Agregar paciente</div>
+              <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 14, color: C.INK }}>Agregar paciente</div>
               <input value={nombrePersonaNueva} onChange={(e) => setNombrePersonaNueva(e.target.value)} placeholder="Ej. Pedro González" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, marginBottom: 10, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
               <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6 }}><Cake size={12} /> EDAD (OPCIONAL)</div>
               <input type="number" min="0" max="120" value={edadPersonaNueva} onChange={(e) => setEdadPersonaNueva(e.target.value)} placeholder="Ej. 82" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, marginBottom: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
@@ -2718,7 +2640,7 @@ function VerEventos({ C, onCerrar }) {
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 32 }}>
             <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 24, padding: 26, margin: 20, textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
               <div style={{ width: 64, height: 64, borderRadius: 999, background: C.GOLD + "15", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}><Lock size={30} color={C.GOLD} strokeWidth={2.2} /></div>
-              <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Llegaste al límite</div>
+              <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8, color: C.INK }}>Llegaste al límite</div>
               <div style={{ fontSize: 13, color: C.MUTED, marginBottom: 18 }}>{showLimite === "meds" ? "En Estándar puedes tener hasta 4 medicamentos." : "En Estándar puedes cuidar a 1 persona."} Con Premium, sin límites.</div>
               <button onClick={() => { setShowLimite(null); setShowPremium(true); }} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: `linear-gradient(135deg, ${C.GOLD}, #E65100)`, color: "#fff", fontWeight: 700, cursor: "pointer", marginBottom: 10 }}>Ver Premium</button>
               <button onClick={() => setShowLimite(null)} className="btn-press-soft" style={{ width: "100%", padding: 12, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.MUTED, fontWeight: 700, cursor: "pointer" }}>Cerrar</button>
@@ -2731,14 +2653,14 @@ function VerEventos({ C, onCerrar }) {
             <div className="modal-slide" style={{ width: "100%", maxWidth: 420, background: C.CREAM, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 -8px 30px rgba(0,0,0,0.25)" }}>
               <div style={{ width: 40, height: 4, background: C.LINE, borderRadius: 999, margin: "0 auto 16px" }} />
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                <div style={{ fontWeight: 700, fontSize: 20, display: "flex", alignItems: "center", gap: 8 }}><Crown size={22} color={C.GOLD} /> Hazte Premium</div>
+                <div style={{ fontWeight: 700, fontSize: 20, display: "flex", alignItems: "center", gap: 8, color: C.INK }}><Crown size={22} color={C.GOLD} /> Hazte Premium</div>
                 <button onClick={() => setShowPremium(false)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer" }}><X size={16} color={C.INK} /></button>
               </div>
               <div style={{ background: `linear-gradient(135deg, ${C.GOLD}, #E65100)`, borderRadius: 16, padding: 20, color: "#fff", marginBottom: 18, textAlign: "center", boxShadow: "0 8px 24px rgba(249,168,37,0.35)" }}>
                 <div style={{ fontSize: 30, fontWeight: 800 }}>$3.990</div>
                 <div style={{ fontSize: 12, opacity: 0.9 }}>al mes · o $29.990 al año</div>
               </div>
-              <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, marginBottom: 16, fontSize: 12.5, lineHeight: 1.8, boxShadow: C.SHADOW }}>
+              <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 14, marginBottom: 16, fontSize: 12.5, lineHeight: 1.8, boxShadow: C.SHADOW, color: C.INK }}>
                 <div>Medicamentos ilimitados</div>
                 <div>Hasta 3 personas mayores</div>
                 <div>Cuidadores ilimitados</div>
@@ -2789,9 +2711,8 @@ function VerEventos({ C, onCerrar }) {
               <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6 }}>¿YA TIENES UN CÓDIGO?</div>
               <div style={{ display: "flex", gap: 8 }}>
                 <input value={codigoPremium} onChange={(e) => setCodigoPremium(e.target.value)} placeholder="Ingresa tu código" style={{ flex: 1, padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 13, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
-                <button onClick={canjearCodigo} className="btn-press" style={{ padding: "12px 18px", borderRadius: 12, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Canjear</button>
+                <button id="btn-canjear-qr" onClick={canjearCodigo} className="btn-press" style={{ padding: "12px 18px", borderRadius: 12, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Canjear</button>
               </div>
-            
             </div>
           </div>
         )}
@@ -2800,7 +2721,7 @@ function VerEventos({ C, onCerrar }) {
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.55)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 25 }}>
             <div className="modal-slide" style={{ width: "100%", maxWidth: 420, background: C.CREAM, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "85vh", overflowY: "auto", boxShadow: "0 -8px 30px rgba(0,0,0,0.25)" }}>
               <div style={{ width: 40, height: 4, background: C.LINE, borderRadius: 999, margin: "0 auto 16px" }} />
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}><div style={{ fontWeight: 700, fontSize: 17 }}>{editandoId ? "Editar medicamento" : "Nuevo medicamento"}</div><button onClick={() => setShowAdd(false)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer" }}><X size={16} color={C.INK} /></button></div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}><div style={{ fontWeight: 700, fontSize: 17, color: C.INK }}>{editandoId ? "Editar medicamento" : "Nuevo medicamento"}</div><button onClick={() => setShowAdd(false)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer" }}><X size={16} color={C.INK} /></button></div>
               <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6 }}>NOMBRE</div>
               <input value={form.name || ""} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value, receta: null, criticidad: null }))} placeholder="Ej. Losartán" style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, marginBottom: 8, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
               {form.name && form.name.trim().length > 2 && detectarCriticidad(form.name) === "vital" && (<div style={{ background: "#FFEBEE", border: `1px solid #FFCDD2`, borderRadius: 12, padding: "10px 12px", fontSize: 12, color: C.CORAL, marginBottom: 10, fontWeight: 600 }}>Medicamento vital. Aviso fijo a los 2 min.</div>)}
@@ -2853,7 +2774,7 @@ function VerEventos({ C, onCerrar }) {
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 28 }}>
             <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 24, padding: 26, margin: 20, textAlign: "center" }}>
               <div style={{ width: 64, height: 64, borderRadius: 999, background: C.CORAL + "15", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}><Trash2 size={30} color={C.CORAL} strokeWidth={2.2} /></div>
-              <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>¿Terminar tratamiento de {archivarTarget.name}?</div>
+              <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 8, color: C.INK }}>¿Terminar tratamiento de {archivarTarget.name}?</div>
               <div style={{ fontSize: 13, color: C.MUTED, marginBottom: 18 }}>Se archivará y podrás verlo en "Medicamentos anteriores".</div>
               <div style={{ display: "flex", gap: 10 }}>
                 <button onClick={() => setArchivarTarget(null)} className="btn-press-soft" style={{ flex: 1, padding: 12, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.MUTED, fontWeight: 700, cursor: "pointer" }}>Cancelar</button>
@@ -2866,7 +2787,7 @@ function VerEventos({ C, onCerrar }) {
         {restockTarget && (
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 26 }}>
             <div className="modal-scale" style={{ width: "100%", maxWidth: 340, background: C.CREAM, borderRadius: 20, padding: 24, textAlign: "center", margin: 20 }}>
-              <div style={{ fontWeight: 700, fontSize: 16 }}>Reponer {restockTarget.name}</div>
+              <div style={{ fontWeight: 700, fontSize: 16, color: C.INK }}>Reponer {restockTarget.name}</div>
               <input type="number" min="1" defaultValue={30} onChange={(e) => setRestockTarget({ ...restockTarget, _c: Number(e.target.value) })} style={{ width: "100%", marginTop: 14, padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 16, textAlign: "center", boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
               <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
                 <button onClick={() => setRestockTarget(null)} className="btn-press-soft" style={{ flex: 1, padding: 12, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.MUTED, fontWeight: 700, cursor: "pointer" }}>Cancelar</button>
@@ -2880,7 +2801,7 @@ function VerEventos({ C, onCerrar }) {
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 29 }}>
             <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 20, padding: 24, textAlign: "center", margin: 20 }}>
               <div style={{ width: 56, height: 56, borderRadius: 999, background: C.GOLD + "15", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}><RefreshCw size={26} color={C.GOLD} strokeWidth={2.2} /></div>
-              <div style={{ fontWeight: 700, fontSize: 16 }}>Reconteo Manual de {reconteoTarget.name}</div>
+              <div style={{ fontWeight: 700, fontSize: 16, color: C.INK }}>Reconteo Manual de {reconteoTarget.name}</div>
               <div style={{ fontSize: 12, color: C.MUTED, marginTop: 8, marginBottom: 14 }}>Ingresa el stock real que tienes actualmente.</div>
               <input type="number" defaultValue={reconteoTarget.stock} onChange={(e) => setReconteoTarget({ ...reconteoTarget, _c: Number(e.target.value) })} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 20, textAlign: "center", boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
               <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
@@ -2895,7 +2816,7 @@ function VerEventos({ C, onCerrar }) {
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 30 }}>
             <div className="modal-scale" style={{ width: "100%", maxWidth: 340, background: C.CREAM, borderRadius: 20, padding: 24, margin: 20 }}>
               <div style={{ width: 48, height: 48, borderRadius: 999, background: C.GOLD + "15", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 12 }}><Sparkles size={22} color={C.GOLD} /></div>
-              <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8 }}>{linkAbierto.farmacia ? `Ir a ${linkAbierto.farmacia}` : "Abrir enlace"}</div>
+              <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 8, color: C.INK }}>{linkAbierto.farmacia ? `Ir a ${linkAbierto.farmacia}` : "Abrir enlace"}</div>
               <a href={linkAbierto.url} target="_blank" rel="noopener noreferrer" style={{ display: "block", fontSize: 13, color: C.TEAL, wordBreak: "break-all", background: C.PAPER, padding: 10, borderRadius: 10, border: `1px solid ${C.LINE}`, textDecoration: "underline", marginBottom: 14 }}>{linkAbierto.url}</a>
               <button onClick={() => setLinkAbierto(null)} className="btn-press" style={{ width: "100%", padding: 12, borderRadius: 12, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Cerrar</button>
             </div>
@@ -2907,13 +2828,13 @@ function VerEventos({ C, onCerrar }) {
             <div className="modal-slide" style={{ width: "100%", maxWidth: 420, background: C.CREAM, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "90vh", overflowY: "auto" }}>
               <div style={{ width: 40, height: 4, background: C.LINE, borderRadius: 999, margin: "0 auto 16px" }} />
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-                <div style={{ fontWeight: 700, fontSize: 18 * scale }}>Ajustes</div>
+                <div style={{ fontWeight: 700, fontSize: 18 * scale, color: C.INK }}>Ajustes</div>
                 <button onClick={() => setShowAjustes(false)} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer" }}><X size={16} color={C.INK} /></button>
               </div>
 
               <div style={{ fontSize: 13, fontWeight: 700, color: C.MUTED, marginBottom: 10 }}>NOTIFICACIONES</div>
               <button onClick={() => { actualizarSettings({ notificarConfirmacion: !settings.notificarConfirmacion }); }} className="btn-press-soft" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 2 }}>
-                <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 10 }}><BellRing size={18} color={settings.notificarConfirmacion ? C.TEAL : C.MUTED} /> Avisarme cuando confirmen</span>
+                <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 10, color: C.INK }}><BellRing size={18} color={settings.notificarConfirmacion ? C.TEAL : C.MUTED} /> Avisarme cuando confirmen</span>
                 <span style={{ width: 46, height: 26, borderRadius: 999, background: settings.notificarConfirmacion ? C.TEAL : C.LINE, position: "relative" }}><span style={{ position: "absolute", top: 3, left: settings.notificarConfirmacion ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
               </button>
               <div style={{ fontSize: 11, color: C.MUTED, marginBottom: 16, marginLeft: 28 }}>
@@ -2922,13 +2843,13 @@ function VerEventos({ C, onCerrar }) {
 
               <div style={{ fontSize: 13, fontWeight: 700, color: C.MUTED, marginBottom: 10 }}>ALERTAS DEL ADULTO MAYOR</div>
               <button onClick={() => { actualizarSettings({ sonidoActivo: !settings.sonidoActivo }); }} className="btn-press-soft" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 10 }}>
-                <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 10 }}>{settings.sonidoActivo ? <Volume2 size={18} color={C.TEAL} /> : <VolumeX size={18} color={C.MUTED} />} Alerta con sonido</span>
+                <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 10, color: C.INK }}>{settings.sonidoActivo ? <Volume2 size={18} color={C.TEAL} /> : <VolumeX size={18} color={C.MUTED} />} Alerta con sonido</span>
                 <span style={{ width: 46, height: 26, borderRadius: 999, background: settings.sonidoActivo ? C.TEAL : C.LINE, position: "relative" }}><span style={{ position: "absolute", top: 3, left: settings.sonidoActivo ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
               </button>
 
               <div style={{ fontSize: 13, fontWeight: 700, color: C.MUTED, marginBottom: 10 }}>PREFERENCIAS VISUALES</div>
               <button onClick={() => { actualizarSettings({ darkMode: !oscuro }); }} className="btn-press-soft" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 20 }}>
-                <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 10 }}>{oscuro ? <Sun size={18} color={C.AMBER} /> : <Moon size={18} color={C.MUTED} />} Modo oscuro</span>
+                <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 10, color: C.INK }}>{oscuro ? <Sun size={18} color={C.AMBER} /> : <Moon size={18} color={C.MUTED} />} Modo oscuro</span>
                 <span style={{ width: 46, height: 26, borderRadius: 999, background: oscuro ? C.TEAL : C.LINE, position: "relative" }}><span style={{ position: "absolute", top: 3, left: oscuro ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
               </button>
 
@@ -2941,7 +2862,7 @@ function VerEventos({ C, onCerrar }) {
                 ))}
               </div>
               <button onClick={() => { actualizarSettings({ daltonico: !settings.daltonico }); }} className="btn-press-soft" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 20 }}>
-                <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 10 }}><Eye size={18} color={settings.daltonico ? C.TEAL : C.MUTED} /> Modo Daltónico</span>
+                <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 10, color: C.INK }}><Eye size={18} color={settings.daltonico ? C.TEAL : C.MUTED} /> Modo Daltónico</span>
                 <span style={{ width: 46, height: 26, borderRadius: 999, background: settings.daltonico ? C.TEAL : C.LINE, position: "relative" }}><span style={{ position: "absolute", top: 3, left: settings.daltonico ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
               </button>
               
