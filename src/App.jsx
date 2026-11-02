@@ -2065,7 +2065,7 @@ export default function App() {
         if (pp && nowMin < pp.postergadoEn + 5) return;
 
         const diff = nowMin - toMinutes(t);
-        if (diff >= 0 && diff <= 60) {
+        if (diff >= 0 && diff <= 1) {
           if (!dueTimes[t]) dueTimes[t] = [];
           dueTimes[t].push({ med: m, time: t, key });
         }
