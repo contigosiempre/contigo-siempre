@@ -8,7 +8,8 @@
   "main": "index.js",
   "dependencies": {
     "firebase-admin": "^12.0.0",
-    "firebase-functions": "^4.5.0"
+    "firebase-functions": "^4.5.0",
+    "firebase-functions/v1": "latest"
   },
   "private": true
 }
