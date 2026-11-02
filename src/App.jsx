@@ -1720,10 +1720,16 @@ export default function App() {
         if (!audioCtxRef && AC) audioCtxRef = new AC();
         if (audioCtxRef && audioCtxRef.state === "suspended") audioCtxRef.resume();
       } catch (e) {}
-      window.removeEventListener("pointerdown", unlock);
     };
+    // Escuchamos varios eventos táctiles para asegurar que se active
     window.addEventListener("pointerdown", unlock);
-    return () => window.removeEventListener("pointerdown", unlock);
+    window.addEventListener("touchstart", unlock);
+    window.addEventListener("click", unlock);
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("touchstart", unlock);
+      window.removeEventListener("click", unlock);
+    };
   }, []);
 
   useEffect(() => {
