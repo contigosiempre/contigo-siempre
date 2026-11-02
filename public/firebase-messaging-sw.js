@@ -15,20 +15,16 @@ const messaging = firebase.messaging();
 
 // Manejar notificaciones en segundo plano (celular bloqueado o app cerrada)
 messaging.onBackgroundMessage((payload) => {
-  console.log('[service-worker.js] Mensaje recibido en segundo plano:', payload);
+  console.log('[service-worker.js] Mensaje en segundo plano:', payload);
   
   const notificationTitle = payload.notification?.title || "Contigo Siempre";
   const notificationOptions = {
     body: payload.notification?.body || "Es hora de tomar tu medicamento",
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
-    vibrate: [1000, 500, 1000, 500, 1000, 500, 1000],
-    sound: 'default',
+    vibrate: [1000, 500, 1000, 500, 1000],
     requireInteraction: true,
-    renotify: true,
-    silent: false,
     priority: 'high',
-    importance: 'high',
     actions: [
       { action: 'tomar', title: '✓ Ya la tomé' },
       { action: 'postergar', title: '⏰ Postergar 5 min' }
@@ -80,8 +76,8 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // ==================== CACHÉ DE LA PWA ====================
-// IMPORTANTE: Cambiamos a v15 para que los celulares borren la caché vieja
-const CACHE_NAME = 'contigo-siempre-v15';
+// Punto 18: network-first para que la app se actualice sola
+const CACHE_NAME = 'contigo-siempre-v16';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
@@ -91,7 +87,6 @@ const URLS_TO_CACHE = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      // Uno por uno, para que no falle si falta un archivo
       return Promise.all(
         URLS_TO_CACHE.map((url) => cache.add(url).catch((err) => console.warn('No se pudo cachear:', url)))
       );
@@ -118,9 +113,14 @@ self.addEventListener('fetch', (event) => {
   if (event.request.url.includes('firebase')) return;
   if (event.request.method !== 'GET') return;
 
+  // Network first (intenta red, si falla usa caché)
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      return response || fetch(event.request);
-    })
+    fetch(event.request)
+      .then((response) => {
+        const responseClone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
