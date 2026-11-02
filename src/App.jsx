@@ -545,13 +545,16 @@ function PantallaAlertaMedicamento({
       )}
 
       {/* Punto 8: botón de posponer vuelve a aparecer, solo 1 vez, solo normales/importantes */}
-      {puedePosponer && (
+          {puedePosponer && (
         <button
-          onClick={onPosponer}
+          onClick={() => {
+            if (onPosponer) onPosponer();
+          }}
+          disabled={yaPostergada}
           className="btn-press-soft"
-          style={{ width: "100%", maxWidth: 380, padding: "14px 20px", borderRadius: 16, border: "2px solid rgba(255,255,255,0.4)", background: "transparent", color: "#FFFFFF", fontWeight: 700, fontSize: 15 * escala, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 4 }}
+          style={{ width: "100%", maxWidth: 380, padding: "14px 20px", borderRadius: 16, border: "2px solid rgba(255,255,255,0.4)", background: "transparent", color: "#FFFFFF", fontWeight: 700, fontSize: 15 * escala, cursor: yaPostergada ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 4, opacity: yaPostergada ? 0.5 : 1 }}
         >
-          <Clock size={18} /> Recordar en 5 minutos
+          <Clock size={18} /> {yaPostergada ? "Ya postergado" : "Recordar en 5 minutos"}
         </button>
       )}
 
