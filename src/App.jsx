@@ -2377,54 +2377,37 @@ export default function App() {
   // ==================== PUNTO 4: CONFIRMACIÓN INDIVIDUAL ====================
   // Confirma UN solo remedio de la alerta activa. Baja su stock, guarda en la nube,
   // lo marca en verde en pantalla, y NO cierra la pantalla hasta que no queden pendientes.
-  const confirmarUno = (med) => {
-    if (!alertaActiva || !med) return;
+   const confirmarUno = (med) => {
+    if (!med) return;
+    const horaConfirmar = alertaActiva?.time || (med.times && med.times[0]) || nowHHMM();
 
-    // Registrar la confirmación de este med
     actualizarPersona((p) => {
       const fecha = todayStr();
       const nc = { ...(p.confirmedByDate || {}) };
-      const key = occKey(med.id, alertaActiva.time);
-      nc[fecha] = { ...(nc[fecha] || {}), [key]: true };
-      const nm = (p.meds || []).map((m) => {
-        if (m.id === med.id) {
-          return { ...m, stock: Math.max(0, +(m.stock - (m.doseAmount || 1)).toFixed(2)) };
-        }
-        return m;
-      });
+      nc[fecha] = { ...(nc[fecha] || {}), [occKey(med.id, horaConfirmar)]: true };
+      const nm = (p.meds || []).map((m) => 
+        m.id === med.id ? { ...m, stock: Math.max(0, +(m.stock - (m.doseAmount || 1)).toFixed(2)) } : m
+      );
       return { ...p, meds: nm, confirmedByDate: nc, ultimaConexion: Date.now() };
     });
 
-    registrarEvento(codigo, "confirmar_toma", `${med.name} a las ${fmtHoraConAmPm(alertaActiva.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: med.name, hora: alertaActiva.time });
+    registrarEvento(codigo, "confirmar_toma", `${med.name} a las ${fmtHoraConAmPm(horaConfirmar)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: med.name, hora: horaConfirmar });
 
-    // Marcar en pantalla como confirmado
-    setConfirmadosIds((prev) => {
-      const nuevos = prev.includes(med.id) ? prev : [...prev, med.id];
-      const pendientesRestantes = alertaActiva.meds.filter((m) => !nuevos.includes(m.id));
-      // Si ya no quedan pendientes, cerrar la alerta y limpiar timers
-      if (pendientesRestantes.length === 0) {
-        timersAlertaRef.current.forEach(clearTimeout);
-        timersAlertaRef.current = [];
-        alertaCerraraRef.current = false;
-        alertaActivaRef.current = null;
-        if (sonidoIntervalRef.current) {
-          clearInterval(sonidoIntervalRef.current);
-          sonidoIntervalRef.current = null;
+    if (alertaActiva) {
+      setConfirmadosIds((prev) => {
+        const nuevos = prev.includes(med.id) ? prev : [...prev, med.id];
+        if (alertaActiva.meds.filter((m) => !nuevos.includes(m.id)).length === 0) {
+          timersAlertaRef.current.forEach(clearTimeout);
+          alertaActivaRef.current = null;
+          if (sonidoIntervalRef.current) clearInterval(sonidoIntervalRef.current);
+          setTimeout(() => { setAlertaActiva(null); setConfirmadosIds([]); setYaPostergadaActual(false); }, 300);
         }
-        setTimeout(() => {
-          setAlertaActiva(null);
-          setConfirmadosIds([]);
-          setYaPostergadaActual(false);
-        }, 300);
-      }
-      return nuevos;
-    });
-
-    // Notificar al cuidador si corresponde (solo cuando ya no quedan pendientes, para no spamear)
-    // (Se maneja en el cierre de arriba)
+        return nuevos;
+      });
+    } else if (familia?.settings?.notificarConfirmacion && Notification?.permission === "granted") {
+      mostrarNotificacion("Toma confirmada", { body: `${elderName.split(" ")[0]} confirmó: ${med.name}` });
+    }
   };
-
-  // Punto 4: confirmar todos los pendientes de un toque (opcional)
   const confirmarTodosPendientes = () => {
     if (!alertaActiva) return;
     const pendientes = alertaActiva.meds.filter((m) => !confirmadosIds.includes(m.id));
