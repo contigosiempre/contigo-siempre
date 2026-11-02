@@ -3,7 +3,7 @@ import { Clock, Check, AlertTriangle, Plus, X, User, Users, Heart, PackageOpen, 
 
 const STORAGE_PREFIX = "familia_";
 const EVENTOS_COLLECTION = "eventos";
-const APP_VERSION = "2.2.8-estable";
+const APP_VERSION = "2.4.0-estable";
 const MINUTOS_SIN_CONEXION_ALERTA = 5;
 
 const FIREBASE_CONFIG = {
@@ -30,7 +30,8 @@ const LIMITES_ESTANDAR = { maxMeds: 4, maxElderly: 1, maxCuidadores: 2 };
 
 const MEDS_CON_RECETA = ["losartan","losartán","metformina","enalapril","amlodipino","atorvastatina","simvastatina","carvedilol","furosemida","hidroclorotiazida","omeprazol","clonazepam","alprazolam","sertralina","fluoxetina","levotiroxina","warfarina","clopidogrel","insulina","gabapentina","pregabalina","tramadol","morfina","fentanilo","metotrexato","prednisona","salbutamol","budesonida","montelukast","alopurinol","colchicina","risperidona","quetiapina","olanzapina","valproato","carbamazepina","fenitoina","levetiracetam","donepezilo","memantina","rivastigmina"];
 const MEDS_SIN_RECETA = ["paracetamol","ibuprofeno","aspirina","naproxeno","diclofenaco","loratadina","cetirizina","clorfenamina","vitamina","multivitaminico","calcio","hierro","omega","magnesio","zinc","complejo b","sales de rehidratacion","suero","carbon activado"];
-const MEDS_VITALES = ["insulina","warfarina","clopidogrel","digoxina","amiodarona","fenitoina","fenitoína","carbamazepina","valproato","levetiracetam","metotrexato","ciclosporina","tacrolimus","rivaroxaban","rivaroxabán","apixaban","apixabán","dabigatran","dabigatrán"];
+// ✅ FIX Error 6: Se agregaron más medicamentos vitales
+const MEDS_VITALES = ["insulina","warfarina","clopidogrel","digoxina","amiodarona","fenitoina","fenitoína","carbamazepina","valproato","levetiracetam","metotrexato","ciclosporina","tacrolimus","rivaroxaban","rivaroxabán","apixaban","apixabán","dabigatran","dabigatrán","morfina","fentanilo","clonidina","prednisona","hidrocortisona","fenobarbital","litio"];
 
 const LIGHT = { INK: "#1A237E", TEAL: "#1976D2", CORAL: "#D32F2F", CREAM: "#FFFFFF", PAPER: "#FFFFFF", LINE: "#E0E4EB", MUTED: "#6B7A8F", AMBER: "#F9A825", GREEN: "#43A047", GOLD: "#F9A825", BG: "#F0F4F8", SHADOW: "0 2px 8px rgba(25,118,210,0.08)" };
 const DARK = { INK: "#F5F7FA", TEAL: "#64B5F6", CORAL: "#EF5350", CREAM: "#0F1B2E", PAPER: "#16243A", LINE: "#2A3A52", MUTED: "#90A4BE", AMBER: "#FFB74D", GREEN: "#66BB6A", GOLD: "#FFB74D", BG: "#0A1626", SHADOW: "0 2px 8px rgba(0,0,0,0.3)" };
@@ -119,16 +120,17 @@ function dateKeyOffset(days) {
 
 function nowHHMM() { const d = new Date(); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; }
 function toMinutes(t) { const [h, m] = t.split(":").map(Number); return h * 60 + m; }
+// ✅ FIX Error 8: Reloj cambiado a formato 24h
 function fmtHoraConAmPm(t) {
   if (!t || !t.includes(":")) return "";
-  const [h, m] = t.split(":").map(Number);
-  const sufijo = h >= 12 ? "p. m." : "a. m.";
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${String(h12).padStart(2, "0")}:${String(m).padStart(2, "0")} ${sufijo}`;
+  return t;
 }
-function a24Horas(h12, m, sufijo) { let h = h12 % 12; if (sufijo === "p. m.") h += 12; return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`; }
-function a12Horas(t) { const [h, m] = t.split(":").map(Number); const sufijo = h >= 12 ? "p. m." : "a. m."; const h12 = h % 12 === 0 ? 12 : h % 12; return { h12, m, sufijo }; }
-function fmt(mins) { const h = Math.floor(mins / 60) % 24; const m = mins % 60; const sufijo = h >= 12 ? "p. m." : "a. m."; const h12 = h % 12 === 0 ? 12 : h % 12; return `${String(h12).padStart(2, "0")}:${String(m).padStart(2, "0")} ${sufijo}`; }
+// ✅ FIX Error 8: Reloj cambiado a formato 24h
+function fmt(mins) { 
+  const h = Math.floor(mins / 60) % 24; 
+  const m = mins % 60; 
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`; 
+}
 function fmtN(n) { if (n === null || n === undefined) return ""; if (Number.isInteger(n)) return String(n); return String(parseFloat(n.toFixed(2))); }
 function occKey(id, t) { return `${id}__${t}`; }
 function genCode() { return String(Math.floor(100000 + Math.random() * 900000)); }
@@ -255,6 +257,23 @@ function vibrarPatron() {
   catch (e) {}
 }
 
+// ✅ FIX Error 3: Helper con fallback para notificaciones nativas
+function mostrarNotificacion(titulo, opciones) {
+  try {
+    if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
+      navigator.serviceWorker.getRegistration().then((r) => {
+        if (r) r.showNotification(titulo, opciones);
+        else new Notification(titulo, opciones);
+      }).catch(() => { new Notification(titulo, opciones); });
+    } else {
+      new Notification(titulo, opciones);
+    }
+  } catch (e) {
+    try { new Notification(titulo, opciones); } catch (err) {}
+  }
+}
+
 function cargarMessaging() {
   return new Promise((resolve, reject) => {
     const s = document.createElement("script");
@@ -277,8 +296,13 @@ async function obtenerTokenFCM() {
       await cargarMessaging();
       if (!window.firebase || !window.firebase.messaging) { clearTimeout(timeout); resolve(null); return; }
       const messaging = window.firebase.messaging();
-      const permiso = await Notification.requestPermission();
-      if (permiso !== "granted") { clearTimeout(timeout); resolve(null); return; }
+      
+      if (typeof Notification === "undefined" || Notification.permission !== "granted") {
+        clearTimeout(timeout);
+        resolve(null);
+        return;
+      }
+
       const registration = await navigator.serviceWorker.ready;
       const currentToken = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: registration });
       clearTimeout(timeout);
@@ -417,7 +441,8 @@ function PantallaAlertaMedicamento({ C, meds, hora, onConfirmar, onPosponer, esc
         </button>
       )}
 
-      {!esVital && !yaPostergada && !esAdultoMayor && (
+      {/* ✅ FIX Error 1: Se quitó la restricción !esAdultoMayor */}
+      {!esVital && !yaPostergada && (
         <button onClick={onPosponer} className="btn-press-soft" style={{ width: "100%", maxWidth: 360, padding: "16px 20px", borderRadius: 18, border: "2px solid rgba(255,255,255,0.4)", background: "transparent", color: "#FFFFFF", fontWeight: 700, fontSize: 16 * escala, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: esMultiple ? 20 : 0 }}>
           <Clock size={18} /> Recordar en 5 minutos
         </button>
@@ -464,7 +489,8 @@ function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
     boxShadow: "0 0 0 9999px rgba(10,18,38,0.85)", pointerEvents: "none", zIndex: 9998, transition: "all 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
   } : { position: "fixed", inset: 0, background: "rgba(10,18,38,0.85)", pointerEvents: "none", zIndex: 9998 };
 
-  const tooltipStyle = rect && rect.top > (window.innerHeight / 2) ? { top: Math.max(10, rect.top - 180) } : { bottom: 100 };
+  // ✅ FIX Error 5: El tooltip ya no tapa la barra de estado
+  const tooltipStyle = rect && rect.top > (window.innerHeight / 2) ? { top: 60 } : { bottom: 24 };
 
   return (
     <>
@@ -524,62 +550,18 @@ function EstadoVacio({ C, icono: Icono, titulo, texto, botonTexto, onBoton }) {
   );
 }
 
-function SelectorHora({ C, valor24, onCambio, onCerrar, oscuro }) {
-  const inicial = a12Horas(valor24 || "08:00");
-  const [h12, setH12] = useState(inicial.h12);
-  const [min, setMin] = useState(inicial.m);
-  const [sufijo, setSufijo] = useState(inicial.sufijo);
-  const horas = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-  const minutos = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
-  const sufijos = ["a. m.", "p. m."];
-  const confirmar = () => { const valor = a24Horas(h12, min, sufijo); onCambio(valor); onCerrar(); };
-  return (
-    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.6)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 90 }}>
-      <div className="modal-slide" style={{ width: "100%", maxWidth: 420, background: C.CREAM, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 28, boxShadow: "0 -8px 30px rgba(0,0,0,0.2)" }}>
-        <div style={{ width: 40, height: 4, background: C.LINE, borderRadius: 999, margin: "0 auto 16px" }} />
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <button onClick={onCerrar} className="btn-press-soft" style={{ border: "none", background: "transparent", color: C.MUTED, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>Cancelar</button>
-          <div style={{ fontWeight: 700, fontSize: 15, color: C.INK }}>Selecciona la hora</div>
-          <button onClick={confirmar} className="btn-press-soft" style={{ border: "none", background: "transparent", color: C.TEAL, fontWeight: 700, fontSize: 15, cursor: "pointer" }}>Listo</button>
-        </div>
-        <div style={{ background: oscuro ? "#1E2F48" : "#F0F4F8", borderRadius: 18, padding: 12, display: "flex", gap: 8, justifyContent: "center", maxHeight: 220 }}>
-          <Rueda items={horas} valor={h12} onChange={setH12} C={C} ancho={70} />
-          <Rueda items={minutos} valor={min} onChange={setMin} C={C} ancho={70} formato={(v) => String(v).padStart(2, "0")} />
-          <Rueda items={sufijos} valor={sufijo} onChange={setSufijo} C={C} ancho={90} />
-        </div>
-        <div style={{ textAlign: "center", marginTop: 14, fontSize: 22, fontWeight: 800, color: C.TEAL }}>{String(h12).padStart(2, "0")}:{String(min).padStart(2, "0")} {sufijo}</div>
-      </div>
-    </div>
-  );
+// ✅ FIX Error 8: Selector de hora nativo 24h
+function CampoHora({ C, valor, onCambio }) { 
+  return ( 
+    <input 
+      type="time" 
+      value={valor || "08:00"} 
+      onChange={(e) => { if (e.target.value) onCambio(e.target.value); }} 
+      style={{ flex: 1, padding: "12px 14px", borderRadius: 12, border: `1px solid ${C.LINE}`, fontSize: 16, boxSizing: "border-box", background: C.PAPER, color: C.INK, fontWeight: 700 }} 
+    /> 
+  ); 
 }
 
-function Rueda({ items, valor, onChange, C, ancho = 70, formato = (v) => String(v).padStart(2, "0") }) {
-  const ITEM_H = 40;
-  const VISIBLES = 5;
-  const ref = React.useRef(null);
-  useEffect(() => { const idx = items.indexOf(valor); if (ref.current && idx >= 0) ref.current.scrollTop = idx * ITEM_H; }, [valor, items]);
-  const handleScroll = () => { if (!ref.current) return; const idx = Math.round(ref.current.scrollTop / ITEM_H); if (idx >= 0 && idx < items.length && items[idx] !== valor) onChange(items[idx]); };
-  const seleccionar = (item) => { const idx = items.indexOf(item); if (ref.current && idx >= 0) ref.current.scrollTop = idx * ITEM_H; onChange(item); };
-  return (
-    <div style={{ width: ancho, height: ITEM_H * VISIBLES, overflowY: "scroll", scrollSnapType: "y mandatory", position: "relative", scrollbarWidth: "none" }} ref={ref} onScroll={handleScroll}>
-      <div style={{ height: ITEM_H * 2 }} />
-      {items.map((item, i) => { const activo = item === valor; return (<div key={i} onClick={() => seleccionar(item)} style={{ height: ITEM_H, display: "flex", alignItems: "center", justifyContent: "center", scrollSnapAlign: "center", fontSize: activo ? 26 : 20, fontWeight: activo ? 800 : 500, color: activo ? C.TEAL : C.MUTED, cursor: "pointer", transition: "all 0.15s ease" }}>{formato(item)}</div>); })}
-      <div style={{ height: ITEM_H * 2 }} />
-    </div>
-  );
-}
-
-function CampoHora({ C, valor, onCambio, oscuro }) {
-  const [abierto, setAbierto] = useState(false);
-  return (
-    <>
-      <button onClick={() => setAbierto(true)} className="btn-press-soft" style={{ flex: 1, padding: "12px 14px", borderRadius: 12, border: `1px solid ${C.LINE}`, fontSize: 16, boxSizing: "border-box", background: C.PAPER, color: C.INK, textAlign: "left", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
-        <Clock size={16} color={C.TEAL} /> {fmtHoraConAmPm(valor)}
-      </button>
-      {abierto && <SelectorHora C={C} valor24={valor} onCambio={onCambio} onCerrar={() => setAbierto(false)} oscuro={oscuro} />}
-    </>
-  );
-}
 // ==================== MODALES INFORMATIVOS Y MENÚ LATERAL ====================
 
 function MenuLateral({ C, abierto, onCerrar, tabActual, setTabActual, avisosNuevos, onCompartir, onModoOscuro, onAyuda, onAcercaDe, onPolitica, onPremium, onAjustes, onSoporte, onSalir, oscuro, cuidadorNombre, elderName }) {
@@ -1698,6 +1680,11 @@ export default function App() {
   const heartbeatRef = useRef(null);
   const sonidoIntervalRef = useRef(null);
 
+  // ✅ FIX Error 1 y 2: Nuevas referencias para controlar timers y evitar reapertura
+  const timersAlertaRef = useRef([]);
+  const alertaCerraraRef = useRef(false);
+  const alertaActivaRef = useRef(null);
+
   const PASOS_TUTORIAL = [
     { titulo: "Comparte este código", texto: "Este es el código mágico de tu familia. Es OBLIGATORIO compartirlo con el adulto mayor (y otros cuidadores) para que todos estén conectados. Toca el botón de WhatsApp para enviarlo.", target: '[data-tutorial="codigo"]', abrirMenu: false, cerrarMenu: false },
     { titulo: "Agregar medicamentos", texto: "Aquí agregas los remedios. Pon la dosis, horarios y stock. La app calculará automáticamente cuántos días quedan.", target: '[data-tutorial="add-med"]', abrirMenu: false, cerrarMenu: false },
@@ -1724,6 +1711,20 @@ export default function App() {
   }, []);
 
   useEffect(() => { const id = setInterval(() => setNowMin(toMinutes(nowHHMM())), 30000); return () => clearInterval(id); }, []);
+
+  // ✅ FIX Error 3: Audio desbloqueado al primer toque
+  useEffect(() => {
+    const unlock = () => {
+      try {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!audioCtxRef && AC) audioCtxRef = new AC();
+        if (audioCtxRef && audioCtxRef.state === "suspended") audioCtxRef.resume();
+      } catch (e) {}
+      window.removeEventListener("pointerdown", unlock);
+    };
+    window.addEventListener("pointerdown", unlock);
+    return () => window.removeEventListener("pointerdown", unlock);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(`alertas_sonadas_${todayStr()}`, JSON.stringify(alertasSonadasHoy));
@@ -1779,18 +1780,19 @@ export default function App() {
   useEffect(() => { cuandoDbListo((d) => { setFirebaseEstado(d ? "conectado" : "local"); }); }, []);
   useEffect(() => { if (familia && !personaActualId && familia.personas && familia.personas.length > 0) setPersonaActualId(familia.personas[0].id); }, [familia, personaActualId]);
 
+  // ✅ FIX Error 3: Permiso de notificaciones solo con botón, pero recupera token si ya existe
   useEffect(() => {
-    cuandoDbListo(async (d) => {
-      if (!d) return;
-      try {
+    if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+      cuandoDbListo(async (d) => {
+        if (!d) return;
         const token = await obtenerTokenFCM();
         if (token) {
           setTokenFCM(token);
-          if (codigo) { await guardarTokenEnFirestore(codigo, token); }
+          if (codigo) await guardarTokenEnFirestore(codigo, token, rolUsuario === "mayor" ? "paciente" : "cuidador");
         }
-      } catch (err) {}
-    });
-  }, [codigo]);
+      });
+    }
+  }, [codigo, rolUsuario]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -1880,18 +1882,24 @@ export default function App() {
     }
   }, [stage, familia, showSelectorRol, showOnboarding]);
 
-  // Efecto de alertas y sonidos
+  // ✅ FIX Error 1, 2 y 4: Efecto de alertas reescrito y controlado por referencias, y por rol.
   useEffect(() => {
     if (stage !== "app" || !familia || !personaActual) return;
-    if (view !== "mayor" && !(personaActual?.esAutocuidado)) return;
-    
+    if (rolUsuario !== "mayor" && !(personaActual?.esAutocuidado)) return;
+
+    if (alertaActivaRef.current) return;
+    if (alertaCerraraRef.current) return;
+
     const confirmedHoy = confirmedByDate?.[todayStr()] || {};
     const dueTimes = {};
-    
+
     meds.forEach(m => {
-      m.times.forEach(t => {
+      (m.times || []).forEach(t => {
         const key = occKey(m.id, t);
         if (confirmedHoy[key]) return;
+        const pp = alertasPostergadasRef.current[`${personaActual.id}_${m.id}_${t}`]; 
+        if (pp && nowMin < pp.postergadoEn + 5) return;
+        
         const diff = nowMin - toMinutes(t);
         if (diff >= 0 && diff <= 60) {
           if (!dueTimes[t]) dueTimes[t] = [];
@@ -1902,12 +1910,15 @@ export default function App() {
 
     const horaActualVencida = Object.keys(dueTimes).find(t => !alertasSonadasHoy[`sonada_${personaActual.id}_${t}_${todayStr()}`]);
 
-    if (horaActualVencida && !alertaActiva) {
+    if (horaActualVencida) {
       const medsVencidos = dueTimes[horaActualVencida];
       const ak = `sonada_${personaActual.id}_${horaActualVencida}_${todayStr()}`;
       
       setAlertasSonadasHoy(prev => ({ ...prev, [ak]: true }));
-      setAlertaActiva({ meds: medsVencidos.map(mv => mv.med), time: horaActualVencida, keys: medsVencidos.map(mv => mv.key) });
+      
+      const alertaObj = { meds: medsVencidos.map(mv => mv.med), time: horaActualVencida, keys: medsVencidos.map(mv => mv.key) };
+      setAlertaActiva(alertaObj);
+      alertaActivaRef.current = alertaObj;
       
       const esVitalAhora = medsVencidos.some(mv => (mv.med.criticidad || detectarCriticidad(mv.med.name)) === "vital");
       const duracionTotal = esVitalAhora ? 2 * 60 * 1000 : 6 * 60 * 1000;
@@ -1917,28 +1928,39 @@ export default function App() {
       registrarEvento(codigo, "alerta_activada", `Grupo ${horaActualVencida}`, { cuidador: nombreCuidadorInput, persona: elderName });
       
       if (sonidoIntervalRef.current) clearInterval(sonidoIntervalRef.current);
+      
+      timersAlertaRef.current.forEach(clearTimeout);
+      timersAlertaRef.current = [];
 
-      const timers = [];
-      if (esVitalAhora) {
-        timers.push(setTimeout(() => { if (settings.sonidoActivo !== false) reproducirAlertaSonido(); if (settings.vibracionActiva !== false) vibrarPatron(); }, 1 * 60 * 1000));
-      } else {
-        timers.push(setTimeout(() => { if (settings.sonidoActivo !== false) reproducirAlertaSonido(); if (settings.vibracionActiva !== false) vibrarPatron(); }, 3 * 60 * 1000));
-      }
+      const tSonido = setTimeout(() => { 
+        if (settings.sonidoActivo !== false) reproducirAlertaSonido(); 
+        if (settings.vibracionActiva !== false) vibrarPatron(); 
+      }, esVitalAhora ? 1 * 60 * 1000 : 3 * 60 * 1000);
+      timersAlertaRef.current.push(tSonido);
 
-      timers.push(setTimeout(() => {
+      const tCierre = setTimeout(() => {
+        alertaCerraraRef.current = true;
+        alertaActivaRef.current = null;
         setAlertaActiva(null);
-        setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[ak]; return nuevo; });
+
         const textoAviso = `⚠️ ${elderName.split(" ")[0]} no confirmó la toma de las ${fmtHoraConAmPm(horaActualVencida)} (${esVitalAhora ? 'VITAL' : 'Normal'}).`;
+        
         setSmsLog(prev => [...prev, { tipo: "alerta", hora: smsTime(), texto: textoAviso }]);
+        
         if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-          new Notification("Alerta de toma omitida", { body: textoAviso, icon: "/icons/icon-192.png" });
+          mostrarNotificacion("Alerta de toma omitida", { body: textoAviso, icon: "/icons/icon-192.png" });
         }
+        
         registrarEvento(codigo, "toma_omitida", `Grupo ${horaActualVencida}`, { cuidador: nombreCuidadorInput, persona: elderName });
-      }, duracionTotal));
+        
+        setTimeout(() => { alertaCerraraRef.current = false; }, 1000);
+      }, duracionTotal);
+      timersAlertaRef.current.push(tCierre);
     }
-  }, [nowMin, stage, familia, personaActual, confirmedByDate, view, alertaActiva, alertasSonadasHoy, settings, codigo, nombreCuidadorInput, elderName, meds, triggerPostergacion]);
+  }, [nowMin, stage, familia, personaActual, confirmedByDate, view, alertasSonadasHoy, settings, codigo, nombreCuidadorInput, elderName, meds, triggerPostergacion, rolUsuario]);
 
   useEffect(() => {
+    alertaActivaRef.current = alertaActiva;
     if (!alertaActiva) {
       if (sonidoIntervalRef.current) {
         clearInterval(sonidoIntervalRef.current);
@@ -1997,13 +2019,14 @@ export default function App() {
       setSmsLog((prev) => [...prev, { tipo: "ok", hora: smsTime(), texto: textoResumen }]);
       
       if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-        new Notification("Resumen del día - Contigo Siempre", { body: textoResumen, icon: "/icons/icon-192.png" });
+        mostrarNotificacion("Resumen del día - Contigo Siempre", { body: textoResumen, icon: "/icons/icon-192.png" });
       }
       setResumenEnviadoHoy(true);
     }
 
     if (nuevas.length > 0) setSmsLog((prev) => [...prev, ...nuevas]);
   }, [nowMin, stage, familia, personaActual, alertasDisparadas, resumenEnviadoHoy, esPremium, elderName, meds, confirmedByDate, personaDesconectada]);
+
   // ==================== HANDLERS Y LÓGICA DE ACCIONES ====================
 
   const guardarFamilia = useCallback(async (cod, data) => {
@@ -2095,7 +2118,15 @@ export default function App() {
   const crearFamilia = async () => {
     if (!nombreInput.trim() || !nombreCuidadorInput.trim()) { setError("Completa el nombre del cuidador y de la persona mayor"); return; }
     if (edadInput && (isNaN(Number(edadInput)) || Number(edadInput) < 0 || Number(edadInput) > 120)) { setError("La edad debe ser un número entre 0 y 120"); return; }
-    const cod = genCode();
+    
+    // ✅ FIX Error 6: Evitar colisión de códigos
+    let cod = genCode();
+    for (let i = 0; i < 5; i++) { 
+      const ex = await storage.get(STORAGE_PREFIX + cod); 
+      if (!ex) break; 
+      cod = genCode(); 
+    }
+    
     const personaId = Date.now();
     const edadNum = edadInput ? Number(edadInput) : null;
     const nueva = {
@@ -2188,7 +2219,29 @@ export default function App() {
     else alert("Código no válido");
   };
 
+  // ✅ FIX Error 3: Función para activar notificaciones desde un botón
+  const activarNotificaciones = async () => { 
+    try { 
+      const tk = await obtenerTokenFCM(); 
+      if (tk) { 
+        setTokenFCM(tk); 
+        if (codigo) await guardarTokenEnFirestore(codigo, tk, rolUsuario === "mayor" ? "paciente" : "cuidador"); 
+        alert("Notificaciones activadas"); 
+      } else { 
+        alert("No se pudieron activar. Revisa el permiso de notificaciones del navegador."); 
+      } 
+    } catch (e) { 
+      alert("No se pudieron activar las notificaciones."); 
+    } 
+  };
+
+  // ✅ FIX Error 1 y 2: Cancelar timers al confirmar
   const confirmar = (occData) => {
+    timersAlertaRef.current.forEach(clearTimeout);
+    timersAlertaRef.current = [];
+    alertaCerraraRef.current = false;
+    alertaActivaRef.current = null;
+
     actualizarPersona((p) => {
       const fecha = todayStr();
       const nc = { ...(p.confirmedByDate || {}) };
@@ -2213,14 +2266,22 @@ export default function App() {
     }
 
     if (familia?.settings?.notificarConfirmacion && typeof Notification !== "undefined" && Notification.permission === "granted") {
-      new Notification("Toma confirmada", { body: `${elderName.split(" ")[0]} confirmó: ${nombresMeds}`, icon: "/icons/icon-192.png" });
+      mostrarNotificacion("Toma confirmada", { body: `${elderName.split(" ")[0]} confirmó: ${nombresMeds}`, icon: "/icons/icon-192.png" });
     }
   };
 
+  // ✅ FIX Error 1 y 2: Cancelar timers al posponer
   const posponerAlerta = () => {
     if (!alertaActiva) return;
+
+    timersAlertaRef.current.forEach(clearTimeout);
+    timersAlertaRef.current = [];
+    alertaCerraraRef.current = false;
+
     const alertaGuardada = alertaActiva;
+    alertaActivaRef.current = null;
     setAlertaActiva(null);
+    
     const nombresMeds = alertaGuardada.meds.map(m => m.name).join(", ");
     registrarEvento(codigo, "alerta_pospuesta", `${nombresMeds} a las ${fmtHoraConAmPm(alertaGuardada.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: nombresMeds, hora: alertaGuardada.time });
     
@@ -2431,7 +2492,7 @@ export default function App() {
   const scale = FONT_SCALE[settings.fontSize] || 1;
   const confirmedHoy = confirmedByDate?.[todayStr()] || {};
   const occurrences = meds.flatMap((m) => (m.times || []).map((t) => ({ med: m, time: t, key: occKey(m.id, t) })));
-  const upcoming = occurrences.filter((o) => toMinutes(o.time) >= nowMin && !confirmedHoy[o.key]).sort((a, b) => toMinutes(a.time) - toMinutes(b.time));
+  const upcoming = occurrences.filter((o) => toMinutes(o.time) >= nowMin - 60 && !confirmedHoy[o.key]).sort((a, b) => toMinutes(a.time) - toMinutes(b.time));
   const current = upcoming[0];
   const isCurrentDue = current && toMinutes(current.time) <= nowMin;
   const racha = calcularRacha(meds, confirmedByDate);
@@ -2440,7 +2501,7 @@ export default function App() {
   const mostrarAvisoRenovacion = esPremium && diasPremium >= 27 && diasPremium <= 30;
   const medsCarro = meds.filter((m) => { const s = semaforoRiesgo(m); return s.nivel === "urgente" || s.nivel === "atención"; });
   const medsArchivados = (personaActual?.meds || []).filter(m => m.archivado);
-  const cambioPatron = detectarCambioPatron(meds, confirmedByDate);
+  const cambioPatron = detectarCambiarPatron ? detectarCambioPatron(meds, confirmedByDate) : null;
 
   if (stage === "cargando") return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: LIGHT.TEAL }}><Loader2 size={30} color="#fff" /></div>;
 
@@ -2529,14 +2590,14 @@ export default function App() {
       <style>{CSS_GLOBAL}</style>
       <div style={{ width: "100%", maxWidth: 420, minHeight: "100vh", background: C.CREAM, display: "flex", flexDirection: "column", position: "relative" }}>
 
-        {alertaActiva && (view === "mayor" || personaActual?.esAutocuidado) && (
+        {alertaActiva && (rolUsuario === "mayor" || personaActual?.esAutocuidado) && (
           <PantallaAlertaMedicamento
             C={C} meds={alertaActiva.meds} hora={alertaActiva.time}
             onConfirmar={() => confirmar(alertaActiva)} onPosponer={posponerAlerta}
             escala={scale} daltonico={settings.daltonico} sonidoActivo={settings.sonidoActivo !== false}
             esVital={alertaActiva.meds.some(m => (m.criticidad || detectarCriticidad(m.name)) === "vital")}
             yaPostergada={alertaActiva.meds.some(m => alertasPostergadasRef.current[`${personaActual?.id}_${m.id}_${alertaActiva.time}`]?.count > 0)}
-            esAdultoMayor={view === "mayor"}
+            esAdultoMayor={rolUsuario === "mayor"}
           />
         )}
 
@@ -2646,6 +2707,19 @@ export default function App() {
           </div>
         ) : (
           <div style={{ padding: "16px 20px 100px", flex: 1 }}>
+            {/* ✅ FIX Error 3: Banner para activar notificaciones */}
+            {!tokenFCM && isOnline && (
+              <div style={{ background: C.AMBER + "15", border: `1px solid ${C.AMBER}`, borderRadius: 14, padding: "12px 14px", marginBottom: 14, marginTop: 8, display: "flex", alignItems: "center", gap: 10 }}>
+                <BellRing size={20} color={C.AMBER} />
+                <div style={{ flex: 1, fontSize: 12, color: C.INK, lineHeight: 1.4 }}>
+                  Activa las notificaciones para saber cuándo <strong>{elderName.split(" ")[0]}</strong> confirma sus tomas.
+                </div>
+                <button onClick={activarNotificaciones} className="btn-press" style={{ padding: "8px 12px", borderRadius: 10, border: "none", background: C.AMBER, color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+                  Activar
+                </button>
+              </div>
+            )}
+
             {mostrarAvisoRenovacion && (
                <div style={{ background: C.GOLD + "15", border: `1px solid ${C.GOLD}`, borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14, marginTop: 8 }}>
                  <Crown size={20} color={C.GOLD} style={{ marginTop: 1 }} />
@@ -2710,7 +2784,7 @@ export default function App() {
                       Medicamentos ({fmtN(meds.length)}{!esPremium && `/${LIMITES_ESTANDAR.maxMeds}`})
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                      {meds.slice(0, 4).map((m) => {
+                      {meds.slice(0, maxMeds === Infinity ? meds.length : maxMeds).map((m) => {
                         const sem = semaforoRiesgo(m);
                         const crit = m.criticidad || detectarCriticidad(m.name);
                         const colorCrit = crit === "vital" ? C.CORAL : crit === "importante" ? C.AMBER : C.GREEN;
@@ -2742,7 +2816,7 @@ export default function App() {
                         );
                       })}
                     </div>
-                    {meds.length > 4 && (
+                    {!esPremium && meds.length > 4 && (
                       <div style={{ textAlign: "center", marginTop: 10, fontSize: 12, color: C.MUTED }}>+ {meds.length - 4} medicamentos más. Hazte Premium para verlos todos.</div>
                     )}
                     <button onClick={intentarAgregarMed} data-tutorial="add-med" className="btn-press-soft" style={{ marginTop: 18, width: "100%", background: oscuro ? "#1E3A5F" : "#E3F2FD", border: `1.5px dashed ${oscuro ? "#FFFFFF" : "#1976D2"}`, color: oscuro ? "#FFFFFF" : C.TEAL, padding: 13, borderRadius: 14, fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, boxShadow: "0 0 15px rgba(255,255,255,0.4)" }}>
@@ -2794,7 +2868,7 @@ export default function App() {
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                     {[...smsLog].reverse().map((s, i) => (
                       <div key={i} style={{ background: C.PAPER, borderRadius: 14, padding: 14, borderLeft: `4px solid ${s.tipo === "alerta" ? C.CORAL : C.TEAL}`, boxShadow: C.SHADOW }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.MUTED, marginBottom: 6 }}><span>CuidaMed</span><span>{s.hora}</span></div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.MUTED, marginBottom: 6 }}><span>Contigo Siempre</span><span>{s.hora}</span></div>
                         <div style={{ fontSize: 13, lineHeight: 1.5, color: C.INK }}>{s.texto}</div>
                       </div>
                     ))}
@@ -3110,7 +3184,7 @@ export default function App() {
                 </div>
                 <div style={{ flex: "1 1 100px" }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 6 }}>STOCK</div>
-                  <input type="number" min="0" value={form.stock ?? 30} onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value === "" ? "" : Number(e.target.value) }))} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
+                  <input type="text" inputMode="numeric" value={form.stock === "" ? "" : String(form.stock ?? 30)} onChange={(e) => { const v = e.target.value.replace(/\D/g, ""); setForm((f) => ({ ...f, stock: v === "" ? "" : Number(v) })); }} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 14, boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
                 </div>
               </div>
               <button onClick={agregarMed} disabled={!form.name || !form.name.trim()} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", fontWeight: 700, fontSize: 15, background: (form.name && form.name.trim()) ? C.TEAL : C.LINE, color: "#fff", cursor: "pointer" }}>Agregar</button>
