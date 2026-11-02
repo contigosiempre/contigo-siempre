@@ -2501,7 +2501,7 @@ export default function App() {
   const mostrarAvisoRenovacion = esPremium && diasPremium >= 27 && diasPremium <= 30;
   const medsCarro = meds.filter((m) => { const s = semaforoRiesgo(m); return s.nivel === "urgente" || s.nivel === "atención"; });
   const medsArchivados = (personaActual?.meds || []).filter(m => m.archivado);
-  const cambioPatron = detectarCambiarPatron ? detectarCambioPatron(meds, confirmedByDate) : null;
+  const cambioPatron = detectarCambioPatron(meds, confirmedByDate);
 
   if (stage === "cargando") return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: LIGHT.TEAL }}><Loader2 size={30} color="#fff" /></div>;
 
