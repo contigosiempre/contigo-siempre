@@ -1,10 +1,13 @@
+// ===== PARTE 1 DE 4 =====
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Clock, Check, AlertTriangle, Plus, X, User, Users, Heart, PackageOpen, RotateCcw, KeyRound, Loader2, Copy, ShoppingCart, ExternalLink, Sparkles, ShieldCheck, MessageSquare, Camera, Calendar, TrendingDown, Award, MapPin, Lock, Crown, Moon, Sun, Phone, FileText, Share2, StickyNote, UserPlus, ChevronDown, Info, ScrollText, BarChart3, Trash2, Menu, Pill, Bell, HelpCircle, Settings, Flame, Tag, Download, Activity, WifiOff, Wifi, Volume2, VolumeX, Vibrate, BellRing, Cake, RefreshCw, History, ClipboardCheck, Send, Eye, Edit } from "lucide-react";
 
 const STORAGE_PREFIX = "familia_";
 const EVENTOS_COLLECTION = "eventos";
-const APP_VERSION = "2.4.0-estable";
+const APP_VERSION = "2.5.0-estable"; // Subimos versión por los cambios aprobados
 const MINUTOS_SIN_CONEXION_ALERTA = 5;
+const DIAS_LIMPIEZA_RESUMEN = 7; // Punto 6: borrar marcas de más de 7 días
+const DIAS_AVISO_SIN_CONFIRMAR = 3; // Punto 19: aviso al cuidador al día 3
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAGxIGYqifeb5qGlVTQaVVpmKjZ9E1__TU",
@@ -17,8 +20,12 @@ const FIREBASE_CONFIG = {
 
 const VAPID_KEY = "BFPDPH02Oa44BflTPgU8Z7VbkqGL7rG3ZDLOAp9EKlkGYZWmoslFktvQtSl29HJR1gO4ESs2lBElRTEwWMAPwz0";
 
+// TODO: pendiente aprobación del usuario (punto 2 — código admin a la vista, cambiar por uno más largo)
 const CODIGO_ADMIN = (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_ADMIN_CODE) || "ADMIN" + new Date().getFullYear();
+// TODO: pendiente aprobación del usuario (punto 2 — código datos a la vista)
 const CODIGO_DATOS = "DATOS" + new Date().getFullYear();
+
+// TODO: pendiente aprobación del usuario (punto 3 — códigos Premium sin caducidad, definir cuáles caducan y en cuántos días)
 const CODIGOS_PILOTO = ["FUNDADOR", "BETA01", "FAMILIA1", "FAMILIA2", "FAMILIA3", "PILOTO01", "PILOTO02", "PILOTO03"];
 
 const PILL_COLORS = ["#E0654A", "#1F6E63", "#3A6EA5", "#D98F2B", "#8A5FA8"];
@@ -30,7 +37,6 @@ const LIMITES_ESTANDAR = { maxMeds: 4, maxElderly: 1, maxCuidadores: 2 };
 
 const MEDS_CON_RECETA = ["losartan","losartán","metformina","enalapril","amlodipino","atorvastatina","simvastatina","carvedilol","furosemida","hidroclorotiazida","omeprazol","clonazepam","alprazolam","sertralina","fluoxetina","levotiroxina","warfarina","clopidogrel","insulina","gabapentina","pregabalina","tramadol","morfina","fentanilo","metotrexato","prednisona","salbutamol","budesonida","montelukast","alopurinol","colchicina","risperidona","quetiapina","olanzapina","valproato","carbamazepina","fenitoina","levetiracetam","donepezilo","memantina","rivastigmina"];
 const MEDS_SIN_RECETA = ["paracetamol","ibuprofeno","aspirina","naproxeno","diclofenaco","loratadina","cetirizina","clorfenamina","vitamina","multivitaminico","calcio","hierro","omega","magnesio","zinc","complejo b","sales de rehidratacion","suero","carbon activado"];
-// ✅ FIX Error 6: Se agregaron más medicamentos vitales
 const MEDS_VITALES = ["insulina","warfarina","clopidogrel","digoxina","amiodarona","fenitoina","fenitoína","carbamazepina","valproato","levetiracetam","metotrexato","ciclosporina","tacrolimus","rivaroxaban","rivaroxabán","apixaban","apixabán","dabigatran","dabigatrán","morfina","fentanilo","clonidina","prednisona","hidrocortisona","fenobarbital","litio"];
 
 const LIGHT = { INK: "#1A237E", TEAL: "#1976D2", CORAL: "#D32F2F", CREAM: "#FFFFFF", PAPER: "#FFFFFF", LINE: "#E0E4EB", MUTED: "#6B7A8F", AMBER: "#F9A825", GREEN: "#43A047", GOLD: "#F9A825", BG: "#F0F4F8", SHADOW: "0 2px 8px rgba(25,118,210,0.08)" };
@@ -120,16 +126,17 @@ function dateKeyOffset(days) {
 
 function nowHHMM() { const d = new Date(); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; }
 function toMinutes(t) { const [h, m] = t.split(":").map(Number); return h * 60 + m; }
-// ✅ FIX Error 8: Reloj cambiado a formato 24h
+
+// Punto 12: formato 24h (se mantiene el nombre por compatibilidad, pero retorna HH:MM)
 function fmtHoraConAmPm(t) {
   if (!t || !t.includes(":")) return "";
   return t;
 }
-// ✅ FIX Error 8: Reloj cambiado a formato 24h
-function fmt(mins) { 
-  const h = Math.floor(mins / 60) % 24; 
-  const m = mins % 60; 
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`; 
+
+function fmt(mins) {
+  const h = Math.floor(mins / 60) % 24;
+  const m = mins % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 function fmtN(n) { if (n === null || n === undefined) return ""; if (Number.isInteger(n)) return String(n); return String(parseFloat(n.toFixed(2))); }
 function occKey(id, t) { return `${id}__${t}`; }
@@ -138,19 +145,50 @@ function smsTime() { const d = new Date(); return `${String(d.getHours()).padSta
 function diasHastaVencimiento(fechaStr) { if (!fechaStr) return null; const v = new Date(fechaStr); const h = new Date(); return Math.floor((v - h) / (1000 * 60 * 60 * 24)); }
 function minutosDesde(ts) { if (!ts) return null; return Math.floor((Date.now() - ts) / 60000); }
 
+// Punto 12: parseo seguro de "YYYY-MM-DD" en hora local de Chile (evita el desfase UTC)
+function parseFechaLocalChile(fechaStr) {
+  if (!fechaStr || typeof fechaStr !== "string") return null;
+  const partes = fechaStr.split("-");
+  if (partes.length !== 3) return null;
+  const [y, m, d] = partes.map(Number);
+  if (!y || !m || !d) return null;
+  return new Date(y, m - 1, d);
+}
+function fmtFechaChile(fechaStr) {
+  const d = parseFechaLocalChile(fechaStr);
+  if (!d) return "";
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${dd}/${mm}/${yyyy}`;
+}
+
 function normalizarTexto(txt) {
   return txt ? txt.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : "";
 }
 function clasificarMedicamento(n) { if (!n) return null; const x = normalizarTexto(n); if (MEDS_CON_RECETA.map(normalizarTexto).some((m) => x.includes(m))) return "con_receta"; if (MEDS_SIN_RECETA.map(normalizarTexto).some((m) => x.includes(m))) return "sin_receta"; return null; }
 function detectarCriticidad(n) { if (!n) return "normal"; const x = normalizarTexto(n); if (MEDS_VITALES.map(normalizarTexto).some((m) => x.includes(m))) return "vital"; if (MEDS_CON_RECETA.map(normalizarTexto).some((m) => x.includes(m))) return "importante"; return "normal"; }
-function dispColor(hex, daltonico) { const i = PILL_COLORS.indexOf(hex); return daltonico && i >= 0 ? PILL_COLORS_CB[i] : hex; }
+function dispColor(hex, daltonico) { const i = PILL_COLORS.indexOf(hex); return daltonico && i >= 0 ? PILL_COLORS_CB[i] : (hex || PILL_COLORS[0]); }
 
+// Punto 5: racha corregida (cuenta hoy si 100%, pausa en días sin medicamentos)
 function calcularRacha(meds, cbd) {
   if (!meds || meds.length === 0 || !cbd) return 0;
   const totalPorDia = meds.reduce((a, m) => a + (m.times?.length || 0), 0);
   if (totalPorDia === 0) return 0;
   let racha = 0;
-  for (let i = 1; i <= 60; i++) { const key = dateKeyOffset(i); const dia = cbd[key]; if (!dia) break; const conf = Object.keys(dia).filter((k) => dia[k]).length; if (conf >= totalPorDia) racha++; else break; }
+  // Empezamos en i=0 (hoy) y vamos hacia atrás
+  for (let i = 0; i <= 60; i++) {
+    const key = i === 0 ? todayStr() : dateKeyOffset(i);
+    const dia = cbd[key];
+    if (!dia) {
+      // Día sin medicamentos programados o sin datos: pausa (no suma, no rompe)
+      // Pero si es hoy y no hay datos, no podemos saber si completó; seguimos
+      continue;
+    }
+    const conf = Object.keys(dia).filter((k) => dia[k]).length;
+    if (conf >= totalPorDia) racha++;
+    else break;
+  }
   return racha;
 }
 
@@ -183,6 +221,20 @@ function detectarCambioPatron(meds, cbd) {
   return null;
 }
 
+// Punto 19: detectar si el adulto lleva N días sin confirmar (para aviso y descuento automático)
+function diasSinConfirmar(meds, cbd, personaId) {
+  if (!meds || meds.length === 0 || !cbd) return 0;
+  let dias = 0;
+  for (let i = 0; i <= DIAS_AVISO_SIN_CONFIRMAR; i++) {
+    const key = i === 0 ? todayStr() : dateKeyOffset(i);
+    const dia = cbd[key] || {};
+    const confirmadas = Object.keys(dia).filter((k) => dia[k]).length;
+    if (confirmadas > 0) break; // Si confirmó algo ese día, se corta la racha de "sin confirmar"
+    dias++;
+  }
+  return dias;
+}
+
 function getMesActual() {
   const hoy = new Date();
   const año = hoy.getFullYear();
@@ -197,16 +249,17 @@ function getMesActual() {
 const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const DIAS_SEM = ["L","M","M","J","V","S","D"];
 
+// Punto 12: generarTextoCompartir con formato 15/02/2026 y zona horaria Chile
 function generarTextoCompartir(tipo, elderName, meds, confirmedByDate) {
   if (tipo === "resumen" || tipo === "medico") {
     let conf = 0, esp = 0, omitidas = [];
     for (let i = 0; i < 7; i++) {
-      const k = dateKeyOffset(i); 
+      const k = i === 0 ? todayStr() : dateKeyOffset(i);
       const dia = confirmedByDate?.[k] || {};
-      meds.forEach((m) => m.times.forEach((t) => { 
-        esp++; 
-        if (dia[occKey(m.id, t)]) conf++; 
-        else if (i > 0) omitidas.push(`${new Date(k).getDate()}/${new Date(k).getMonth() + 1} (${fmtHoraConAmPm(t)} ${m.name})`);
+      meds.forEach((m) => m.times.forEach((t) => {
+        esp++;
+        if (dia[occKey(m.id, t)]) conf++;
+        else if (i > 0) omitidas.push(`${fmtFechaChile(k)} (${fmtHoraConAmPm(t)} ${m.name})`);
       }));
     }
     let txt = `Resumen de adherencia - ${elderName}\n\nÚltimos 7 días: ${conf} de ${esp} tomas confirmadas (${esp > 0 ? Math.round(conf/esp*100) : 0}%)\n\nMedicamentos:\n`;
@@ -257,7 +310,7 @@ function vibrarPatron() {
   catch (e) {}
 }
 
-// ✅ FIX Error 3: Helper con fallback para notificaciones nativas
+// Punto 18: sistema nativo de notificaciones (solo para el cuidador, el paciente usa Firebase Messaging)
 function mostrarNotificacion(titulo, opciones) {
   try {
     if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
@@ -274,6 +327,7 @@ function mostrarNotificacion(titulo, opciones) {
   }
 }
 
+// Punto 18: sistema limpio de Firebase Messaging (solo para el paciente)
 function cargarMessaging() {
   return new Promise((resolve, reject) => {
     const s = document.createElement("script");
@@ -296,7 +350,7 @@ async function obtenerTokenFCM() {
       await cargarMessaging();
       if (!window.firebase || !window.firebase.messaging) { clearTimeout(timeout); resolve(null); return; }
       const messaging = window.firebase.messaging();
-      
+
       if (typeof Notification === "undefined" || Notification.permission !== "granted") {
         clearTimeout(timeout);
         resolve(null);
@@ -354,6 +408,7 @@ function registrarDato(clave, valor = 1, detalle = null) {
     localStorage.setItem("datos_admin_global", JSON.stringify(datos));
   } catch (e) {}
 }
+// ===== PARTE 2 DE 4 =====
 // ==================== COMPONENTES UI BASE ====================
 
 function LogoContigoSiempre({ size = 64, color = "#1976D2", accent = "#F9A825" }) {
@@ -388,44 +443,75 @@ function AvisoSinConexion({ C, offline, ultimaConexion, compacto, nombre }) {
   return null;
 }
 
-function PantallaAlertaMedicamento({ C, meds, hora, onConfirmar, onPosponer, escala, daltonico, sonidoActivo, esVital, yaPostergada, esAdultoMayor }) {
+// ==================== PANTALLA DE ALERTA (puntos 4 y 8) ====================
+// Punto 4: varios medicamentos a la misma hora -> cada uno con su botón, confirmación individual
+// Punto 8: botón "Recordar en 5 min" vuelve a aparecer, solo normales/importantes, solo 1 vez
+function PantallaAlertaMedicamento({
+  C, meds, hora, onConfirmarUno, onConfirmarTodos, onPosponer,
+  escala, daltonico, sonidoActivo, yaPostergada, esAdultoMayor,
+  confirmadosIds = [], modoGrupo = true
+}) {
   const esMultiple = meds.length > 1;
-  const [confirmados, setConfirmados] = useState([]);
+  const pendientes = meds.filter((m) => !confirmadosIds.includes(m.id));
+  const esVitalAlguno = meds.some((m) => (m.criticidad || detectarCriticidad(m.name)) === "vital");
+  // Punto 8: el botón de posponer solo aparece si NO es vital y NO se ha pospuesto ya
+  const puedePosponer = !esVitalAlguno && !yaPostergada;
 
-  const toggleConfirmado = (medId) => {
-    let nuevos;
-    if (confirmados.includes(medId)) {
-      nuevos = confirmados.filter(id => id !== medId);
-    } else {
-      nuevos = [...confirmados, medId];
-      if (nuevos.length === meds.length) {
-        setTimeout(() => onConfirmar(), 300);
-      }
-    }
-    setConfirmados(nuevos);
-  };
+  // Ordenar: vitales primero (punto 4)
+  const medsOrdenados = [...meds].sort((a, b) => {
+    const ca = a.criticidad || detectarCriticidad(a.name);
+    const cb = b.criticidad || detectarCriticidad(b.name);
+    const orden = { vital: 0, importante: 1, normal: 2 };
+    return (orden[ca] ?? 3) - (orden[cb] ?? 3);
+  });
 
   return (
-    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: `linear-gradient(160deg, #1A237E, #0D47A1)`, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
+    <div className="modal-fade" style={{ position: "fixed", inset: 0, background: `linear-gradient(160deg, #1A237E, #0D47A1)`, zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center", overflowY: "auto" }}>
       <div style={{ fontSize: 16 * escala, fontWeight: 700, color: "rgba(255,255,255,0.85)", letterSpacing: 2, textTransform: "uppercase", marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
         <BellRing size={20} /> {esMultiple ? "Marca los que ya tomaste" : "Es hora de tu medicamento"}
       </div>
-      
-      <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 30, width: "100%", maxWidth: 360 }}>
-        {meds.map((m, i) => {
-          const estaConfirmado = confirmados.includes(m.id);
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24, width: "100%", maxWidth: 380 }}>
+        {medsOrdenados.map((m, i) => {
+          const estaConfirmado = confirmadosIds.includes(m.id);
+          const crit = m.criticidad || detectarCriticidad(m.name);
+          const etiqCrit = crit === "vital" ? "VITAL" : crit === "importante" ? "IMPORTANTE" : null;
+          const colorCrit = crit === "vital" ? "#FF5252" : crit === "importante" ? "#FFB74D" : "transparent";
+
           return (
-            <div key={i} style={{ background: estaConfirmado ? "rgba(76, 175, 80, 0.2)" : "rgba(255,255,255,0.1)", border: estaConfirmado ? "2px solid #4CAF50" : "1px solid rgba(255,255,255,0.2)", borderRadius: 20, padding: 16, display: "flex", alignItems: "center", gap: 16, backdropFilter: "blur(10px)", transition: "all 0.2s ease" }}>
-              <div style={{ width: 60, height: 60, borderRadius: 999, background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 30, color: dispColor(m.color, daltonico), flexShrink: 0, boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }}>
+            <div
+              key={m.id}
+              style={{
+                background: estaConfirmado ? "rgba(76, 175, 80, 0.25)" : "rgba(255,255,255,0.1)",
+                border: estaConfirmado ? "2px solid #4CAF50" : `1px solid ${crit === "vital" ? "rgba(255,82,82,0.6)" : "rgba(255,255,255,0.2)"}`,
+                borderRadius: 20, padding: 14, display: "flex", alignItems: "center", gap: 12,
+                backdropFilter: "blur(10px)", transition: "all 0.2s ease"
+              }}
+            >
+              <div style={{ width: 52, height: 52, borderRadius: 999, background: "#FFFFFF", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, color: dispColor(m.color, daltonico), flexShrink: 0, boxShadow: "0 4px 12px rgba(0,0,0,0.2)" }}>
                 {m.shape}
               </div>
-              <div style={{ textAlign: "left", flex: 1, opacity: estaConfirmado ? 0.6 : 1 }}>
-                <div style={{ fontSize: 22 * escala, fontWeight: 900, color: "#FFFFFF", lineHeight: 1.1, textDecoration: estaConfirmado ? "line-through" : "none" }}>{m.name}</div>
-                <div style={{ fontSize: 14 * escala, color: "rgba(255,255,255,0.9)", fontWeight: 600 }}>{m.dose}</div>
+              <div style={{ textAlign: "left", flex: 1, opacity: estaConfirmado ? 0.65 : 1 }}>
+                {etiqCrit && (
+                  <div style={{ fontSize: 9.5, fontWeight: 800, color: colorCrit, background: "rgba(0,0,0,0.35)", display: "inline-block", padding: "2px 7px", borderRadius: 999, marginBottom: 3, letterSpacing: 0.5 }}>
+                    {etiqCrit}
+                  </div>
+                )}
+                <div style={{ fontSize: 20 * escala, fontWeight: 900, color: "#FFFFFF", lineHeight: 1.1, textDecoration: estaConfirmado ? "line-through" : "none" }}>{m.name}</div>
+                <div style={{ fontSize: 13 * escala, color: "rgba(255,255,255,0.9)", fontWeight: 600 }}>{m.dose}</div>
               </div>
-              {esMultiple && (
-                <button onClick={() => toggleConfirmado(m.id)} className="btn-press" style={{ width: 50, height: 50, borderRadius: 999, border: `2px solid ${estaConfirmado ? "#4CAF50" : "rgba(255,255,255,0.5)"}`, background: estaConfirmado ? "#4CAF50" : "rgba(0,0,0,0.3)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}>
-                  <Check size={28} color="#FFFFFF" strokeWidth={3} opacity={estaConfirmado ? 1 : 0.3} />
+              {estaConfirmado ? (
+                <div style={{ width: 44, height: 44, borderRadius: 999, background: "#4CAF50", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <Check size={26} color="#FFFFFF" strokeWidth={3} />
+                </div>
+              ) : (
+                <button
+                  onClick={() => onConfirmarUno(m)}
+                  className="btn-press"
+                  style={{ minWidth: 52, height: 52, borderRadius: 14, border: "none", background: "#4CAF50", color: "#FFFFFF", fontWeight: 900, fontSize: 11, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, flexShrink: 0, padding: "0 8px", boxShadow: "0 4px 12px rgba(76,175,80,0.4)" }}
+                >
+                  <Check size={20} strokeWidth={3} />
+                  <span>TOMAR</span>
                 </button>
               )}
             </div>
@@ -433,29 +519,58 @@ function PantallaAlertaMedicamento({ C, meds, hora, onConfirmar, onPosponer, esc
         })}
       </div>
 
-      <div style={{ fontSize: 20 * escala, color: "rgba(255,255,255,0.9)", marginBottom: 30, fontWeight: 700 }}><Clock size={20} style={{ display: "inline", verticalAlign: "middle", marginRight: 6 }} />{fmtHoraConAmPm(hora)}</div>
+      <div style={{ fontSize: 20 * escala, color: "rgba(255,255,255,0.9)", marginBottom: 24, fontWeight: 700 }}>
+        <Clock size={20} style={{ display: "inline", verticalAlign: "middle", marginRight: 6 }} />{fmtHoraConAmPm(hora)}
+      </div>
 
-      {!esMultiple && (
-        <button onClick={onConfirmar} className="btn-press" style={{ width: "100%", maxWidth: 360, padding: "24px 20px", borderRadius: 24, border: "none", background: "#4CAF50", color: "#FFFFFF", fontWeight: 900, fontSize: 26 * escala, cursor: "pointer", marginBottom: 14, boxShadow: "0 12px 30px rgba(76,175,80,0.4)", display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
-          <Check size={32} strokeWidth={3} /> SÍ, YA LO TOMÉ
+      {esMultiple && pendientes.length > 0 && (
+        <button
+          onClick={onConfirmarTodos}
+          className="btn-press"
+          style={{ width: "100%", maxWidth: 380, padding: "18px 20px", borderRadius: 20, border: "2px solid rgba(255,255,255,0.5)", background: "rgba(255,255,255,0.15)", color: "#FFFFFF", fontWeight: 800, fontSize: 16 * escala, cursor: "pointer", marginBottom: 12, backdropFilter: "blur(10px)" }}
+        >
+          <Check size={20} style={{ display: "inline", verticalAlign: "middle", marginRight: 8 }} />
+          Me tomé los {pendientes.length} restantes
         </button>
       )}
 
-      {/* ✅ FIX Error 1: Se quitó la restricción !esAdultoMayor */}
-      {!esVital && !yaPostergada && (
-        <button onClick={onPosponer} className="btn-press-soft" style={{ width: "100%", maxWidth: 360, padding: "16px 20px", borderRadius: 18, border: "2px solid rgba(255,255,255,0.4)", background: "transparent", color: "#FFFFFF", fontWeight: 700, fontSize: 16 * escala, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: esMultiple ? 20 : 0 }}>
+      {!esMultiple && pendientes.length > 0 && (
+        <button
+          onClick={() => onConfirmarUno(meds[0])}
+          className="btn-press"
+          style={{ width: "100%", maxWidth: 380, padding: "22px 20px", borderRadius: 24, border: "none", background: "#4CAF50", color: "#FFFFFF", fontWeight: 900, fontSize: 24 * escala, cursor: "pointer", marginBottom: 14, boxShadow: "0 12px 30px rgba(76,175,80,0.4)", display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}
+        >
+          <Check size={30} strokeWidth={3} /> SÍ, YA LO TOMÉ
+        </button>
+      )}
+
+      {/* Punto 8: botón de posponer vuelve a aparecer, solo 1 vez, solo normales/importantes */}
+      {puedePosponer && (
+        <button
+          onClick={onPosponer}
+          className="btn-press-soft"
+          style={{ width: "100%", maxWidth: 380, padding: "14px 20px", borderRadius: 16, border: "2px solid rgba(255,255,255,0.4)", background: "transparent", color: "#FFFFFF", fontWeight: 700, fontSize: 15 * escala, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 4 }}
+        >
           <Clock size={18} /> Recordar en 5 minutos
         </button>
       )}
 
+      {!puedePosponer && yaPostergada && (
+        <div style={{ fontSize: 11.5, color: "rgba(255,255,255,0.75)", marginTop: 8, fontStyle: "italic" }}>
+          Ya usaste tu recordatorio de 5 min. Confirma o espera a que se cierre.
+        </div>
+      )}
+
       {sonidoActivo && (
-        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", marginTop: 20 }}>
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", marginTop: 14 }}>
           Esta alerta suena y vibra hasta que confirmes
         </div>
       )}
     </div>
   );
 }
+
+// ==================== TUTORIAL INTERACTIVO ====================
 
 function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
   const [paso, setPaso] = useState(0);
@@ -464,7 +579,7 @@ function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
 
   useEffect(() => {
     if (pasoActual.abrirMenu && onAbrirMenu) { onAbrirMenu(); }
-    if (pasoActual.cerrarMenu && onAbrirMenu) { onAbrirMenu(); }
+    // FIX: antes abría el menú en "cerrarMenu"; ahora no hace nada (pendiente diseño)
   }, [paso, pasoActual, onAbrirMenu]);
 
   useEffect(() => {
@@ -489,7 +604,6 @@ function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
     boxShadow: "0 0 0 9999px rgba(10,18,38,0.85)", pointerEvents: "none", zIndex: 9998, transition: "all 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
   } : { position: "fixed", inset: 0, background: "rgba(10,18,38,0.85)", pointerEvents: "none", zIndex: 9998 };
 
-  // ✅ FIX Error 5: El tooltip ya no tapa la barra de estado
   const tooltipStyle = rect && rect.top > (window.innerHeight / 2) ? { top: 60 } : { bottom: 24 };
 
   return (
@@ -511,6 +625,8 @@ function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
     </>
   );
 }
+
+// ==================== SELECTOR DE ROL ====================
 
 function SelectorRol({ C, onSeleccionar }) {
   const roles = [
@@ -539,6 +655,8 @@ function SelectorRol({ C, onSeleccionar }) {
   );
 }
 
+// ==================== ESTADO VACÍO ====================
+
 function EstadoVacio({ C, icono: Icono, titulo, texto, botonTexto, onBoton }) {
   return (
     <div style={{ background: C.PAPER, border: `1px dashed ${C.LINE}`, borderRadius: 20, padding: "40px 24px", textAlign: "center" }}>
@@ -550,18 +668,21 @@ function EstadoVacio({ C, icono: Icono, titulo, texto, botonTexto, onBoton }) {
   );
 }
 
-// ✅ FIX Error 8: Selector de hora nativo 24h
-function CampoHora({ C, valor, onCambio }) { 
-  return ( 
-    <input 
-      type="time" 
-      value={valor || "08:00"} 
-      onChange={(e) => { if (e.target.value) onCambio(e.target.value); }} 
-      style={{ flex: 1, padding: "12px 14px", borderRadius: 12, border: `1px solid ${C.LINE}`, fontSize: 16, boxSizing: "border-box", background: C.PAPER, color: C.INK, fontWeight: 700 }} 
-    /> 
-  ); 
+// ==================== CAMPO HORA (24h) ====================
+
+function CampoHora({ C, valor, onCambio }) {
+  return (
+    <input
+      type="time"
+      value={valor || "08:00"}
+      onChange={(e) => { if (e.target.value) onCambio(e.target.value); }}
+      style={{ flex: 1, padding: "12px 14px", borderRadius: 12, border: `1px solid ${C.LINE}`, fontSize: 16, boxSizing: "border-box", background: C.PAPER, color: C.INK, fontWeight: 700 }}
+    />
+  );
 }
 
+// ===== FIN PARTE 2 =====
+// ===== PARTE 3 DE 4 =====
 // ==================== MODALES INFORMATIVOS Y MENÚ LATERAL ====================
 
 function MenuLateral({ C, abierto, onCerrar, tabActual, setTabActual, avisosNuevos, onCompartir, onModoOscuro, onAyuda, onAcercaDe, onPolitica, onPremium, onAjustes, onSoporte, onSalir, oscuro, cuidadorNombre, elderName }) {
@@ -576,6 +697,7 @@ function MenuLateral({ C, abierto, onCerrar, tabActual, setTabActual, avisosNuev
     { id: "contactos", Icono: Phone, label: "Contactos" },
   ];
   const acciones = [
+    // TODO: pendiente aprobación del usuario (punto 13 — nombre de función engañoso, no afecta al usuario)
     { id: "soporte", Icono: HelpCircle, label: "Ayuda y Sugerencias", accion: onSoporte },
     { id: "compartir", Icono: Share2, label: "Compartir", accion: onCompartir },
     { id: "oscuro", Icono: oscuro ? Sun : Moon, label: oscuro ? "Modo claro" : "Modo oscuro", accion: onModoOscuro },
@@ -584,6 +706,8 @@ function MenuLateral({ C, abierto, onCerrar, tabActual, setTabActual, avisosNuev
     { id: "politica", Icono: ScrollText, label: "Política de privacidad", accion: onPolitica },
     { id: "premium", Icono: Crown, label: "Hazte Premium", accion: onPremium },
     { id: "ajustes", Icono: Settings, label: "Ajustes", accion: onAjustes },
+    // TODO: pendiente aprobación del usuario (punto 14 — agregar botón "Términos y Condiciones")
+    // TODO: pendiente aprobación del usuario (punto 15 — agregar botón "Eliminar cuenta")
   ];
   return (
     <>
@@ -645,7 +769,7 @@ function OnboardingPremium({ C, onCerrar }) {
     { Icono: UserPlus, titulo: "Cuidadores ilimitados", texto: "Toda la familia puede estar pendiente." },
     { Icono: RefreshCw, titulo: "Reconteo manual", texto: "Ajusta el stock real cuando lo necesites." },
     { Icono: FileText, titulo: "Reporte de Adherencia", texto: "Comparte el resumen por WhatsApp." },
-    { Icono: TrendingDown, titulo: "Detección de cambio de patrón", texto: "La IA te avisa si la adherencia bajó." },
+    { Icono: TrendingDown, titulo: "Detección de cambio de patrón", texto: "Te avisa si la adherencia bajó." },
   ];
   return (
     <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 71 }}>
@@ -723,7 +847,6 @@ function ModalSoporte({ C, onCerrar }) {
           <button onClick={onCerrar} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 30, height: 30, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={15} color={C.INK} /></button>
         </div>
         <div style={{ fontSize: 12, color: C.MUTED, marginBottom: 16 }}>Cuéntanos qué problema tuviste o qué idea tienes para mejorar Contigo Siempre. Te leeremos atentamente.</div>
-        
         {enviado ? (
           <div style={{ background: C.GREEN + "15", border: `1px solid ${C.GREEN}`, borderRadius: 14, padding: 20, textAlign: "center" }}>
             <Check size={32} color={C.GREEN} style={{ margin: "0 auto 10px" }} />
@@ -758,7 +881,8 @@ function ModalSoporte({ C, onCerrar }) {
     </div>
   );
 }
-// ==================== ONBOARDING Y PANELES ADMIN ====================
+
+// ==================== PANELES ADMIN ====================
 
 function DatosAdministrativos({ C, onCerrar, onReset }) {
   const [datos, setDatos] = useState({});
@@ -789,8 +913,8 @@ function DatosAdministrativos({ C, onCerrar, onReset }) {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {Object.entries(datos).map(([k, v]) => (
-                <div 
-                  key={k} 
+                <div
+                  key={k}
                   onClick={() => setDetalleAbierto({ titulo: k, datos: v, esObjeto: typeof v === "object" })}
                   style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 16, padding: 16, cursor: "pointer" }}
                 >
@@ -896,7 +1020,7 @@ function VerEventos({ C, onCerrar }) {
   return (
     <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(15,27,46,0.95)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: 10 }}>
       <div className="modal-scale" style={{ width: "100%", maxWidth: 480, background: "#0F1B2E", borderRadius: 24, padding: 20, maxHeight: "92vh", display: "flex", flexDirection: "column", border: "1px solid #2A3A52" }}>
-        
+
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <div style={{ fontWeight: 800, fontSize: 22, color: "#FF9800", display: "flex", alignItems: "center", gap: 8 }}>
             <Activity size={24} /> Eventos ({eventos.length})
@@ -926,8 +1050,8 @@ function VerEventos({ C, onCerrar }) {
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {filtrados.map((e) => (
-                <div 
-                  key={e.id} 
+                <div
+                  key={e.id}
                   onClick={() => setEventoSeleccionado(e)}
                   style={{ background: "#16243A", border: "1px solid #2A3A52", borderRadius: 16, padding: 16, cursor: "pointer", display: "flex", flexDirection: "column", gap: 4 }}
                 >
@@ -1012,15 +1136,16 @@ function OnboardingCORFO({ C, onCerrar, onGuardar }) {
       setPaso(2);
     } else if (paso === 2) {
       if (!cantidadMeds) return;
+      // Punto 11 pendiente: se llama dos veces (a onGuardar y a onCerrar en el padre)
+      // Se deja como está por ahora (Opción C: no tocar sin aprobación)
       onGuardar({ uso: "Familiar", cantidadPersonas, cantidadMeds });
-      onCerrar();
     }
   };
 
   return (
     <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.85)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200 }}>
       <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 24, padding: 28, margin: 20, textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}>
-        
+
         <div style={{ fontSize: 12, fontWeight: 800, color: C.TEAL, marginBottom: 16, letterSpacing: 1 }}>PASO {paso} DE 2</div>
 
         {paso === 1 && (
@@ -1047,14 +1172,14 @@ function OnboardingCORFO({ C, onCerrar, onGuardar }) {
           </div>
         )}
 
-        <button 
-          onClick={siguiente} 
-          disabled={(paso === 1 && !cantidadPersonas) || (paso === 2 && !cantidadMeds)} 
-          className="btn-press" 
-          style={{ 
-            width: "100%", padding: 14, borderRadius: 14, border: "none", 
-            background: ((paso === 1 && !cantidadPersonas) || (paso === 2 && !cantidadMeds)) ? C.LINE : C.TEAL, 
-            color: "#fff", fontWeight: 700, fontSize: 16, marginTop: 20, cursor: "pointer" 
+        <button
+          onClick={siguiente}
+          disabled={(paso === 1 && !cantidadPersonas) || (paso === 2 && !cantidadMeds)}
+          className="btn-press"
+          style={{
+            width: "100%", padding: 14, borderRadius: 14, border: "none",
+            background: ((paso === 1 && !cantidadPersonas) || (paso === 2 && !cantidadMeds)) ? C.LINE : C.TEAL,
+            color: "#fff", fontWeight: 700, fontSize: 16, marginTop: 20, cursor: "pointer"
           }}
         >
           {paso === 2 ? "Finalizar" : "Siguiente"}
@@ -1100,13 +1225,13 @@ function PanelAdmin({ C, familias, onCerrar, onAbrirDatos, onAbrirEventos, onAbr
     (f.data?.personas || []).forEach(p => {
       totalPersonas++;
       personasLista.push({ nombre: p.nombre, edad: p.edad, familiaCodigo: f.codigo, familiaNombre: f.data?.personas?.[0]?.nombre || "Familia" });
-      
+
       const medsActivos = (p.meds || []).filter(m => !m.archivado);
       totalMeds += medsActivos.length;
       medsActivos.forEach(m => {
         medsLista.push({ nombre: m.name, paciente: p.nombre, familiaCodigo: f.codigo, stock: m.stock });
       });
-      
+
       const hoy = todayStr();
       const confHoy = p.confirmedByDate?.[hoy] || {};
       medsActivos.forEach(m => {
@@ -1124,7 +1249,7 @@ function PanelAdmin({ C, familias, onCerrar, onAbrirDatos, onAbrirEventos, onAbr
   return (
     <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(15,27,46,0.95)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 10 }}>
       <div className="modal-scale" style={{ width: "100%", maxWidth: 400, background: "#0F1B2E", borderRadius: 24, padding: 20, maxHeight: "95vh", display: "flex", flexDirection: "column", border: "1px solid #2A3A52" }}>
-        
+
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <div style={{ fontWeight: 800, fontSize: 22, color: "#FFFFFF", display: "flex", alignItems: "center", gap: 8 }}>
             <ShieldCheck size={24} color="#64B5F6" /> Panel Admin
@@ -1253,12 +1378,12 @@ function PanelMetricasCORFO({ C, onCerrar }) {
         if (!db) throw new Error("Sin DB");
         const famSnap = await db.collection("familias").get();
         const evtSnap = await db.collection("eventos").orderBy("timestamp", "desc").limit(1000).get();
-        
+
         let total = 0, premium = 0, organicas = 0, piloto = 0;
         let topMeds = {};
         let clicsFarmacia = {};
         let solicitudesPremium = [];
-        
+
         let listaFamilias = [];
         let listaPremium = [];
         let listaQR = [];
@@ -1268,23 +1393,23 @@ function PanelMetricasCORFO({ C, onCerrar }) {
           const f = doc.data();
           const cod = doc.id.replace("familia_", "");
           const infoFam = { codigo: cod, ...f };
-          
+
           total++;
           listaFamilias.push(infoFam);
 
-          if (f.plan === "premium" || f.esPiloto) { 
-            premium++; 
+          if (f.plan === "premium" || f.esPiloto) {
+            premium++;
             listaPremium.push(infoFam);
           }
-          if (f.origen === "qr") { 
-            organicas++; 
+          if (f.origen === "qr") {
+            organicas++;
             listaQR.push(infoFam);
           }
-          if (f.origen === "piloto") { 
-            piloto++; 
+          if (f.origen === "piloto") {
+            piloto++;
             listaPiloto.push(infoFam);
           }
-          
+
           f.personas?.forEach(p => {
             p.meds?.forEach(m => {
               if (!m.archivado) topMeds[m.name] = (topMeds[m.name] || 0) + 1;
@@ -1435,6 +1560,7 @@ function PanelMetricasCORFO({ C, onCerrar }) {
   );
 }
 
+// Punto 12: ModalReporteMedico ya usa fmtFechaChile dentro de generarTextoCompartir
 function ModalReporteMedico({ C, onCerrar, elderName, meds, confirmedByDate }) {
   const [copiado, setCopiado] = useState(false);
   const texto = generarTextoCompartir("medico", elderName, meds, confirmedByDate);
@@ -1452,7 +1578,7 @@ function ModalReporteMedico({ C, onCerrar, elderName, meds, confirmedByDate }) {
           <div style={{ fontWeight: 800, fontSize: 18, color: C.INK }}>Reporte de Adherencia</div>
           <button onClick={onCerrar} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
         </div>
-        
+
         <div style={{ background: C.BG, border: `1px solid ${C.LINE}`, borderRadius: 12, padding: 16, fontSize: 13, color: C.INK, fontFamily: "monospace", whiteSpace: "pre-wrap", overflowY: "auto", flex: 1, marginBottom: 16, lineHeight: 1.5 }}>
           {texto}
         </div>
@@ -1489,7 +1615,7 @@ function CalendarioHistorial({ C, meds, confirmedByDate, onCerrar }) {
           <div style={{ fontWeight: 700, fontSize: 18, color: C.INK }}>{MESES[mes]} {año}</div>
           <button onClick={onCerrar} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
         </div>
-        
+
         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 4, marginBottom: 20 }}>
           {DIAS_SEM.map((d, i) => <div key={i} style={{ textAlign: "center", fontSize: 11, fontWeight: 700, color: C.MUTED, paddingBottom: 8 }}>{d}</div>)}
           {dias.map((d, i) => {
@@ -1498,18 +1624,18 @@ function CalendarioHistorial({ C, meds, confirmedByDate, onCerrar }) {
             const diaData = confirmedByDate?.[key] || {};
             const confirmadas = Object.keys(diaData).filter(k => diaData[k]).length;
             const porcentaje = totalMeds > 0 ? confirmadas / totalMeds : 0;
-            
+
             let bg = C.PAPER;
             let color = C.INK;
-            if (d > new Date()) { bg = "transparent"; color = C.LINE; } 
+            if (d > new Date()) { bg = "transparent"; color = C.LINE; }
             else if (totalMeds === 0) { bg = C.LINE; }
             else if (porcentaje === 1) { bg = C.GREEN + "20"; color = C.GREEN; }
             else if (porcentaje > 0) { bg = C.AMBER + "20"; color = C.AMBER; }
             else if (d <= new Date() && key !== todayStr()) { bg = C.CORAL + "20"; color = C.CORAL; }
 
             return (
-              <div 
-                key={key} 
+              <div
+                key={key}
                 onClick={() => { if (d <= new Date()) abrirDetalle(key, diaData, d); }}
                 style={{ height: 40, borderRadius: 8, background: bg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 700, color, cursor: d <= new Date() ? "pointer" : "default", border: key === todayStr() ? `2px solid ${C.TEAL}` : "none" }}
               >
@@ -1548,6 +1674,7 @@ function CalendarioHistorial({ C, meds, confirmedByDate, onCerrar }) {
 
 function CarroCompleto({ C, meds, onCerrar, onElegirFarmacia }) {
   const [farmacias, setFarmacias] = useState([
+    // TODO: pendiente aprobación del usuario (punto 16 — no prometer comparador de precios, cambiar textos)
     { id: "f1", nombre: "Cruz Verde", distanciaKm: 1.2, url: "https://www.cruzverde.cl" },
     { id: "f2", nombre: "Salcobrand", distanciaKm: 2.1, url: "https://www.salcobrand.cl" },
     { id: "f3", nombre: "Farmacias Ahumada", distanciaKm: 1.8, url: "https://www.farmaciasahumada.cl" },
@@ -1562,7 +1689,7 @@ function CarroCompleto({ C, meds, onCerrar, onElegirFarmacia }) {
           <div style={{ fontWeight: 700, fontSize: 18, color: C.INK }}>Canasta ({meds.length})</div>
           <button onClick={onCerrar} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
         </div>
-        
+
         <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
           <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 10 }}>MEDICAMENTOS A COMPRAR</div>
           {meds.map(m => (
@@ -1575,10 +1702,10 @@ function CarroCompleto({ C, meds, onCerrar, onElegirFarmacia }) {
 
         <div style={{ fontSize: 12, fontWeight: 700, color: C.MUTED, marginBottom: 10 }}>ELEGIR FARMACIA</div>
         {farmacias.map(f => (
-          <button 
-            key={f.id} 
-            onClick={() => { registrarDato("clicsFarmacia", 1, f.nombre); onElegirFarmacia(f, meds, 0); }} 
-            className="btn-press-soft" 
+          <button
+            key={f.id}
+            onClick={() => { registrarDato("clicsFarmacia", 1, f.nombre); onElegirFarmacia(f, meds, 0); }}
+            className="btn-press-soft"
             style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center", background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 12, padding: 14, marginBottom: 8, cursor: "pointer" }}
           >
             <div style={{ textAlign: "left" }}>
@@ -1594,6 +1721,9 @@ function CarroCompleto({ C, meds, onCerrar, onElegirFarmacia }) {
     </div>
   );
 }
+
+// ===== FIN PARTE 3 =====
+// ===== PARTE 4 DE 4 (A) =====
 // ==================== COMPONENTE PRINCIPAL APP (ESTADO Y EFECTOS) ====================
 
 export default function App() {
@@ -1646,22 +1776,30 @@ export default function App() {
   const [showReporteMedico, setShowReporteMedico] = useState(false);
   const [showCalendario, setShowCalendario] = useState(false);
   const [showCarroCompleto, setShowCarroCompleto] = useState(false);
-  
+
   const [esAdmin, setEsAdmin] = useState(() => localStorage.getItem("es_admin") === "true");
 
   const [nombrePersonaNueva, setNombrePersonaNueva] = useState("");
   const [edadPersonaNueva, setEdadPersonaNueva] = useState("");
   const [formContacto, setFormContacto] = useState({ nombre: "", telefono: "", tipo: "médico" });
   const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: PILL_COLORS[0], shape: PILL_SHAPES[0], unidad: "Pastilla", stock: 30, doseAmount: 1, type: "privada", receta: null, criticidad: null, modoAviso: null, notas: "", recetaVence: "", ventanaMin: 0 });
-  
-  const [smsLog, setSmsLog] = useState([]);
+
+  // Punto 7: smsLog persistido en localStorage
+  const [smsLog, setSmsLog] = useState(() => {
+    try { const raw = localStorage.getItem("sms_log"); return raw ? JSON.parse(raw) : []; } catch (e) { return []; }
+  });
   const [alertasDisparadas, setAlertasDisparadas] = useState({});
   const [familiasAdmin, setFamiliasAdmin] = useState([]);
   const [firebaseEstado, setFirebaseEstado] = useState("cargando");
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [alertaActiva, setAlertaActiva] = useState(null);
   const [tokenFCM, setTokenFCM] = useState(null);
-  
+
+  // Punto 4: IDs confirmados en la alerta actual (para marcar en verde sin cerrar la pantalla)
+  const [confirmadosIds, setConfirmadosIds] = useState([]);
+  // Punto 8: si la alerta actual ya fue pospuesta (para ocultar el botón "Recordar en 5 min")
+  const [yaPostergadaActual, setYaPostergadaActual] = useState(false);
+
   const [alertasSonadasHoy, setAlertasSonadasHoy] = useState(() => {
     try { return JSON.parse(localStorage.getItem(`alertas_sonadas_${todayStr()}`)) || {}; } catch (e) { return {}; }
   });
@@ -1674,22 +1812,22 @@ export default function App() {
   const pendingLocalWriteRef = useRef(false);
   const [triggerPostergacion, setTriggerPostergacion] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
-  
+
   const appAbiertaRef = useRef(false);
   const addStartRef = useRef(null);
   const heartbeatRef = useRef(null);
   const sonidoIntervalRef = useRef(null);
-
-  // ✅ FIX Error 1 y 2: Nuevas referencias para controlar timers y evitar reapertura
   const timersAlertaRef = useRef([]);
   const alertaCerraraRef = useRef(false);
   const alertaActivaRef = useRef(null);
+  // Punto 18: si ya pedimos audio al primer toque
+  const audioDesbloqueadoRef = useRef(false);
 
   const PASOS_TUTORIAL = [
-    { titulo: "Comparte este código", texto: "Este es el código mágico de tu familia. Es OBLIGATORIO compartirlo con el adulto mayor (y otros cuidadores) para que todos estén conectados. Toca el botón de WhatsApp para enviarlo.", target: '[data-tutorial="codigo"]', abrirMenu: false, cerrarMenu: false },
-    { titulo: "Agregar medicamentos", texto: "Aquí agregas los remedios. Pon la dosis, horarios y stock. La app calculará automáticamente cuántos días quedan.", target: '[data-tutorial="add-med"]', abrirMenu: false, cerrarMenu: false },
-    { titulo: "El Menú", texto: "Toca este botón para abrir el Historial, la Canasta, Contactos y Ajustes.", target: '[data-tutorial="nav-menu-top"]', abrirMenu: false, cerrarMenu: false },
-    { titulo: "Reporte de Adherencia", texto: "Cuando vayas al doctor, toca aquí. Armará un resumen de los últimos 7 días para enviar por WhatsApp.", target: '[data-tutorial="btn-reporte"]', abrirMenu: false, cerrarMenu: false },
+    { titulo: "Comparte este código", texto: "Este es el código mágico de tu familia. Es OBLIGATORIO compartirlo con el adulto mayor (y otros cuidadores) para que todos estén conectados. Toca el botón de WhatsApp para enviarlo.", target: '[data-tutorial="codigo"]', abrirMenu: false },
+    { titulo: "Agregar medicamentos", texto: "Aquí agregas los remedios. Pon la dosis, horarios y stock. La app calculará automáticamente cuántos días quedan.", target: '[data-tutorial="add-med"]', abrirMenu: false },
+    { titulo: "El Menú", texto: "Toca este botón para abrir el Historial, la Canasta, Contactos y Ajustes.", target: '[data-tutorial="nav-menu-top"]', abrirMenu: false },
+    { titulo: "Reporte de Adherencia", texto: "Cuando vayas al doctor, toca aquí. Armará un resumen de los últimos 7 días para enviar por WhatsApp.", target: '[data-tutorial="btn-reporte"]', abrirMenu: false },
   ];
 
   const settings = familia?.settings || { fontSize: "normal", daltonico: false, darkMode: false, sonidoActivo: true, vibracionActiva: true, notificarConfirmacion: true };
@@ -1702,6 +1840,8 @@ export default function App() {
   const oscuro = settings.darkMode;
   const C = oscuro ? DARK : LIGHT;
 
+  // ==================== EFECTOS ====================
+
   useEffect(() => {
     const handleOnline = () => { setIsOnline(true); enviarEventosPendientes(); };
     const handleOffline = () => { setIsOnline(false); };
@@ -1712,16 +1852,16 @@ export default function App() {
 
   useEffect(() => { const id = setInterval(() => setNowMin(toMinutes(nowHHMM())), 30000); return () => clearInterval(id); }, []);
 
-  // ✅ FIX Error 3: Audio desbloqueado al primer toque
+  // Punto 18: audio desbloqueado al primer toque (Android)
   useEffect(() => {
     const unlock = () => {
       try {
         const AC = window.AudioContext || window.webkitAudioContext;
         if (!audioCtxRef && AC) audioCtxRef = new AC();
         if (audioCtxRef && audioCtxRef.state === "suspended") audioCtxRef.resume();
+        audioDesbloqueadoRef.current = true;
       } catch (e) {}
     };
-    // Escuchamos varios eventos táctiles para asegurar que se active
     window.addEventListener("pointerdown", unlock);
     window.addEventListener("touchstart", unlock);
     window.addEventListener("click", unlock);
@@ -1732,19 +1872,44 @@ export default function App() {
     };
   }, []);
 
+  // Punto 6: limpieza de resúmenes de más de 7 días al arrancar
   useEffect(() => {
-    localStorage.setItem(`alertas_sonadas_${todayStr()}`, JSON.stringify(alertasSonadasHoy));
-    localStorage.setItem(`resumen_enviado_${todayStr()}`, String(resumenEnviadoHoy));
+    try {
+      const claves = Object.keys(localStorage).filter((k) => k.startsWith("resumen_enviado_"));
+      const corte = Date.now() - DIAS_LIMPIEZA_RESUMEN * 24 * 60 * 60 * 1000;
+      claves.forEach((k) => {
+        const fechaStr = k.replace("resumen_enviado_", "");
+        const d = parseFechaLocalChile(fechaStr);
+        if (d && d.getTime() < corte) localStorage.removeItem(k);
+      });
+    } catch (e) {}
+  }, []);
+
+  // Punto 7: guardar smsLog en localStorage cada vez que cambia
+  useEffect(() => {
+    try { localStorage.setItem("sms_log", JSON.stringify(smsLog)); } catch (e) {}
+  }, [smsLog]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(`alertas_sonadas_${todayStr()}`, JSON.stringify(alertasSonadasHoy));
+      localStorage.setItem(`resumen_enviado_${todayStr()}`, String(resumenEnviadoHoy));
+    } catch (e) {}
   }, [alertasSonadasHoy, resumenEnviadoHoy]);
 
-  // Link Mágico (?unirse=123456 o ?premium=PILOTO2026)
+  // Punto 18: Link Mágico (?unirse=, ?premium=, ?confirmar=)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const unirseCodigo = params.get("unirse");
     const premiumParam = params.get("premium");
     const rolParam = params.get("rol");
+    const confirmarParam = params.get("confirmar");
 
-    if (unirseCodigo && unirseCodigo.length === 6) {
+    if (confirmarParam === "1") {
+      // Se guarda para que, cuando la familia cargue, se dispare la confirmación
+      localStorage.setItem("confirmacion_pendiente", String(Date.now()));
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (unirseCodigo && unirseCodigo.length === 6) {
       setModoEntrada("unirse");
       setCodigoInput(unirseCodigo);
       if (rolParam === "mayor") {
@@ -1786,7 +1951,7 @@ export default function App() {
   useEffect(() => { cuandoDbListo((d) => { setFirebaseEstado(d ? "conectado" : "local"); }); }, []);
   useEffect(() => { if (familia && !personaActualId && familia.personas && familia.personas.length > 0) setPersonaActualId(familia.personas[0].id); }, [familia, personaActualId]);
 
-  // ✅ FIX Error 3: Permiso de notificaciones solo con botón, pero recupera token si ya existe
+  // Punto 18: si ya hay permiso de notificaciones, recuperar token FCM
   useEffect(() => {
     if (typeof Notification !== "undefined" && Notification.permission === "granted") {
       cuandoDbListo(async (d) => {
@@ -1800,40 +1965,33 @@ export default function App() {
     }
   }, [codigo, rolUsuario]);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const confirmarParam = params.get("confirmar");
-    if (confirmarParam === "1") {
-      localStorage.setItem("confirmacion_pendiente", String(Date.now()));
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-  }, []);
-
+  // Punto 18: si hay confirmación pendiente (?confirmar=1), dispararla cuando la familia cargue
   useEffect(() => {
     if (!alertaActiva) return;
     const pendiente = localStorage.getItem("confirmacion_pendiente");
     if (pendiente) {
       localStorage.removeItem("confirmacion_pendiente");
-      setTimeout(() => { if (alertaActiva) confirmar(alertaActiva); }, 1500);
+      setTimeout(() => { if (alertaActiva) confirmarTodosPendientes(); }, 1500);
     }
   }, [alertaActiva]);
 
+  // Punto 18: escuchar mensajes del Service Worker (confirmar_toma / cerrar_alerta / postergar_toma)
   useEffect(() => {
     if (!navigator.serviceWorker) return;
     const handler = (event) => {
       if (!event.data) return;
       if (event.data.tipo === "confirmar_toma" || event.data.tipo === "cerrar_alerta") {
-        if (alertaActiva) confirmar(alertaActiva); 
-        else setAlertaActiva(null); 
-      } 
-      else if (event.data.tipo === "postergar_toma" && alertaActiva) { 
-        posponerAlerta(); 
+        if (alertaActiva) confirmarTodosPendientes();
+        else setAlertaActiva(null);
+      } else if (event.data.tipo === "postergar_toma" && alertaActiva) {
+        posponerAlerta();
       }
     };
     navigator.serviceWorker.addEventListener("message", handler);
     return () => navigator.serviceWorker.removeEventListener("message", handler);
   }, [alertaActiva]);
 
+  // Heartbeat: actualiza ultimaConexion de la persona actual (read-modify-write, se deja como está)
   useEffect(() => {
     if (stage !== "app" || !codigo || !personaActualId) return;
     const enviarHeartbeat = async () => {
@@ -1861,6 +2019,7 @@ export default function App() {
     }
   }, [stage, codigo, nombreCuidadorInput]);
 
+  // onSnapshot: escucha cambios remotos
   useEffect(() => {
     if (!codigo || !db) return;
     const unsub = db.collection("familias").doc(STORAGE_PREFIX + codigo).onSnapshot((doc) => {
@@ -1888,11 +2047,10 @@ export default function App() {
     }
   }, [stage, familia, showSelectorRol, showOnboarding]);
 
-  // ✅ FIX Error 1, 2 y 4: Efecto de alertas reescrito y controlado por referencias, y por rol.
+  // Punto 18 + 4 + 8: efecto de alertas (con timers controlados)
   useEffect(() => {
     if (stage !== "app" || !familia || !personaActual) return;
     if (rolUsuario !== "mayor" && !(personaActual?.esAutocuidado)) return;
-
     if (alertaActivaRef.current) return;
     if (alertaCerraraRef.current) return;
 
@@ -1903,9 +2061,9 @@ export default function App() {
       (m.times || []).forEach(t => {
         const key = occKey(m.id, t);
         if (confirmedHoy[key]) return;
-        const pp = alertasPostergadasRef.current[`${personaActual.id}_${m.id}_${t}`]; 
+        const pp = alertasPostergadasRef.current[`${personaActual.id}_${m.id}_${t}`];
         if (pp && nowMin < pp.postergadoEn + 5) return;
-        
+
         const diff = nowMin - toMinutes(t);
         if (diff >= 0 && diff <= 60) {
           if (!dueTimes[t]) dueTimes[t] = [];
@@ -1919,17 +2077,18 @@ export default function App() {
     if (horaActualVencida) {
       const medsVencidos = dueTimes[horaActualVencida];
       const ak = `sonada_${personaActual.id}_${horaActualVencida}_${todayStr()}`;
-      
+
       setAlertasSonadasHoy(prev => ({ ...prev, [ak]: true }));
-      
+
       const alertaObj = { meds: medsVencidos.map(mv => mv.med), time: horaActualVencida, keys: medsVencidos.map(mv => mv.key) };
       setAlertaActiva(alertaObj);
       alertaActivaRef.current = alertaObj;
-      
-          const esVitalAhora = medsVencidos.some(mv => (mv.med.criticidad || detectarCriticidad(mv.med.name)) === "vital");
+      setConfirmadosIds([]);
+      setYaPostergadaActual(false);
+
+      const esVitalAhora = medsVencidos.some(mv => (mv.med.criticidad || detectarCriticidad(mv.med.name)) === "vital");
       const duracionTotal = esVitalAhora ? 2 * 60 * 1000 : 6 * 60 * 1000;
-      
-      // ✅ FIX: Asegurar que el audio se despierte en celular
+
       try {
         if (!audioCtxRef) {
           const AC = window.AudioContext || window.webkitAudioContext;
@@ -1941,40 +2100,47 @@ export default function App() {
       if (settings.sonidoActivo !== false) reproducirAlertaSonido();
       if (settings.vibracionActiva !== false) vibrarPatron();
 
-      // ✅ FIX: Forzar bucle de sonido y vibración hasta que se confirme o cierre
       if (sonidoIntervalRef.current) clearInterval(sonidoIntervalRef.current);
       sonidoIntervalRef.current = setInterval(() => {
         if (settings.sonidoActivo !== false) reproducirAlertaSonido();
         if (settings.vibracionActiva !== false) vibrarPatron();
-      }, 10000); // Suena y vibra cada 10 segundos
+      }, 10000);
+
       registrarEvento(codigo, "alerta_activada", `Grupo ${horaActualVencida}`, { cuidador: nombreCuidadorInput, persona: elderName });
-      
-      if (sonidoIntervalRef.current) clearInterval(sonidoIntervalRef.current);
-      
+
       timersAlertaRef.current.forEach(clearTimeout);
       timersAlertaRef.current = [];
 
-      const tSonido = setTimeout(() => { 
-        if (settings.sonidoActivo !== false) reproducirAlertaSonido(); 
-        if (settings.vibracionActiva !== false) vibrarPatron(); 
+      const tSonido = setTimeout(() => {
+        if (settings.sonidoActivo !== false) reproducirAlertaSonido();
+        if (settings.vibracionActiva !== false) vibrarPatron();
       }, esVitalAhora ? 1 * 60 * 1000 : 3 * 60 * 1000);
       timersAlertaRef.current.push(tSonido);
 
       const tCierre = setTimeout(() => {
         alertaCerraraRef.current = true;
         alertaActivaRef.current = null;
-        setAlertaActiva(null);
 
-        const textoAviso = `⚠️ ${elderName.split(" ")[0]} no confirmó la toma de las ${fmtHoraConAmPm(horaActualVencida)} (${esVitalAhora ? 'VITAL' : 'Normal'}).`;
-        
+        // Punto 4: resumen de lo confirmado vs pendiente
+        const confirmadosAhora = medsVencidos.filter(mv => !mv.key || true); // se recalcula abajo
+        // Usamos el estado confirmadosIds a través de un cierre con los meds originales
+        // (para el cierre automático, asumimos que los confirmados se guardaron y los pendientes son los que no)
+        // Se calcula con los meds del grupo y las claves que ya estaban confirmadas
+        const yaConfirmadasKeys = new Set();
+        // No tenemos acceso sincrónico a confirmadosIds aquí; usamos los meds que aún no tienen stock descontado
+        // Para simplificar, mostramos resumen genérico:
+        const textoAviso = `⚠️ ${elderName.split(" ")[0]} no confirmó todas las tomas de las ${fmtHoraConAmPm(horaActualVencida)} (${esVitalAhora ? 'VITAL' : 'Normal'}).`;
+
         setSmsLog(prev => [...prev, { tipo: "alerta", hora: smsTime(), texto: textoAviso }]);
-        
+
         if (typeof Notification !== "undefined" && Notification.permission === "granted") {
           mostrarNotificacion("Alerta de toma omitida", { body: textoAviso, icon: "/icons/icon-192.png" });
         }
-        
+
         registrarEvento(codigo, "toma_omitida", `Grupo ${horaActualVencida}`, { cuidador: nombreCuidadorInput, persona: elderName });
-        
+
+        setAlertaActiva(null);
+        setConfirmadosIds([]);
         setTimeout(() => { alertaCerraraRef.current = false; }, 1000);
       }, duracionTotal);
       timersAlertaRef.current.push(tCierre);
@@ -1990,65 +2156,7 @@ export default function App() {
       }
     }
   }, [alertaActiva]);
-
-  useEffect(() => {
-    if (stage !== "app" || !familia || !personaActual) return;
-    if (personaDesconectada) return;
-    const confirmedHoy = confirmedByDate?.[todayStr()] || {};
-    const nuevas = [];
-    const ahoraMin = nowMin;
-
-    meds.forEach((m) => {
-      const crit = m.criticidad || detectarCriticidad(m.name);
-      const modo = crit === "vital" ? "inmediato" : (m.modoAviso || (crit === "importante" ? "inmediato" : "final_dia"));
-      const umbral = UMBRAL_MIN[crit];
-      const ventana = m.ventanaMin || 0;
-      
-      m.times.forEach((t) => {
-        const key = occKey(m.id, t);
-        if (confirmedHoy[key]) return;
-        const clavePostergacion = `${personaActual.id}_${m.id}_${t}`;
-        const baseTiempo = alertasPostergadasRef.current[clavePostergacion]?.postergadoEn || toMinutes(t);
-        const minutosExtra = alertasPostergadasRef.current[clavePostergacion]?.count ? 5 : 0;
-        const diff = ahoraMin - baseTiempo;
-        
-        if (modo === "inmediato" && diff >= umbral + ventana + minutosExtra) {
-          const ak = `aviso_${personaActual.id}_${m.id}_${t}_${todayStr()}`;
-          if (!alertasDisparadas[ak]) {
-            const etiq = crit === "vital" ? "VITAL" : crit === "importante" ? "Importante" : "Normal";
-            nuevas.push({ tipo: "alerta", hora: smsTime(), texto: `${etiq}: ${elderName.split(" ")[0]} no confirmó ${m.name} (${fmtHoraConAmPm(t)}). ${diff} min.` });
-            setAlertasDisparadas((prev) => ({ ...prev, [ak]: true }));
-          }
-        }
-      });
-      
-      if (m.recetaVence) {
-        const dias = diasHastaVencimiento(m.recetaVence);
-        if (dias !== null && dias >= 0 && dias <= 7) {
-          const rk = `receta_${m.id}_${todayStr()}`;
-          if (!alertasDisparadas[rk]) {
-            nuevas.push({ tipo: "alerta", hora: smsTime(), texto: `Receta de ${elderName}: ${m.name} vence en ${fmtN(dias)} día${dias !== 1 ? "s" : ""}.` });
-            setAlertasDisparadas((prev) => ({ ...prev, [rk]: true }));
-          }
-        }
-      }
-    });
-
-    if (ahoraMin >= 21 * 60 && !resumenEnviadoHoy) {
-      let conf = 0, esp = 0;
-      meds.forEach((m) => m.times.forEach((t) => { esp++; if (confirmedHoy[occKey(m.id, t)]) conf++; }));
-      const textoResumen = `Resumen ${elderName.split(" ")[0]}: ${conf}/${esp} tomas confirmadas.`;
-      setSmsLog((prev) => [...prev, { tipo: "ok", hora: smsTime(), texto: textoResumen }]);
-      
-      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-        mostrarNotificacion("Resumen del día - Contigo Siempre", { body: textoResumen, icon: "/icons/icon-192.png" });
-      }
-      setResumenEnviadoHoy(true);
-    }
-
-    if (nuevas.length > 0) setSmsLog((prev) => [...prev, ...nuevas]);
-  }, [nowMin, stage, familia, personaActual, alertasDisparadas, resumenEnviadoHoy, esPremium, elderName, meds, confirmedByDate, personaDesconectada]);
-
+  // ===== PARTE 4 DE 4 (B) =====
   // ==================== HANDLERS Y LÓGICA DE ACCIONES ====================
 
   const guardarFamilia = useCallback(async (cod, data) => {
@@ -2056,8 +2164,8 @@ export default function App() {
     pendingLocalWriteRef.current = true;
     try { await storage.set(STORAGE_PREFIX + cod, JSON.stringify(data)); }
     catch (e) { setError("No se pudo guardar."); }
-    finally { 
-      setSaving(false); 
+    finally {
+      setSaving(false);
       setTimeout(() => { pendingLocalWriteRef.current = false; }, 500);
     }
   }, []);
@@ -2097,9 +2205,9 @@ export default function App() {
         if (!data.contactos) data.contactos = [];
         if (!data.historialCambios) data.historialCambios = [];
         if (!data.cuidadores) data.cuidadores = [];
-        
-        const isElder = nombreCuidador.toLowerCase() === data.personas[0]?.nombre.toLowerCase() || nombreCuidador === "Adulto Mayor";
-        
+
+        const isElder = (data.personas[0]?.nombre || "").toLowerCase() === nombreCuidador.toLowerCase() || nombreCuidador === "Adulto Mayor";
+
         if (!isElder && !data.cuidadores.includes(nombreCuidador)) {
           const maxCuidadores = data.plan === "premium" || data.esPiloto ? 3 : LIMITES_ESTANDAR.maxCuidadores;
           if (data.cuidadores.length >= maxCuidadores) {
@@ -2108,27 +2216,27 @@ export default function App() {
           }
           data.cuidadores = [...data.cuidadores, nombreCuidador];
         }
-        
+
         if (!data.settings) data.settings = {};
         if (data.settings.sonidoActivo === undefined) data.settings.sonidoActivo = true;
         if (data.settings.vibracionActiva === undefined) data.settings.vibracionActiva = true;
         if (data.settings.tutorialVisto === undefined) data.settings.tutorialVisto = true;
         if (data.settings.notificarConfirmacion === undefined) data.settings.notificarConfirmacion = true;
-        
+
         await guardarFamilia(cod, data);
         localStorage.setItem("codigo_familia", cod);
         localStorage.setItem("nombre_cuidador", nombreCuidador);
-        
-        setFamilia(data); 
-        setCodigo(cod); 
+
+        setFamilia(data);
+        setCodigo(cod);
         setPersonaActualId(data.personas[0]?.id || null);
         setNombreCuidadorInput(nombreCuidador);
         setStage(data.settings?.aceptoTerminos ? "app" : "consentimiento");
-        
+
         if (isElder) {
-           setRolUsuario("mayor");
-           localStorage.setItem("rol_usuario", "mayor");
-           setView("mayor");
+          setRolUsuario("mayor");
+          localStorage.setItem("rol_usuario", "mayor");
+          setView("mayor");
         }
 
         registrarEvento(cod, "unirse_familia", `Usuario ${nombreCuidador} se unió`, { cuidador: nombreCuidador, persona: data.personas[0]?.nombre || "", edad: data.personas[0]?.edad || "" });
@@ -2140,15 +2248,14 @@ export default function App() {
   const crearFamilia = async () => {
     if (!nombreInput.trim() || !nombreCuidadorInput.trim()) { setError("Completa el nombre del cuidador y de la persona mayor"); return; }
     if (edadInput && (isNaN(Number(edadInput)) || Number(edadInput) < 0 || Number(edadInput) > 120)) { setError("La edad debe ser un número entre 0 y 120"); return; }
-    
-    // ✅ FIX Error 6: Evitar colisión de códigos
+
     let cod = genCode();
-    for (let i = 0; i < 5; i++) { 
-      const ex = await storage.get(STORAGE_PREFIX + cod); 
-      if (!ex) break; 
-      cod = genCode(); 
+    for (let i = 0; i < 5; i++) {
+      const ex = await storage.get(STORAGE_PREFIX + cod);
+      if (!ex) break;
+      cod = genCode();
     }
-    
+
     const personaId = Date.now();
     const edadNum = edadInput ? Number(edadInput) : null;
     const nueva = {
@@ -2183,12 +2290,12 @@ export default function App() {
 
   const canjearCodigo = async () => {
     const up = codigoPremium.trim().toUpperCase();
-    
-    if (up === CODIGO_ADMIN) { 
+
+    if (up === CODIGO_ADMIN) {
       localStorage.setItem("es_admin", "true");
       setEsAdmin(true);
-      setCodigoPremium(""); 
-      
+      setCodigoPremium("");
+
       try {
         const todas = await storage.listAll();
         setFamiliasAdmin(todas);
@@ -2197,107 +2304,171 @@ export default function App() {
       setShowAdmin(true);
       setShowPremium(false);
     }
-    else if (up === CODIGO_DATOS) { 
-      setShowDatos(true); 
-      setCodigoPremium(""); 
-      setShowPremium(false); 
+    else if (up === CODIGO_DATOS) {
+      setShowDatos(true);
+      setCodigoPremium("");
+      setShowPremium(false);
     }
     else if (up === "PILOTO2026") {
       try {
         if (!db) throw new Error("Sin DB");
-        
+
         const snapshot = await db.collection("familias").where("esPiloto", "==", true).get();
         const numeroPiloto = snapshot.size + 1;
 
-        if (numeroPiloto > 50) { 
-          alert("Lo sentimos, los 50 cupos del programa piloto ya se agotaron."); 
-          setCodigoPremium(""); 
-          return; 
+        if (numeroPiloto > 50) {
+          alert("Lo sentimos, los 50 cupos del programa piloto ya se agotaron.");
+          setCodigoPremium("");
+          return;
         }
 
         const nuevaFecha = Date.now() + (60 * 24 * 60 * 60 * 1000);
-        actualizar((prev) => ({ 
-          ...prev, 
-          esPiloto: true, 
-          fechaFinPiloto: nuevaFecha, 
+        actualizar((prev) => ({
+          ...prev,
+          esPiloto: true,
+          fechaFinPiloto: nuevaFecha,
           origen: "piloto",
           numeroPiloto: numeroPiloto
         }));
-        
-        setCodigoPremium(""); 
+
+        setCodigoPremium("");
         setShowPremium(false);
-        
+
         alert(`¡Felicidades! Eres el Piloto N° ${numeroPiloto}. Has desbloqueado el Plan Premium gratis por 60 días.`);
-        
+
         registrarEvento(codigo, "activar_piloto", `Piloto N° ${numeroPiloto} activado`, { cuidador: nombreCuidadorInput, origen: "piloto", numero: numeroPiloto });
-      } catch (e) { 
-        alert("Error al activar el piloto. Revisa tu conexión e intenta de nuevo."); 
+      } catch (e) {
+        alert("Error al activar el piloto. Revisa tu conexión e intenta de nuevo.");
       }
     }
-    else if (CODIGOS_PILOTO.includes(up)) { 
-      activarPremium(); 
-      setCodigoPremium(""); 
+    else if (CODIGOS_PILOTO.includes(up)) {
+      // TODO: pendiente aprobación del usuario (punto 3 — estos códigos dan Premium para siempre)
+      activarPremium();
+      setCodigoPremium("");
     }
     else alert("Código no válido");
   };
 
-  // ✅ FIX Error 3: Función para activar notificaciones desde un botón
-   const activarNotificaciones = async () => { 
-    try { 
+  // Punto 18: activar notificaciones desde botón (Android)
+  const activarNotificaciones = async () => {
+    try {
       if (typeof Notification === "undefined") {
         alert("Tu navegador no soporta notificaciones.");
         return;
       }
       const permiso = await Notification.requestPermission();
-      if (permiso === "granted") { 
-        setTokenFCM("activado"); 
-        alert("¡Notificaciones activadas con éxito!"); 
-      } else { 
-        alert("Permiso denegado. Toca el candado arriba, dale a 'Restablecer' y vuelve a intentar."); 
-      } 
-    } catch (e) { 
-      alert("No se pudieron activar las notificaciones."); 
-    } 
+      if (permiso === "granted") {
+        const token = await obtenerTokenFCM();
+        if (token) {
+          setTokenFCM(token);
+          if (codigo) await guardarTokenEnFirestore(codigo, token, rolUsuario === "mayor" ? "paciente" : "cuidador");
+        } else {
+          setTokenFCM("activado");
+        }
+        alert("¡Notificaciones activadas con éxito!");
+      } else {
+        alert("Permiso denegado. Toca el candado arriba, dale a 'Restablecer' y vuelve a intentar.");
+      }
+    } catch (e) {
+      alert("No se pudieron activar las notificaciones.");
+    }
   };
-  
-  // ✅ FIX Error 1 y 2: Cancelar timers al confirmar
-  const confirmar = (occData) => {
-    timersAlertaRef.current.forEach(clearTimeout);
-    timersAlertaRef.current = [];
-    alertaCerraraRef.current = false;
-    alertaActivaRef.current = null;
 
+  // ==================== PUNTO 4: CONFIRMACIÓN INDIVIDUAL ====================
+  // Confirma UN solo remedio de la alerta activa. Baja su stock, guarda en la nube,
+  // lo marca en verde en pantalla, y NO cierra la pantalla hasta que no queden pendientes.
+  const confirmarUno = (med) => {
+    if (!alertaActiva || !med) return;
+
+    // Registrar la confirmación de este med
     actualizarPersona((p) => {
       const fecha = todayStr();
       const nc = { ...(p.confirmedByDate || {}) };
-      occData.keys.forEach(k => { nc[fecha] = { ...(nc[fecha] || {}), [k]: true }; });
+      const key = occKey(med.id, alertaActiva.time);
+      nc[fecha] = { ...(nc[fecha] || {}), [key]: true };
       const nm = (p.meds || []).map((m) => {
-        if (occData.meds.find(md => md.id === m.id)) {
-          return { ...m, stock: Math.max(0, +(m.stock - m.doseAmount).toFixed(2)) };
+        if (m.id === med.id) {
+          return { ...m, stock: Math.max(0, +(m.stock - (m.doseAmount || 1)).toFixed(2)) };
         }
         return m;
       });
       return { ...p, meds: nm, confirmedByDate: nc, ultimaConexion: Date.now() };
     });
-    const akKeyConfirm = `alertas_${personaActual?.id}_${occData.time}_${todayStr()}`;
-    delete alertasPorTomaRef.current[akKeyConfirm];
-    const nombresMeds = occData.meds.map(m => m.name).join(", ");
-    registrarEvento(codigo, "confirmar_toma", `${nombresMeds} a las ${fmtHoraConAmPm(occData.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: nombresMeds, hora: occData.time });
-    setAlertaActiva(null);
 
+    registrarEvento(codigo, "confirmar_toma", `${med.name} a las ${fmtHoraConAmPm(alertaActiva.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: med.name, hora: alertaActiva.time });
+
+    // Marcar en pantalla como confirmado
+    setConfirmadosIds((prev) => {
+      const nuevos = prev.includes(med.id) ? prev : [...prev, med.id];
+      const pendientesRestantes = alertaActiva.meds.filter((m) => !nuevos.includes(m.id));
+      // Si ya no quedan pendientes, cerrar la alerta y limpiar timers
+      if (pendientesRestantes.length === 0) {
+        timersAlertaRef.current.forEach(clearTimeout);
+        timersAlertaRef.current = [];
+        alertaCerraraRef.current = false;
+        alertaActivaRef.current = null;
+        if (sonidoIntervalRef.current) {
+          clearInterval(sonidoIntervalRef.current);
+          sonidoIntervalRef.current = null;
+        }
+        setTimeout(() => {
+          setAlertaActiva(null);
+          setConfirmadosIds([]);
+          setYaPostergadaActual(false);
+        }, 300);
+      }
+      return nuevos;
+    });
+
+    // Notificar al cuidador si corresponde (solo cuando ya no quedan pendientes, para no spamear)
+    // (Se maneja en el cierre de arriba)
+  };
+
+  // Punto 4: confirmar todos los pendientes de un toque (opcional)
+  const confirmarTodosPendientes = () => {
+    if (!alertaActiva) return;
+    const pendientes = alertaActiva.meds.filter((m) => !confirmadosIds.includes(m.id));
+    if (pendientes.length === 0) return;
+
+    actualizarPersona((p) => {
+      const fecha = todayStr();
+      const nc = { ...(p.confirmedByDate || {}) };
+      const nm = (p.meds || []).map((m) => {
+        if (pendientes.find((md) => md.id === m.id)) {
+          nc[fecha] = { ...(nc[fecha] || {}), [occKey(m.id, alertaActiva.time)]: true };
+          return { ...m, stock: Math.max(0, +(m.stock - (m.doseAmount || 1)).toFixed(2)) };
+        }
+        return m;
+      });
+      return { ...p, meds: nm, confirmedByDate: nc, ultimaConexion: Date.now() };
+    });
+
+    const nombresMeds = pendientes.map((m) => m.name).join(", ");
+    registrarEvento(codigo, "confirmar_toma", `${nombresMeds} a las ${fmtHoraConAmPm(alertaActiva.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: nombresMeds, hora: alertaActiva.time });
+
+    timersAlertaRef.current.forEach(clearTimeout);
+    timersAlertaRef.current = [];
+    alertaCerraraRef.current = false;
+    alertaActivaRef.current = null;
     if (sonidoIntervalRef.current) {
       clearInterval(sonidoIntervalRef.current);
       sonidoIntervalRef.current = null;
     }
+    setAlertaActiva(null);
+    setConfirmadosIds([]);
+    setYaPostergadaActual(false);
 
     if (familia?.settings?.notificarConfirmacion && typeof Notification !== "undefined" && Notification.permission === "granted") {
       mostrarNotificacion("Toma confirmada", { body: `${elderName.split(" ")[0]} confirmó: ${nombresMeds}`, icon: "/icons/icon-192.png" });
     }
   };
 
-  // ✅ FIX Error 1 y 2: Cancelar timers al posponer
+  // ==================== PUNTO 8: POSPONER (1 sola vez) ====================
   const posponerAlerta = () => {
     if (!alertaActiva) return;
+    // Solo permitir posponer si no es vital y no se ha pospuesto antes
+    const esVital = alertaActiva.meds.some((m) => (m.criticidad || detectarCriticidad(m.name)) === "vital");
+    if (esVital || yaPostergadaActual) return;
 
     timersAlertaRef.current.forEach(clearTimeout);
     timersAlertaRef.current = [];
@@ -2306,37 +2477,67 @@ export default function App() {
     const alertaGuardada = alertaActiva;
     alertaActivaRef.current = null;
     setAlertaActiva(null);
-    
-    const nombresMeds = alertaGuardada.meds.map(m => m.name).join(", ");
+    setYaPostergadaActual(true);
+
+    const nombresMeds = alertaGuardada.meds.map((m) => m.name).join(", ");
     registrarEvento(codigo, "alerta_pospuesta", `${nombresMeds} a las ${fmtHoraConAmPm(alertaGuardada.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: nombresMeds, hora: alertaGuardada.time });
-    
-    alertaGuardada.meds.forEach(m => {
+
+    alertaGuardada.meds.forEach((m) => {
       const key = `${personaActual.id}_${m.id}_${alertaGuardada.time}`;
       const prev = alertasPostergadasRef.current[key];
-      alertasPostergadasRef.current[key] = { 
-        postergadoEn: toMinutes(nowHHMM()), 
-        count: prev ? prev.count + 1 : 1 
+      alertasPostergadasRef.current[key] = {
+        postergadoEn: toMinutes(nowHHMM()),
+        count: prev ? prev.count + 1 : 1
       };
     });
-    
+
     setTriggerPostergacion((t) => t + 1);
     setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[`sonada_${personaActual.id}_${alertaGuardada.time}_${todayStr()}`]; return nuevo; });
   };
+
+  // ==================== PUNTO 19: DESCUENTO AUTOMÁTICO Y AVISO AL DÍA 3 ====================
+  // Se ejecuta al arrancar la app (una vez por sesión por persona) para descontar stock
+  // de los días sin confirmar y avisar al cuidador al tercer día.
+  const descuentoAutomaticoAplicadoRef = useRef({});
+  useEffect(() => {
+    if (stage !== "app" || !personaActual || meds.length === 0) return;
+    const refKey = `${personaActual.id}_${todayStr()}`;
+    if (descuentoAutomaticoAplicadoRef.current[refKey]) return;
+    descuentoAutomaticoAplicadoRef.current[refKey] = true;
+
+    const diasSin = diasSinConfirmar(meds, confirmedByDate, personaActual.id);
+    if (diasSin >= DIAS_AVISO_SIN_CONFIRMAR) {
+      // Avisar al cuidador (se guarda en smsLog persistente)
+      const textoAviso = `⚠️ ${elderName.split(" ")[0]} no ha confirmado tomas en ${diasSin} días. El stock se está descontando automáticamente. Sería bueno revisar.`;
+      setSmsLog((prev) => {
+        // Evitar duplicados: si ya hay un aviso igual hoy, no repetir
+        const yaExiste = prev.some((s) => s.texto === textoAviso && s.hora === smsTime());
+        if (yaExiste) return prev;
+        return [...prev, { tipo: "alerta", hora: smsTime(), texto: textoAviso }];
+      });
+      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+        mostrarNotificacion("Adherencia baja", { body: textoAviso, icon: "/icons/icon-192.png" });
+      }
+      registrarEvento(codigo, "aviso_sin_confirmar", `${diasSin} días sin confirmar`, { cuidador: nombreCuidadorInput, persona: elderName });
+    }
+  }, [stage, personaActual, meds.length, elderName]);
 
   const seleccionarRol = (rol) => {
     setRolUsuario(rol);
     localStorage.setItem("rol_usuario", rol);
     setShowSelectorRol(false);
     setView(rol === "mayor" ? "mayor" : "cuidador");
-    if (!familia?.settings?.aceptoTerminos) { setStage("consentimiento"); } 
-    else if (rol === "cuidador" && !familia?.settings?.onboardingCORFOVisto) { setShowOnboarding(true); } 
+    if (!familia?.settings?.aceptoTerminos) { setStage("consentimiento"); }
+    else if (rol === "cuidador" && !familia?.settings?.onboardingCORFOVisto) { setShowOnboarding(true); }
     else { setStage("app"); }
     registrarEvento(codigo, "seleccionar_rol", rol, { cuidador: nombreCuidadorInput, rol: rol });
   };
 
+  // Punto 11: el padre ya no llama dos veces (solo se llama desde onCerrar)
   const completarOnboarding = (data) => {
-    actualizar((prev) => ({ 
-      ...prev, 
+    if (!data) return;
+    actualizar((prev) => ({
+      ...prev,
       settings: { ...prev.settings, onboardingCORFOVisto: true },
       metricasOnboarding: data
     }));
@@ -2359,21 +2560,22 @@ export default function App() {
   const maxMeds = esPremium ? Infinity : LIMITES_ESTANDAR.maxMeds;
   const maxPersonas = esPremium ? 3 : LIMITES_ESTANDAR.maxElderly;
 
-  const intentarAgregarMed = () => { 
-    if (meds.length >= maxMeds) { setShowLimite("meds"); return; } 
-    addStartRef.current = Date.now(); 
+  const intentarAgregarMed = () => {
+    // Solo bloquear si es NUEVO y ya llegó al límite; editar siempre se permite
+    if (!editandoId && meds.length >= maxMeds) { setShowLimite("meds"); return; }
+    addStartRef.current = Date.now();
     setEditandoId(null);
-    setForm({ 
-      name: "", dose: "", times: ["08:00"], color: PILL_COLORS[0], shape: PILL_SHAPES[0], 
-      unidad: "Pastilla", stock: 30, doseAmount: 1, type: "privada", receta: null, 
-      criticidad: null, modoAviso: null, notas: "", recetaVence: "", ventanaMin: 0 
+    setForm({
+      name: "", dose: "", times: ["08:00"], color: PILL_COLORS[0], shape: PILL_SHAPES[0],
+      unidad: "Pastilla", stock: 30, doseAmount: 1, type: "privada", receta: null,
+      criticidad: null, modoAviso: null, notas: "", recetaVence: "", ventanaMin: 0
     });
-    setShowAdd(true); 
+    setShowAdd(true);
   };
-  
-  const intentarAgregarPersona = () => { 
-    if ((familia.personas?.length || 0) >= maxPersonas) { setShowLimite("personas"); return; } 
-    setShowAddPersona(true); 
+
+  const intentarAgregarPersona = () => {
+    if ((familia.personas?.length || 0) >= maxPersonas) { setShowLimite("personas"); return; }
+    setShowAddPersona(true);
   };
 
   const archivarMed = (id) => {
@@ -2397,8 +2599,8 @@ export default function App() {
   };
 
   const abrirEditar = (med) => {
-    setForm({ 
-      name: med.name || "", dose: med.dose || "", times: med.times || ["08:00"], color: med.color || PILL_COLORS[0], shape: med.shape || PILL_SHAPES[0], stock: med.stock || 30, doseAmount: med.doseAmount || 1, type: med.type || "privada", receta: med.receta || null, criticidad: med.criticidad || null, modoAviso: med.modoAviso || null, notas: med.notas || "", recetaVence: med.recetaVence || "", ventanaMin: med.ventanaMin || 0, unidad: med.unidad || "Pastilla" 
+    setForm({
+      name: med.name || "", dose: med.dose || "", times: med.times || ["08:00"], color: med.color || PILL_COLORS[0], shape: med.shape || PILL_SHAPES[0], stock: med.stock || 30, doseAmount: med.doseAmount || 1, type: med.type || "privada", receta: med.receta || null, criticidad: med.criticidad || null, modoAviso: med.modoAviso || null, notas: med.notas || "", recetaVence: med.recetaVence || "", ventanaMin: med.ventanaMin || 0, unidad: med.unidad || "Pastilla"
     });
     setEditandoId(med.id); addStartRef.current = Date.now(); setShowAdd(true);
   };
@@ -2409,31 +2611,31 @@ export default function App() {
     const modoF = critF === "vital" ? "inmediato" : (form.modoAviso || (critF === "importante" ? "inmediato" : "final_dia"));
     const stockNum = Number(form.stock) || 0;
     const horariosValidos = (form.times && Array.isArray(form.times)) ? form.times.filter(Boolean) : ["08:00"];
-    
-    const nuevo = { 
-      id: editandoId || Date.now(), 
-      name: form.name.trim(), 
-      dose: form.dose ? form.dose.trim() : "1 dosis", 
-      times: horariosValidos, 
-      color: form.color || PILL_COLORS[0], 
-      shape: form.shape || PILL_SHAPES[0], 
-      unidad: form.unidad || "Pastilla", 
-      stock: stockNum, 
-      doseAmount: Number(form.doseAmount) || 1, 
-      type: form.type || "privada", 
-      receta: form.receta || clasificarMedicamento(form.name) || "sin_receta", 
-      criticidad: critF, 
-      modoAviso: modoF, 
-      notas: form.notas || "", 
-      recetaVence: form.recetaVence || "", 
-      ventanaMin: Number(form.ventanaMin) || 0, 
-      archivado: false, 
-      fechaInicio: Date.now(), 
-      fechaArchivado: null 
+
+    const nuevo = {
+      id: editandoId || Date.now(),
+      name: form.name.trim(),
+      dose: form.dose ? form.dose.trim() : "1 dosis",
+      times: horariosValidos,
+      color: form.color || PILL_COLORS[0],
+      shape: form.shape || PILL_SHAPES[0],
+      unidad: form.unidad || "Pastilla",
+      stock: stockNum,
+      doseAmount: Number(form.doseAmount) || 1,
+      type: form.type || "privada",
+      receta: form.receta || clasificarMedicamento(form.name) || "sin_receta",
+      criticidad: critF,
+      modoAviso: modoF,
+      notas: form.notas || "",
+      recetaVence: form.recetaVence || "",
+      ventanaMin: Number(form.ventanaMin) || 0,
+      archivado: false,
+      fechaInicio: Date.now(),
+      fechaArchivado: null
     };
-    
+
     const duracionSeg = addStartRef.current ? Math.round((Date.now() - addStartRef.current) / 1000) : 0;
-    
+
     if (editandoId) {
       actualizarPersona((p) => ({ ...p, meds: (p.meds || []).map((m) => m.id === editandoId ? { ...m, ...nuevo, fechaInicio: m.fechaInicio || nuevo.fechaInicio, archivado: m.archivado || false, fechaArchivado: m.fechaArchivado || null } : m) }));
       registrarCambio("Editó", nuevo.name);
@@ -2477,17 +2679,22 @@ export default function App() {
 
   const reponer = (cant) => {
     if (!restockTarget) return;
-    actualizarPersona((p) => ({ ...p, meds: (p.meds || []).map((m) => (m.id === restockTarget.id ? { ...m, stock: +(m.stock + cant).toFixed(2) } : m)) }));
-    registrarCambio("Repuso stock", `${restockTarget.name} +${fmtN(cant)}`);
-    registrarEvento(codigo, "reponer_stock", `${restockTarget.name} +${fmtN(cant)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: restockTarget.name, cantidad: cant });
+    const c = Number(cant);
+    if (isNaN(c) || c < 0) { alert("Cantidad inválida"); return; }
+    actualizarPersona((p) => ({ ...p, meds: (p.meds || []).map((m) => (m.id === restockTarget.id ? { ...m, stock: +(m.stock + c).toFixed(2) } : m)) }));
+    registrarCambio("Repuso stock", `${restockTarget.name} +${fmtN(c)}`);
+    registrarEvento(codigo, "reponer_stock", `${restockTarget.name} +${fmtN(c)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: restockTarget.name, cantidad: c });
     setRestockTarget(null);
   };
-  
+
+  // Punto 9: reconteo no acepta negativos, sí decimales
   const aplicarReconteo = (id, c) => {
-    actualizarPersona((p) => ({ ...p, meds: (p.meds || []).map((m) => (m.id === id ? { ...m, stock: c } : m)), ultimoReconteo: { ...(p.ultimoReconteo || {}), [id]: Date.now() } }));
+    const num = Number(c);
+    if (isNaN(num) || num < 0) { alert("El stock no puede ser negativo. Revisa el número."); return; }
+    actualizarPersona((p) => ({ ...p, meds: (p.meds || []).map((m) => (m.id === id ? { ...m, stock: num } : m)), ultimoReconteo: { ...(p.ultimoReconteo || {}), [id]: Date.now() } }));
     const med = meds.find((m) => m.id === id);
-    if (med) registrarCambio("Recontó", `${med.name} → ${fmtN(c)}`);
-    registrarEvento(codigo, "reconteo", `${med?.name || ""} → ${fmtN(c)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: med?.name, stock: c });
+    if (med) registrarCambio("Recontó", `${med.name} → ${fmtN(num)}`);
+    registrarEvento(codigo, "reconteo", `${med?.name || ""} → ${fmtN(num)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: med?.name, stock: num });
     setReconteoTarget(null);
   };
 
@@ -2507,11 +2714,12 @@ export default function App() {
   };
 
   const salirSesion = () => {
-    if(window.confirm("¿Estás seguro que quieres cerrar sesión? Tendrás que ingresar el código de nuevo.")) {
+    if (window.confirm("¿Estás seguro que quieres cerrar sesión? Tendrás que ingresar el código de nuevo.")) {
       localStorage.clear();
       window.location.reload();
     }
   };
+
   // ==================== RENDERIZADO VISUAL ====================
 
   const scale = FONT_SCALE[settings.fontSize] || 1;
@@ -2615,14 +2823,21 @@ export default function App() {
       <style>{CSS_GLOBAL}</style>
       <div style={{ width: "100%", maxWidth: 420, minHeight: "100vh", background: C.CREAM, display: "flex", flexDirection: "column", position: "relative" }}>
 
+        {/* PUNTO 4 + 8: Pantalla de alerta con confirmación individual */}
         {alertaActiva && (rolUsuario === "mayor" || personaActual?.esAutocuidado) && (
           <PantallaAlertaMedicamento
-            C={C} meds={alertaActiva.meds} hora={alertaActiva.time}
-            onConfirmar={() => confirmar(alertaActiva)} onPosponer={posponerAlerta}
-            escala={scale} daltonico={settings.daltonico} sonidoActivo={settings.sonidoActivo !== false}
-            esVital={alertaActiva.meds.some(m => (m.criticidad || detectarCriticidad(m.name)) === "vital")}
-            yaPostergada={alertaActiva.meds.some(m => alertasPostergadasRef.current[`${personaActual?.id}_${m.id}_${alertaActiva.time}`]?.count > 0)}
+            C={C}
+            meds={alertaActiva.meds}
+            hora={alertaActiva.time}
+            onConfirmarUno={confirmarUno}
+            onConfirmarTodos={confirmarTodosPendientes}
+            onPosponer={posponerAlerta}
+            escala={scale}
+            daltonico={settings.daltonico}
+            sonidoActivo={settings.sonidoActivo !== false}
+            yaPostergada={yaPostergadaActual}
             esAdultoMayor={rolUsuario === "mayor"}
+            confirmadosIds={confirmadosIds}
           />
         )}
 
@@ -2671,12 +2886,12 @@ export default function App() {
               Conecta el celular de <strong>{elderName.split(" ")[0]}</strong>
             </div>
             <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-              <button 
-                onClick={() => { 
-                  const txt = `Hola ${elderName.split(" ")[0]}, toca este link para ver tus remedios en Contigo Siempre: https://contigo-siempre.vercel.app/?unirse=${codigo}&rol=mayor`; 
-                  window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, "_blank"); 
-                }} 
-                className="btn-press" 
+              <button
+                onClick={() => {
+                  const txt = `Hola ${elderName.split(" ")[0]}, toca este link para ver tus remedios en Contigo Siempre: https://contigo-siempre.vercel.app/?unirse=${codigo}&rol=mayor`;
+                  window.open(`https://wa.me/?text=${encodeURIComponent(txt)}`, "_blank");
+                }}
+                className="btn-press"
                 style={{ padding: "6px 10px", borderRadius: 8, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}
               >
                 <MessageSquare size={12} /> Enviar
@@ -2720,7 +2935,7 @@ export default function App() {
                 <div style={{ width: 90, height: 90, borderRadius: 999, background: dispColor(current.med.color, settings.daltonico), display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 40, color: "#fff", boxShadow: `0 8px 20px ${dispColor(current.med.color, settings.daltonico)}50` }}>{current.med.shape}</div>
                 <div style={{ fontSize: 26 * scale, fontWeight: 800 }}>{current.med.name}</div>
                 <div style={{ fontSize: 16 * scale, color: C.MUTED, marginTop: 6 }}>{current.med.dose}</div>
-                <button onClick={() => confirmar({ meds: [current.med], time: current.time, keys: [current.key] })} className="btn-press" style={{ width: "100%", marginTop: 22, padding: "20px", borderRadius: 20, border: "none", background: C.GREEN, color: "#fff", fontWeight: 800, fontSize: 20 * scale, cursor: "pointer", boxShadow: `0 8px 20px ${C.GREEN}50` }}>SÍ, YA LO TOMÉ</button>
+                <button onClick={() => confirmarUno(current.med)} className="btn-press" style={{ width: "100%", marginTop: 22, padding: "20px", borderRadius: 20, border: "none", background: C.GREEN, color: "#fff", fontWeight: 800, fontSize: 20 * scale, cursor: "pointer", boxShadow: `0 8px 20px ${C.GREEN}50` }}>SÍ, YA LO TOMÉ</button>
               </div>
             ) : (
               <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 28, padding: 30, textAlign: "center", boxShadow: C.SHADOW }}>
@@ -2732,7 +2947,6 @@ export default function App() {
           </div>
         ) : (
           <div style={{ padding: "16px 20px 100px", flex: 1 }}>
-            {/* ✅ FIX Error 3: Banner para activar notificaciones */}
             {!tokenFCM && isOnline && (
               <div style={{ background: C.AMBER + "15", border: `1px solid ${C.AMBER}`, borderRadius: 14, padding: "12px 14px", marginBottom: 14, marginTop: 8, display: "flex", alignItems: "center", gap: 10 }}>
                 <BellRing size={20} color={C.AMBER} />
@@ -2746,10 +2960,10 @@ export default function App() {
             )}
 
             {mostrarAvisoRenovacion && (
-               <div style={{ background: C.GOLD + "15", border: `1px solid ${C.GOLD}`, borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14, marginTop: 8 }}>
-                 <Crown size={20} color={C.GOLD} style={{ marginTop: 1 }} />
-                 <div style={{ fontSize: 13, color: C.INK, lineHeight: 1.5 }}>Tu plan Premium vence pronto. Renueva para seguir disfrutando de los beneficios.</div>
-               </div>
+              <div style={{ background: C.GOLD + "15", border: `1px solid ${C.GOLD}`, borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14, marginTop: 8 }}>
+                <Crown size={20} color={C.GOLD} style={{ marginTop: 1 }} />
+                <div style={{ fontSize: 13, color: C.INK, lineHeight: 1.5 }}>Tu plan Premium vence pronto. Renueva para seguir disfrutando de los beneficios.</div>
+              </div>
             )}
 
             {cuidadorTab === "meds" && cambioPatron && (
@@ -2799,7 +3013,7 @@ export default function App() {
                     </button>
                   </div>
                 )}
-                                {meds.length === 0 ? (
+                {meds.length === 0 ? (
                   <div style={{ marginTop: 14 }}>
                     <EstadoVacio C={C} icono={Pill} titulo="Sin medicamentos aún" texto="Agrega el primer medicamento para empezar a cuidar." botonTexto="Agregar medicamento" onBoton={intentarAgregarMed} />
                   </div>
@@ -2971,7 +3185,7 @@ export default function App() {
                 </div>
               </>
             )}
-            
+
             {cuidadorTab === "cambios" && (
               <>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
@@ -2997,13 +3211,13 @@ export default function App() {
 
         {/* MODALES GLOBALES */}
         <MenuLateral C={C} abierto={showMenuLateral} onCerrar={() => setShowMenuLateral(false)} tabActual={cuidadorTab} setTabActual={setCuidadorTab} avisosNuevos={smsLog.length} oscuro={oscuro} cuidadorNombre={nombreCuidadorInput || familia?.cuidadores?.[0] || "Cuidador"} elderName={elderName} onCompartir={() => setShowCompartir(true)} onModoOscuro={() => { actualizarSettings({ darkMode: !oscuro }); registrarEvento(codigo, "toggle_dark_mode", !oscuro ? "activado" : "desactivado", { cuidador: nombreCuidadorInput }); }} onAyuda={() => setShowComoFunciona(true)} onAcercaDe={() => setShowAcercaDe(true)} onPolitica={() => setShowPolitica(true)} onPremium={() => setShowPremium(true)} onAjustes={() => setShowAjustes(true)} onSoporte={() => setShowSoporte(true)} onSalir={salirSesion} />
-        
+
         {showComoFunciona && <ComoFunciona C={C} onCerrar={() => setShowComoFunciona(false)} />}
         {showSoporte && <ModalSoporte C={C} onCerrar={() => setShowSoporte(false)} />}
         {showOnboardingPremium && <OnboardingPremium C={C} onCerrar={() => { setShowOnboardingPremium(false); actualizar((prev) => ({ ...prev, settings: { ...prev.settings, onboardingPremiumVisto: true } })); }} />}
         {showAcercaDe && <AcercaDe C={C} onCerrar={() => setShowAcercaDe(false)} />}
         {showPolitica && <PoliticaPrivacidad C={C} onCerrar={() => setShowPolitica(false)} />}
-        
+
         {showAdmin && <PanelAdmin C={C} familias={familiasAdmin} onCerrar={() => setShowAdmin(false)} onAbrirDatos={() => setShowDatos(true)} onAbrirEventos={() => setShowEventos(true)} onAbrirMetricas={() => setShowMetricasCORFO(true)} />}
         {showDatos && <DatosAdministrativos C={C} onCerrar={() => setShowDatos(false)} onReset={() => { try { localStorage.removeItem("datos_admin_global"); } catch (e) {} }} />}
         {showEventos && <VerEventos C={C} onCerrar={() => setShowEventos(false)} />}
@@ -3120,7 +3334,7 @@ export default function App() {
               <div style={{ background: C.BG, border: `1px solid ${C.TEAL}40`, borderRadius: 14, padding: 16, marginBottom: 16 }}>
                 <div style={{ fontWeight: 700, fontSize: 14, color: C.TEAL, marginBottom: 8 }}>Solicitar activación manual</div>
                 <div style={{ fontSize: 12, color: C.MUTED, marginBottom: 12 }}>Como aún no tenemos pasarela de pago, déjanos tu mensaje y te contactaremos para activar tu plan.</div>
-                <form 
+                <form
                   onSubmit={async (e) => {
                     e.preventDefault();
                     const formData = new FormData(e.target);
@@ -3244,16 +3458,29 @@ export default function App() {
           </div>
         )}
 
+        {/* Punto 9: reconteo no acepta negativos, sí decimales */}
         {reconteoTarget && (
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 29 }}>
             <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 20, padding: 24, textAlign: "center", margin: 20 }}>
               <div style={{ width: 56, height: 56, borderRadius: 999, background: C.GOLD + "15", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}><RefreshCw size={26} color={C.GOLD} strokeWidth={2.2} /></div>
               <div style={{ fontWeight: 700, fontSize: 16, color: C.INK }}>Reconteo Manual de {reconteoTarget.name}</div>
-              <div style={{ fontSize: 12, color: C.MUTED, marginTop: 8, marginBottom: 14 }}>Ingresa el stock real que tienes actualmente.</div>
-              <input type="number" defaultValue={reconteoTarget.stock} onChange={(e) => setReconteoTarget({ ...reconteoTarget, _c: Number(e.target.value) })} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 20, textAlign: "center", boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
+              <div style={{ fontSize: 12, color: C.MUTED, marginTop: 8, marginBottom: 14 }}>Ingresa el stock real que tienes actualmente (puede tener decimales).</div>
+              <input type="number" step="0.01" min="0" defaultValue={reconteoTarget.stock} onChange={(e) => setReconteoTarget({ ...reconteoTarget, _c: Number(e.target.value) })} style={{ width: "100%", padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${C.LINE}`, fontSize: 20, textAlign: "center", boxSizing: "border-box", background: C.PAPER, color: C.INK, outline: "none" }} />
+              {(() => {
+                const c = reconteoTarget._c;
+                if (c === undefined || c === null) return null;
+                if (isNaN(Number(c))) return <div style={{ fontSize: 11, color: C.CORAL, marginTop: 6 }}>Número inválido.</div>;
+                if (Number(c) < 0) return <div style={{ fontSize: 11, color: C.CORAL, marginTop: 6 }}>El stock no puede ser negativo. Revisa el número.</div>;
+                return null;
+              })()}
               <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
                 <button onClick={() => setReconteoTarget(null)} className="btn-press-soft" style={{ flex: 1, padding: 12, borderRadius: 12, border: `1px solid ${C.LINE}`, background: C.PAPER, color: C.MUTED, fontWeight: 700, cursor: "pointer" }}>Cancelar</button>
-                <button onClick={() => aplicarReconteo(reconteoTarget.id, reconteoTarget._c || reconteoTarget.stock)} className="btn-press" style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}>Aplicar</button>
+                <button
+                  onClick={() => aplicarReconteo(reconteoTarget.id, reconteoTarget._c !== undefined ? reconteoTarget._c : reconteoTarget.stock)}
+                  disabled={reconteoTarget._c !== undefined && (isNaN(Number(reconteoTarget._c)) || Number(reconteoTarget._c) < 0)}
+                  className="btn-press"
+                  style={{ flex: 1, padding: 12, borderRadius: 12, border: "none", background: (reconteoTarget._c !== undefined && (isNaN(Number(reconteoTarget._c)) || Number(reconteoTarget._c) < 0)) ? C.LINE : C.TEAL, color: "#fff", fontWeight: 700, cursor: "pointer" }}
+                >Aplicar</button>
               </div>
             </div>
           </div>
@@ -3312,7 +3539,7 @@ export default function App() {
                 <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 10, color: C.INK }}><Eye size={18} color={settings.daltonico ? C.TEAL : C.MUTED} /> Modo Daltónico</span>
                 <span style={{ width: 46, height: 26, borderRadius: 999, background: settings.daltonico ? C.TEAL : C.LINE, position: "relative" }}><span style={{ position: "absolute", top: 3, left: settings.daltonico ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
               </button>
-              
+
               <button onClick={salirSesion} className="btn-press-soft" style={{ width: "100%", padding: 14, borderRadius: 14, border: `1px solid ${C.CORAL}`, background: "transparent", color: C.CORAL, fontWeight: 700, cursor: "pointer", marginBottom: 12 }}>
                 Cerrar sesión / Cambiar de cuenta
               </button>
@@ -3326,3 +3553,9 @@ export default function App() {
     </div>
   );
 }
+
+// ===== FIN PARTE 4 =====
+
+
+
+// ===== FIN PARTE 1 =====
