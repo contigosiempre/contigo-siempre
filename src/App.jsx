@@ -2220,21 +2220,24 @@ export default function App() {
   };
 
   // ✅ FIX Error 3: Función para activar notificaciones desde un botón
-  const activarNotificaciones = async () => { 
+   const activarNotificaciones = async () => { 
     try { 
-      const tk = await obtenerTokenFCM(); 
-      if (tk) { 
-        setTokenFCM(tk); 
-        if (codigo) await guardarTokenEnFirestore(codigo, tk, rolUsuario === "mayor" ? "paciente" : "cuidador"); 
-        alert("Notificaciones activadas"); 
+      if (typeof Notification === "undefined") {
+        alert("Tu navegador no soporta notificaciones.");
+        return;
+      }
+      const permiso = await Notification.requestPermission();
+      if (permiso === "granted") { 
+        setTokenFCM("activado"); 
+        alert("¡Notificaciones activadas con éxito!"); 
       } else { 
-        alert("No se pudieron activar. Revisa el permiso de notificaciones del navegador."); 
+        alert("Permiso denegado. Toca el candado arriba, dale a 'Restablecer' y vuelve a intentar."); 
       } 
     } catch (e) { 
       alert("No se pudieron activar las notificaciones."); 
     } 
   };
-
+  
   // ✅ FIX Error 1 y 2: Cancelar timers al confirmar
   const confirmar = (occData) => {
     timersAlertaRef.current.forEach(clearTimeout);
