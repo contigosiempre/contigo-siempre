@@ -1920,11 +1920,27 @@ export default function App() {
       setAlertaActiva(alertaObj);
       alertaActivaRef.current = alertaObj;
       
-      const esVitalAhora = medsVencidos.some(mv => (mv.med.criticidad || detectarCriticidad(mv.med.name)) === "vital");
+          const esVitalAhora = medsVencidos.some(mv => (mv.med.criticidad || detectarCriticidad(mv.med.name)) === "vital");
       const duracionTotal = esVitalAhora ? 2 * 60 * 1000 : 6 * 60 * 1000;
       
+      // ✅ FIX: Asegurar que el audio se despierte en celular
+      try {
+        if (!audioCtxRef) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (AC) audioCtxRef = new AC();
+        }
+        if (audioCtxRef && audioCtxRef.state === "suspended") audioCtxRef.resume();
+      } catch (e) {}
+
       if (settings.sonidoActivo !== false) reproducirAlertaSonido();
       if (settings.vibracionActiva !== false) vibrarPatron();
+
+      // ✅ FIX: Forzar bucle de sonido y vibración hasta que se confirme o cierre
+      if (sonidoIntervalRef.current) clearInterval(sonidoIntervalRef.current);
+      sonidoIntervalRef.current = setInterval(() => {
+        if (settings.sonidoActivo !== false) reproducirAlertaSonido();
+        if (settings.vibracionActiva !== false) vibrarPatron();
+      }, 10000); // Suena y vibra cada 10 segundos
       registrarEvento(codigo, "alerta_activada", `Grupo ${horaActualVencida}`, { cuidador: nombreCuidadorInput, persona: elderName });
       
       if (sonidoIntervalRef.current) clearInterval(sonidoIntervalRef.current);
