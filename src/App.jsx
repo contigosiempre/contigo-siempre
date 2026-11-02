@@ -3503,6 +3503,32 @@ export default function App() {
                 <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 10, color: C.INK }}>{settings.sonidoActivo ? <Volume2 size={18} color={C.TEAL} /> : <VolumeX size={18} color={C.MUTED} />} Alerta con sonido</span>
                 <span style={{ width: 46, height: 26, borderRadius: 999, background: settings.sonidoActivo ? C.TEAL : C.LINE, position: "relative" }}><span style={{ position: "absolute", top: 3, left: settings.sonidoActivo ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
               </button>
+                            <button onClick={async () => {
+                try {
+                  if (typeof Notification === "undefined") {
+                    alert("Tu navegador no soporta notificaciones.");
+                    return;
+                  }
+                  const permiso = await Notification.requestPermission();
+                  if (permiso !== "granted") {
+                    alert("Permiso denegado. Ve a la configuración de Chrome y permite las notificaciones.");
+                    return;
+                  }
+                  alert("Permiso concedido. Generando token... espera.");
+                  const token = await obtenerTokenFCM();
+                  if (token) {
+                    setTokenFCM(token);
+                    if (codigo) await guardarTokenEnFirestore(codigo, token, "cuidador");
+                    alert("¡ÉXITO! Token guardado: " + token.substring(0, 10) + "...");
+                  } else {
+                    alert("ERROR: No se pudo generar el token. Revisa la consola de Chrome (F12) en la pestaña 'Console' para ver el error exacto.");
+                  }
+                } catch (err) {
+                  alert("Error inesperado: " + err.message);
+                }
+              }} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: C.AMBER, color: "#fff", fontWeight: 700, cursor: "pointer", marginBottom: 20 }}>
+                🔧 Forzar Token de Notificaciones (Reparación)
+              </button>
 
               <div style={{ fontSize: 13, fontWeight: 700, color: C.MUTED, marginBottom: 10 }}>PREFERENCIAS VISUALES</div>
               <button onClick={() => { actualizarSettings({ darkMode: !oscuro }); }} className="btn-press-soft" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 20 }}>
