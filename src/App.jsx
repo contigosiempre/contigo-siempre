@@ -2135,15 +2135,22 @@ export default function App() {
 
         // GUARDAR ALERTA CRÍTICA EN FIREBASE (Para el cuidador)
         if (db && codigo) {
-          db.collection("familias").doc(STORAGE_PREFIX + codigo).update({
-            alerta_critica_activa: {
-              meds: medsVencidos.map(mv => mv.med.name),
-              hora: horaActualVencida,
-              esVital: esVitalAhora,
-              persona: elderName,
-              fecha: Date.now()
-            }
-          }).catch(() => {});
+                  // Filtramos SOLO los medicamentos que el abuelito no confirmó
+          const medsPendientesNombre = medsVencidos
+            .filter(mv => !confirmadosIds.includes(mv.med.id))
+            .map(mv => mv.med.name);
+
+          if (medsPendientesNombre.length > 0) {
+            db.collection("familias").doc(STORAGE_PREFIX + codigo).update({
+              alerta_critica_activa: {
+                meds: medsPendientesNombre,
+                hora: horaActualVencida,
+                esVital: esVitalAhora,
+                persona: elderName,
+                fecha: Date.now()
+              }
+            }).catch(() => {});
+          }
         }
 
         const textoAviso = esVitalAhora 
