@@ -2700,9 +2700,15 @@ export default function App() {
   const confirmedHoy = confirmedByDate?.[todayStr()] || {};
   const occurrences = meds.flatMap((m) => (m.times || []).map((t) => ({ med: m, time: t, key: occKey(m.id, t) })));
   const upcoming = occurrences.filter((o) => toMinutes(o.time) >= nowMin - 60 && !confirmedHoy[o.key]).sort((a, b) => toMinutes(a.time) - toMinutes(b.time));
-  const current = upcoming[0];
+   const current = upcoming[0];
+  
+  // Calculamos cuánto tiempo ha pasado desde la hora de la toma
   const difMinutos = current ? (nowMin - toMinutes(current.time)) : -1;
+  
+  // La ventana es de 2 min si es vital, 6 min si es normal
   const ventanaAlerta = current ? ((current.med.criticidad === "vital" || detectarCriticidad(current.med.name) === "vital") ? 2 : 6) : 0;
+  
+  // Solo mostramos la tarjeta si estamos DENTRO de la ventana
   const isCurrentDue = current && difMinutos >= 0 && difMinutos <= ventanaAlerta;
 
   const racha = calcularRacha(meds, confirmedByDate);
