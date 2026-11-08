@@ -4,10 +4,10 @@ import { Clock, Check, AlertTriangle, Plus, X, User, Users, Heart, PackageOpen, 
 
 const STORAGE_PREFIX = "familia_";
 const EVENTOS_COLLECTION = "eventos";
-const APP_VERSION = "2.5.0-estable"; // Subimos versión por los cambios aprobados
+const APP_VERSION = "2.5.1-estable"; // Subimos versión por los cambios de notificaciones
 const MINUTOS_SIN_CONEXION_ALERTA = 5;
-const DIAS_LIMPIEZA_RESUMEN = 7; // Punto 6: borrar marcas de más de 7 días
-const DIAS_AVISO_SIN_CONFIRMAR = 3; // Punto 19: aviso al cuidador al día 3
+const DIAS_LIMPIEZA_RESUMEN = 7;
+const DIAS_AVISO_SIN_CONFIRMAR = 3;
 
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyAGxIGYqifeb5qGlVTQaVVpmKjZ9E1__TU",
@@ -20,12 +20,8 @@ const FIREBASE_CONFIG = {
 
 const VAPID_KEY = "BFPDPH02Oa44BflTPgU8Z7VbkqGL7rG3ZDLOAp9EKlkGYZWmoslFktvQtSl29HJR1gO4ESs2lBElRTEwWMAPwz0";
 
-// TODO: pendiente aprobación del usuario (punto 2 — código admin a la vista, cambiar por uno más largo)
 const CODIGO_ADMIN = (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_ADMIN_CODE) || "ADMIN" + new Date().getFullYear();
-// TODO: pendiente aprobación del usuario (punto 2 — código datos a la vista)
 const CODIGO_DATOS = "DATOS" + new Date().getFullYear();
-
-// TODO: pendiente aprobación del usuario (punto 3 — códigos Premium sin caducidad, definir cuáles caducan y en cuántos días)
 const CODIGOS_PILOTO = ["FUNDADOR", "BETA01", "FAMILIA1", "FAMILIA2", "FAMILIA3", "PILOTO01", "PILOTO02", "PILOTO03"];
 
 const PILL_COLORS = ["#E0654A", "#1F6E63", "#3A6EA5", "#D98F2B", "#8A5FA8"];
@@ -127,7 +123,6 @@ function dateKeyOffset(days) {
 function nowHHMM() { const d = new Date(); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; }
 function toMinutes(t) { const [h, m] = t.split(":").map(Number); return h * 60 + m; }
 
-// Punto 12: formato 24h (se mantiene el nombre por compatibilidad, pero retorna HH:MM)
 function fmtHoraConAmPm(t) {
   if (!t || !t.includes(":")) return "";
   return t;
@@ -145,7 +140,6 @@ function smsTime() { const d = new Date(); return `${String(d.getHours()).padSta
 function diasHastaVencimiento(fechaStr) { if (!fechaStr) return null; const v = new Date(fechaStr); const h = new Date(); return Math.floor((v - h) / (1000 * 60 * 60 * 24)); }
 function minutosDesde(ts) { if (!ts) return null; return Math.floor((Date.now() - ts) / 60000); }
 
-// Punto 12: parseo seguro de "YYYY-MM-DD" en hora local de Chile (evita el desfase UTC)
 function parseFechaLocalChile(fechaStr) {
   if (!fechaStr || typeof fechaStr !== "string") return null;
   const partes = fechaStr.split("-");
@@ -170,21 +164,15 @@ function clasificarMedicamento(n) { if (!n) return null; const x = normalizarTex
 function detectarCriticidad(n) { if (!n) return "normal"; const x = normalizarTexto(n); if (MEDS_VITALES.map(normalizarTexto).some((m) => x.includes(m))) return "vital"; if (MEDS_CON_RECETA.map(normalizarTexto).some((m) => x.includes(m))) return "importante"; return "normal"; }
 function dispColor(hex, daltonico) { const i = PILL_COLORS.indexOf(hex); return daltonico && i >= 0 ? PILL_COLORS_CB[i] : (hex || PILL_COLORS[0]); }
 
-// Punto 5: racha corregida (cuenta hoy si 100%, pausa en días sin medicamentos)
 function calcularRacha(meds, cbd) {
   if (!meds || meds.length === 0 || !cbd) return 0;
   const totalPorDia = meds.reduce((a, m) => a + (m.times?.length || 0), 0);
   if (totalPorDia === 0) return 0;
   let racha = 0;
-  // Empezamos en i=0 (hoy) y vamos hacia atrás
   for (let i = 0; i <= 60; i++) {
     const key = i === 0 ? todayStr() : dateKeyOffset(i);
     const dia = cbd[key];
-    if (!dia) {
-      // Día sin medicamentos programados o sin datos: pausa (no suma, no rompe)
-      // Pero si es hoy y no hay datos, no podemos saber si completó; seguimos
-      continue;
-    }
+    if (!dia) continue;
     const conf = Object.keys(dia).filter((k) => dia[k]).length;
     if (conf >= totalPorDia) racha++;
     else break;
@@ -221,7 +209,6 @@ function detectarCambioPatron(meds, cbd) {
   return null;
 }
 
-// Punto 19: detectar si el adulto lleva N días sin confirmar (para aviso y descuento automático)
 function diasSinConfirmar(meds, cbd, personaId) {
   if (!meds || meds.length === 0 || !cbd) return 0;
   let dias = 0;
@@ -229,7 +216,7 @@ function diasSinConfirmar(meds, cbd, personaId) {
     const key = i === 0 ? todayStr() : dateKeyOffset(i);
     const dia = cbd[key] || {};
     const confirmadas = Object.keys(dia).filter((k) => dia[k]).length;
-    if (confirmadas > 0) break; // Si confirmó algo ese día, se corta la racha de "sin confirmar"
+    if (confirmadas > 0) break;
     dias++;
   }
   return dias;
@@ -249,7 +236,6 @@ function getMesActual() {
 const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 const DIAS_SEM = ["L","M","M","J","V","S","D"];
 
-// Punto 12: generarTextoCompartir con formato 15/02/2026 y zona horaria Chile
 function generarTextoCompartir(tipo, elderName, meds, confirmedByDate) {
   if (tipo === "resumen" || tipo === "medico") {
     let conf = 0, esp = 0, omitidas = [];
@@ -310,7 +296,6 @@ function vibrarPatron() {
   catch (e) {}
 }
 
-// Punto 18: sistema nativo de notificaciones (solo para el cuidador, el paciente usa Firebase Messaging)
 function mostrarNotificacion(titulo, opciones) {
   try {
     if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
@@ -327,7 +312,6 @@ function mostrarNotificacion(titulo, opciones) {
   }
 }
 
-// Punto 18: sistema limpio de Firebase Messaging (solo para el paciente)
 function cargarMessaging() {
   return new Promise((resolve, reject) => {
     const s = document.createElement("script");
@@ -408,6 +392,7 @@ function registrarDato(clave, valor = 1, detalle = null) {
     localStorage.setItem("datos_admin_global", JSON.stringify(datos));
   } catch (e) {}
 }
+// ===== FIN PARTE 1 =====
 // ===== PARTE 2 DE 4 =====
 // ==================== COMPONENTES UI BASE ====================
 
@@ -443,21 +428,15 @@ function AvisoSinConexion({ C, offline, ultimaConexion, compacto, nombre }) {
   return null;
 }
 
-// ==================== PANTALLA DE ALERTA (puntos 4 y 8) ====================
-// Punto 4: varios medicamentos a la misma hora -> cada uno con su botón, confirmación individual
-// Punto 8: botón "Recordar en 5 min" vuelve a aparecer, solo normales/importantes, solo 1 vez
+// PUNTO 8 ELIMINADO: Ya no hay botón de posponer ni lógica de postergación.
 function PantallaAlertaMedicamento({
-  C, meds, hora, onConfirmarUno, onConfirmarTodos, onPosponer,
-  escala, daltonico, sonidoActivo, yaPostergada, esAdultoMayor,
-  confirmadosIds = [], modoGrupo = true
+  C, meds, hora, onConfirmarUno, onConfirmarTodos,
+  escala, daltonico, sonidoActivo, esAdultoMayor,
+  confirmadosIds = []
 }) {
   const esMultiple = meds.length > 1;
   const pendientes = meds.filter((m) => !confirmadosIds.includes(m.id));
-  const esVitalAlguno = meds.some((m) => (m.criticidad || detectarCriticidad(m.name)) === "vital");
-  // Punto 8: el botón de posponer solo aparece si NO es vital y NO se ha pospuesto ya
-  const puedePosponer = !esVitalAlguno && !yaPostergada;
 
-  // Ordenar: vitales primero (punto 4)
   const medsOrdenados = [...meds].sort((a, b) => {
     const ca = a.criticidad || detectarCriticidad(a.name);
     const cb = b.criticidad || detectarCriticidad(b.name);
@@ -544,26 +523,6 @@ function PantallaAlertaMedicamento({
         </button>
       )}
 
-      {/* Punto 8: botón de posponer vuelve a aparecer, solo 1 vez, solo normales/importantes */}
-          {puedePosponer && (
-        <button
-          onClick={() => {
-            if (onPosponer) onPosponer();
-          }}
-          disabled={yaPostergada}
-          className="btn-press-soft"
-          style={{ width: "100%", maxWidth: 380, padding: "14px 20px", borderRadius: 16, border: "2px solid rgba(255,255,255,0.4)", background: "transparent", color: "#FFFFFF", fontWeight: 700, fontSize: 15 * escala, cursor: yaPostergada ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 4, opacity: yaPostergada ? 0.5 : 1 }}
-        >
-          <Clock size={18} /> {yaPostergada ? "Ya postergado" : "Recordar en 5 minutos"}
-        </button>
-      )}
-
-      {!puedePosponer && yaPostergada && (
-        <div style={{ fontSize: 11.5, color: "rgba(255,255,255,0.75)", marginTop: 8, fontStyle: "italic" }}>
-          Ya usaste tu recordatorio de 5 min. Confirma o espera a que se cierre.
-        </div>
-      )}
-
       {sonidoActivo && (
         <div style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", marginTop: 14 }}>
           Esta alerta suena y vibra hasta que confirmes
@@ -582,7 +541,6 @@ function TutorialInteractivo({ pasos, onCerrar, C, onAbrirMenu }) {
 
   useEffect(() => {
     if (pasoActual.abrirMenu && onAbrirMenu) { onAbrirMenu(); }
-    // FIX: antes abría el menú en "cerrarMenu"; ahora no hace nada (pendiente diseño)
   }, [paso, pasoActual, onAbrirMenu]);
 
   useEffect(() => {
@@ -700,7 +658,6 @@ function MenuLateral({ C, abierto, onCerrar, tabActual, setTabActual, avisosNuev
     { id: "contactos", Icono: Phone, label: "Contactos" },
   ];
   const acciones = [
-    // TODO: pendiente aprobación del usuario (punto 13 — nombre de función engañoso, no afecta al usuario)
     { id: "soporte", Icono: HelpCircle, label: "Ayuda y Sugerencias", accion: onSoporte },
     { id: "compartir", Icono: Share2, label: "Compartir", accion: onCompartir },
     { id: "oscuro", Icono: oscuro ? Sun : Moon, label: oscuro ? "Modo claro" : "Modo oscuro", accion: onModoOscuro },
@@ -709,8 +666,6 @@ function MenuLateral({ C, abierto, onCerrar, tabActual, setTabActual, avisosNuev
     { id: "politica", Icono: ScrollText, label: "Política de privacidad", accion: onPolitica },
     { id: "premium", Icono: Crown, label: "Hazte Premium", accion: onPremium },
     { id: "ajustes", Icono: Settings, label: "Ajustes", accion: onAjustes },
-    // TODO: pendiente aprobación del usuario (punto 14 — agregar botón "Términos y Condiciones")
-    // TODO: pendiente aprobación del usuario (punto 15 — agregar botón "Eliminar cuenta")
   ];
   return (
     <>
@@ -1139,8 +1094,6 @@ function OnboardingCORFO({ C, onCerrar, onGuardar }) {
       setPaso(2);
     } else if (paso === 2) {
       if (!cantidadMeds) return;
-      // Punto 11 pendiente: se llama dos veces (a onGuardar y a onCerrar en el padre)
-      // Se deja como está por ahora (Opción C: no tocar sin aprobación)
       onGuardar({ uso: "Familiar", cantidadPersonas, cantidadMeds });
     }
   };
@@ -1563,7 +1516,6 @@ function PanelMetricasCORFO({ C, onCerrar }) {
   );
 }
 
-// Punto 12: ModalReporteMedico ya usa fmtFechaChile dentro de generarTextoCompartir
 function ModalReporteMedico({ C, onCerrar, elderName, meds, confirmedByDate }) {
   const [copiado, setCopiado] = useState(false);
   const texto = generarTextoCompartir("medico", elderName, meds, confirmedByDate);
@@ -1677,7 +1629,6 @@ function CalendarioHistorial({ C, meds, confirmedByDate, onCerrar }) {
 
 function CarroCompleto({ C, meds, onCerrar, onElegirFarmacia }) {
   const [farmacias, setFarmacias] = useState([
-    // TODO: pendiente aprobación del usuario (punto 16 — no prometer comparador de precios, cambiar textos)
     { id: "f1", nombre: "Cruz Verde", distanciaKm: 1.2, url: "https://www.cruzverde.cl" },
     { id: "f2", nombre: "Salcobrand", distanciaKm: 2.1, url: "https://www.salcobrand.cl" },
     { id: "f3", nombre: "Farmacias Ahumada", distanciaKm: 1.8, url: "https://www.farmaciasahumada.cl" },
@@ -1726,7 +1677,7 @@ function CarroCompleto({ C, meds, onCerrar, onElegirFarmacia }) {
 }
 
 // ===== FIN PARTE 3 =====
-// ===== PARTE 4 DE 4 (A) =====
+// ===== PARTE 4 DE 4 =====
 // ==================== COMPONENTE PRINCIPAL APP (ESTADO Y EFECTOS) ====================
 
 export default function App() {
@@ -1787,7 +1738,6 @@ export default function App() {
   const [formContacto, setFormContacto] = useState({ nombre: "", telefono: "", tipo: "médico" });
   const [form, setForm] = useState({ name: "", dose: "", times: ["08:00"], color: PILL_COLORS[0], shape: PILL_SHAPES[0], unidad: "Pastilla", stock: 30, doseAmount: 1, type: "privada", receta: null, criticidad: null, modoAviso: null, notas: "", recetaVence: "", ventanaMin: 0 });
 
-  // Punto 7: smsLog persistido en localStorage
   const [smsLog, setSmsLog] = useState(() => {
     try { const raw = localStorage.getItem("sms_log"); return raw ? JSON.parse(raw) : []; } catch (e) { return []; }
   });
@@ -1797,11 +1747,7 @@ export default function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [alertaActiva, setAlertaActiva] = useState(null);
   const [tokenFCM, setTokenFCM] = useState(null);
-
-  // Punto 4: IDs confirmados en la alerta actual (para marcar en verde sin cerrar la pantalla)
   const [confirmadosIds, setConfirmadosIds] = useState([]);
-  // Punto 8: si la alerta actual ya fue pospuesta (para ocultar el botón "Recordar en 5 min")
-  const [yaPostergadaActual, setYaPostergadaActual] = useState(false);
 
   const [alertasSonadasHoy, setAlertasSonadasHoy] = useState(() => {
     try { return JSON.parse(localStorage.getItem(`alertas_sonadas_${todayStr()}`)) || {}; } catch (e) { return {}; }
@@ -1811,9 +1757,7 @@ export default function App() {
   });
 
   const alertasPorTomaRef = useRef({});
-  const alertasPostergadasRef = useRef({});
   const pendingLocalWriteRef = useRef(false);
-  const [triggerPostergacion, setTriggerPostergacion] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
 
   const appAbiertaRef = useRef(false);
@@ -1823,7 +1767,6 @@ export default function App() {
   const timersAlertaRef = useRef([]);
   const alertaCerraraRef = useRef(false);
   const alertaActivaRef = useRef(null);
-  // Punto 18: si ya pedimos audio al primer toque
   const audioDesbloqueadoRef = useRef(false);
 
   const PASOS_TUTORIAL = [
@@ -1843,8 +1786,6 @@ export default function App() {
   const oscuro = settings.darkMode;
   const C = oscuro ? DARK : LIGHT;
 
-  // ==================== EFECTOS ====================
-
   useEffect(() => {
     const handleOnline = () => { setIsOnline(true); enviarEventosPendientes(); };
     const handleOffline = () => { setIsOnline(false); };
@@ -1855,7 +1796,6 @@ export default function App() {
 
   useEffect(() => { const id = setInterval(() => setNowMin(toMinutes(nowHHMM())), 30000); return () => clearInterval(id); }, []);
 
-  // Punto 18: audio desbloqueado al primer toque (Android)
   useEffect(() => {
     const unlock = () => {
       try {
@@ -1875,7 +1815,6 @@ export default function App() {
     };
   }, []);
 
-  // Punto 6: limpieza de resúmenes de más de 7 días al arrancar
   useEffect(() => {
     try {
       const claves = Object.keys(localStorage).filter((k) => k.startsWith("resumen_enviado_"));
@@ -1888,7 +1827,6 @@ export default function App() {
     } catch (e) {}
   }, []);
 
-  // Punto 7: guardar smsLog en localStorage cada vez que cambia
   useEffect(() => {
     try { localStorage.setItem("sms_log", JSON.stringify(smsLog)); } catch (e) {}
   }, [smsLog]);
@@ -1900,7 +1838,6 @@ export default function App() {
     } catch (e) {}
   }, [alertasSonadasHoy, resumenEnviadoHoy]);
 
-  // Punto 18: Link Mágico (?unirse=, ?premium=, ?confirmar=)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const unirseCodigo = params.get("unirse");
@@ -1909,7 +1846,6 @@ export default function App() {
     const confirmarParam = params.get("confirmar");
 
     if (confirmarParam === "1") {
-      // Se guarda para que, cuando la familia cargue, se dispare la confirmación
       localStorage.setItem("confirmacion_pendiente", String(Date.now()));
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (unirseCodigo && unirseCodigo.length === 6) {
@@ -1954,7 +1890,6 @@ export default function App() {
   useEffect(() => { cuandoDbListo((d) => { setFirebaseEstado(d ? "conectado" : "local"); }); }, []);
   useEffect(() => { if (familia && !personaActualId && familia.personas && familia.personas.length > 0) setPersonaActualId(familia.personas[0].id); }, [familia, personaActualId]);
 
-  // Punto 18: si ya hay permiso de notificaciones, recuperar token FCM
   useEffect(() => {
     if (typeof Notification !== "undefined" && Notification.permission === "granted") {
       cuandoDbListo(async (d) => {
@@ -1968,7 +1903,6 @@ export default function App() {
     }
   }, [codigo, rolUsuario]);
 
-  // Punto 18: si hay confirmación pendiente (?confirmar=1), dispararla cuando la familia cargue
   useEffect(() => {
     if (!alertaActiva) return;
     const pendiente = localStorage.getItem("confirmacion_pendiente");
@@ -1978,7 +1912,6 @@ export default function App() {
     }
   }, [alertaActiva]);
 
-  // Punto 18: escuchar mensajes del Service Worker (confirmar_toma / cerrar_alerta / postergar_toma)
   useEffect(() => {
     if (!navigator.serviceWorker) return;
     const handler = (event) => {
@@ -1986,15 +1919,12 @@ export default function App() {
       if (event.data.tipo === "confirmar_toma" || event.data.tipo === "cerrar_alerta") {
         if (alertaActiva) confirmarTodosPendientes();
         else setAlertaActiva(null);
-      } else if (event.data.tipo === "postergar_toma" && alertaActiva) {
-        posponerAlerta();
       }
     };
     navigator.serviceWorker.addEventListener("message", handler);
     return () => navigator.serviceWorker.removeEventListener("message", handler);
   }, [alertaActiva]);
 
-  // Heartbeat: actualiza ultimaConexion de la persona actual (read-modify-write, se deja como está)
   useEffect(() => {
     if (stage !== "app" || !codigo || !personaActualId) return;
     const enviarHeartbeat = async () => {
@@ -2022,7 +1952,6 @@ export default function App() {
     }
   }, [stage, codigo, nombreCuidadorInput]);
 
-  // onSnapshot: escucha cambios remotos
   useEffect(() => {
     if (!codigo || !db) return;
     const unsub = db.collection("familias").doc(STORAGE_PREFIX + codigo).onSnapshot((doc) => {
@@ -2050,7 +1979,6 @@ export default function App() {
     }
   }, [stage, familia, showSelectorRol, showOnboarding]);
 
-  // Punto 18 + 4 + 8: efecto de alertas (con timers controlados)
   useEffect(() => {
     if (stage !== "app" || !familia || !personaActual) return;
     if (rolUsuario !== "mayor" && !(personaActual?.esAutocuidado)) return;
@@ -2064,8 +1992,6 @@ export default function App() {
       (m.times || []).forEach(t => {
         const key = occKey(m.id, t);
         if (confirmedHoy[key]) return;
-        const pp = alertasPostergadasRef.current[`${personaActual.id}_${m.id}_${t}`];
-        if (pp && nowMin < pp.postergadoEn + 5) return;
 
         const diff = nowMin - toMinutes(t);
         if (diff >= 0 && diff <= 1) {
@@ -2087,7 +2013,6 @@ export default function App() {
       setAlertaActiva(alertaObj);
       alertaActivaRef.current = alertaObj;
       setConfirmadosIds([]);
-      setYaPostergadaActual(false);
 
       const esVitalAhora = medsVencidos.some(mv => (mv.med.criticidad || detectarCriticidad(mv.med.name)) === "vital");
       const duracionTotal = esVitalAhora ? 2 * 60 * 1000 : 6 * 60 * 1000;
@@ -2123,15 +2048,16 @@ export default function App() {
       const tCierre = setTimeout(() => {
         alertaCerraraRef.current = true;
         alertaActivaRef.current = null;
+        
+        // Cerrar la notificación del celular si la app está abierta
+        try {
+          if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
+            navigator.serviceWorker.getRegistration().then((reg) => {
+              if (reg && reg.getNotifications) reg.getNotifications().then((notifs) => notifs.forEach((n) => n.close()));
+            });
+          }
+        } catch (e) {}
 
-        // Punto 4: resumen de lo confirmado vs pendiente
-        const confirmadosAhora = medsVencidos.filter(mv => !mv.key || true); // se recalcula abajo
-        // Usamos el estado confirmadosIds a través de un cierre con los meds originales
-        // (para el cierre automático, asumimos que los confirmados se guardaron y los pendientes son los que no)
-        // Se calcula con los meds del grupo y las claves que ya estaban confirmadas
-        const yaConfirmadasKeys = new Set();
-        // No tenemos acceso sincrónico a confirmadosIds aquí; usamos los meds que aún no tienen stock descontado
-        // Para simplificar, mostramos resumen genérico:
         const textoAviso = `⚠️ ${elderName.split(" ")[0]} no confirmó todas las tomas de las ${fmtHoraConAmPm(horaActualVencida)} (${esVitalAhora ? 'VITAL' : 'Normal'}).`;
 
         setSmsLog(prev => [...prev, { tipo: "alerta", hora: smsTime(), texto: textoAviso }]);
@@ -2148,7 +2074,7 @@ export default function App() {
       }, duracionTotal);
       timersAlertaRef.current.push(tCierre);
     }
-  }, [nowMin, stage, familia, personaActual, confirmedByDate, view, alertasSonadasHoy, settings, codigo, nombreCuidadorInput, elderName, meds, triggerPostergacion, rolUsuario]);
+  }, [nowMin, stage, familia, personaActual, confirmedByDate, view, alertasSonadasHoy, settings, codigo, nombreCuidadorInput, elderName, meds, rolUsuario]);
 
   useEffect(() => {
     alertaActivaRef.current = alertaActiva;
@@ -2159,7 +2085,7 @@ export default function App() {
       }
     }
   }, [alertaActiva]);
-  // ===== PARTE 4 DE 4 (B) =====
+
   // ==================== HANDLERS Y LÓGICA DE ACCIONES ====================
 
   const guardarFamilia = useCallback(async (cod, data) => {
@@ -2345,14 +2271,12 @@ export default function App() {
       }
     }
     else if (CODIGOS_PILOTO.includes(up)) {
-      // TODO: pendiente aprobación del usuario (punto 3 — estos códigos dan Premium para siempre)
       activarPremium();
       setCodigoPremium("");
     }
     else alert("Código no válido");
   };
 
-  // Punto 18: activar notificaciones desde botón (Android)
   const activarNotificaciones = async () => {
     try {
       if (typeof Notification === "undefined") {
@@ -2377,10 +2301,7 @@ export default function App() {
     }
   };
 
-  // ==================== PUNTO 4: CONFIRMACIÓN INDIVIDUAL ====================
-  // Confirma UN solo remedio de la alerta activa. Baja su stock, guarda en la nube,
-  // lo marca en verde en pantalla, y NO cierra la pantalla hasta que no queden pendientes.
-   const confirmarUno = (med) => {
+  const confirmarUno = (med) => {
     if (!med) return;
     const horaConfirmar = alertaActiva?.time || (med.times && med.times[0]) || nowHHMM();
 
@@ -2403,7 +2324,7 @@ export default function App() {
           timersAlertaRef.current.forEach(clearTimeout);
           alertaActivaRef.current = null;
           if (sonidoIntervalRef.current) clearInterval(sonidoIntervalRef.current);
-          setTimeout(() => { setAlertaActiva(null); setConfirmadosIds([]); setYaPostergadaActual(false); }, 300);
+          setTimeout(() => { setAlertaActiva(null); setConfirmadosIds([]); }, 300);
         }
         return nuevos;
       });
@@ -2411,6 +2332,7 @@ export default function App() {
       mostrarNotificacion("Toma confirmada", { body: `${elderName.split(" ")[0]} confirmó: ${med.name}` });
     }
   };
+
   const confirmarTodosPendientes = () => {
     if (!alertaActiva) return;
     const pendientes = alertaActiva.meds.filter((m) => !confirmadosIds.includes(m.id));
@@ -2442,48 +2364,13 @@ export default function App() {
     }
     setAlertaActiva(null);
     setConfirmadosIds([]);
-    setYaPostergadaActual(false);
 
     if (familia?.settings?.notificarConfirmacion && typeof Notification !== "undefined" && Notification.permission === "granted") {
       mostrarNotificacion("Toma confirmada", { body: `${elderName.split(" ")[0]} confirmó: ${nombresMeds}`, icon: "/icons/icon-192.png" });
     }
   };
 
-  // ==================== PUNTO 8: POSPONER (1 sola vez) ====================
-  const posponerAlerta = () => {
-    if (!alertaActiva) return;
-    // Solo permitir posponer si no es vital y no se ha pospuesto antes
-    const esVital = alertaActiva.meds.some((m) => (m.criticidad || detectarCriticidad(m.name)) === "vital");
-    if (esVital || yaPostergadaActual) return;
-
-    timersAlertaRef.current.forEach(clearTimeout);
-    timersAlertaRef.current = [];
-    alertaCerraraRef.current = false;
-
-    const alertaGuardada = alertaActiva;
-    alertaActivaRef.current = null;
-    setAlertaActiva(null);
-    setYaPostergadaActual(true);
-
-    const nombresMeds = alertaGuardada.meds.map((m) => m.name).join(", ");
-    registrarEvento(codigo, "alerta_pospuesta", `${nombresMeds} a las ${fmtHoraConAmPm(alertaGuardada.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: nombresMeds, hora: alertaGuardada.time });
-
-    alertaGuardada.meds.forEach((m) => {
-      const key = `${personaActual.id}_${m.id}_${alertaGuardada.time}`;
-      const prev = alertasPostergadasRef.current[key];
-      alertasPostergadasRef.current[key] = {
-        postergadoEn: toMinutes(nowHHMM()),
-        count: prev ? prev.count + 1 : 1
-      };
-    });
-
-    setTriggerPostergacion((t) => t + 1);
-    setAlertasSonadasHoy((prev) => { const nuevo = { ...prev }; delete nuevo[`sonada_${personaActual.id}_${alertaGuardada.time}_${todayStr()}`]; return nuevo; });
-  };
-
   // ==================== PUNTO 19: DESCUENTO AUTOMÁTICO Y AVISO AL DÍA 3 ====================
-  // Se ejecuta al arrancar la app (una vez por sesión por persona) para descontar stock
-  // de los días sin confirmar y avisar al cuidador al tercer día.
   const descuentoAutomaticoAplicadoRef = useRef({});
   useEffect(() => {
     if (stage !== "app" || !personaActual || meds.length === 0) return;
@@ -2493,10 +2380,8 @@ export default function App() {
 
     const diasSin = diasSinConfirmar(meds, confirmedByDate, personaActual.id);
     if (diasSin >= DIAS_AVISO_SIN_CONFIRMAR) {
-      // Avisar al cuidador (se guarda en smsLog persistente)
       const textoAviso = `⚠️ ${elderName.split(" ")[0]} no ha confirmado tomas en ${diasSin} días. El stock se está descontando automáticamente. Sería bueno revisar.`;
       setSmsLog((prev) => {
-        // Evitar duplicados: si ya hay un aviso igual hoy, no repetir
         const yaExiste = prev.some((s) => s.texto === textoAviso && s.hora === smsTime());
         if (yaExiste) return prev;
         return [...prev, { tipo: "alerta", hora: smsTime(), texto: textoAviso }];
@@ -2519,7 +2404,6 @@ export default function App() {
     registrarEvento(codigo, "seleccionar_rol", rol, { cuidador: nombreCuidadorInput, rol: rol });
   };
 
-  // Punto 11: el padre ya no llama dos veces (solo se llama desde onCerrar)
   const completarOnboarding = (data) => {
     if (!data) return;
     actualizar((prev) => ({
@@ -2547,7 +2431,6 @@ export default function App() {
   const maxPersonas = esPremium ? 3 : LIMITES_ESTANDAR.maxElderly;
 
   const intentarAgregarMed = () => {
-    // Solo bloquear si es NUEVO y ya llegó al límite; editar siempre se permite
     if (!editandoId && meds.length >= maxMeds) { setShowLimite("meds"); return; }
     addStartRef.current = Date.now();
     setEditandoId(null);
@@ -2673,7 +2556,6 @@ export default function App() {
     setRestockTarget(null);
   };
 
-  // Punto 9: reconteo no acepta negativos, sí decimales
   const aplicarReconteo = (id, c) => {
     const num = Number(c);
     if (isNaN(num) || num < 0) { alert("El stock no puede ser negativo. Revisa el número."); return; }
@@ -2705,8 +2587,6 @@ export default function App() {
       window.location.reload();
     }
   };
-
-  // ==================== RENDERIZADO VISUAL ====================
 
   const scale = FONT_SCALE[settings.fontSize] || 1;
   const confirmedHoy = confirmedByDate?.[todayStr()] || {};
@@ -2809,7 +2689,6 @@ export default function App() {
       <style>{CSS_GLOBAL}</style>
       <div style={{ width: "100%", maxWidth: 420, minHeight: "100vh", background: C.CREAM, display: "flex", flexDirection: "column", position: "relative" }}>
 
-        {/* PUNTO 4 + 8: Pantalla de alerta con confirmación individual */}
         {alertaActiva && (rolUsuario === "mayor" || personaActual?.esAutocuidado) && (
           <PantallaAlertaMedicamento
             C={C}
@@ -2817,11 +2696,9 @@ export default function App() {
             hora={alertaActiva.time}
             onConfirmarUno={confirmarUno}
             onConfirmarTodos={confirmarTodosPendientes}
-            onPosponer={posponerAlerta}
             escala={scale}
             daltonico={settings.daltonico}
             sonidoActivo={settings.sonidoActivo !== false}
-            yaPostergada={yaPostergadaActual}
             esAdultoMayor={rolUsuario === "mayor"}
             confirmadosIds={confirmadosIds}
           />
@@ -3444,7 +3321,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Punto 9: reconteo no acepta negativos, sí decimales */}
         {reconteoTarget && (
           <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(26,35,126,0.55)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 29 }}>
             <div className="modal-scale" style={{ width: "100%", maxWidth: 360, background: C.CREAM, borderRadius: 20, padding: 24, textAlign: "center", margin: 20 }}>
@@ -3506,7 +3382,7 @@ export default function App() {
                 <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 10, color: C.INK }}>{settings.sonidoActivo ? <Volume2 size={18} color={C.TEAL} /> : <VolumeX size={18} color={C.MUTED} />} Alerta con sonido</span>
                 <span style={{ width: 46, height: 26, borderRadius: 999, background: settings.sonidoActivo ? C.TEAL : C.LINE, position: "relative" }}><span style={{ position: "absolute", top: 3, left: settings.sonidoActivo ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
               </button>
-                            <button onClick={async () => {
+              <button onClick={async () => {
                 try {
                   if (typeof Notification === "undefined") {
                     alert("Tu navegador no soporta notificaciones.");
@@ -3567,7 +3443,3 @@ export default function App() {
 }
 
 // ===== FIN PARTE 4 =====
-
-
-
-// ===== FIN PARTE 1 =====
