@@ -1,4 +1,3 @@
-// ==================== FIREBASE MESSAGING ====================
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 
@@ -13,28 +12,25 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Manejar notificaciones en segundo plano (celular bloqueado o app cerrada)
+// Manejar notificaciones en segundo plano
 messaging.onBackgroundMessage((payload) => {
-  console.log('[service-worker.js] Mensaje en segundo plano:', payload);
-  
   const notificationTitle = payload.notification?.title || "Contigo Siempre";
   const notificationOptions = {
     body: payload.notification?.body || "Es hora de tomar tu medicamento",
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
+    // Al quitar requireInteraction: true, Android permite que se borre sola
     vibrate: [1000, 500, 1000, 500, 1000],
-    requireInteraction: true,
+    sound: 'default',
     priority: 'high',
     actions: [
-      { action: 'tomar', title: '✓ Ya la tomé' },
-      { action: 'postergar', title: '⏰ Postergar 5 min' }
+      { action: 'tomar', title: '✓ Ya la tomé' }
     ]
   };
   
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
 
-// Manejar clics en la notificación
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const APP_URL = 'https://contigo-siempre.vercel.app';
@@ -51,18 +47,6 @@ self.addEventListener('notificationclick', (event) => {
         if (clients.openWindow) return clients.openWindow(APP_URL + '?confirmar=1');
       })
     );
-  } else if (event.action === 'postergar') {
-    event.waitUntil(
-      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-        for (const client of clientList) {
-          if (client.url.includes('contigo-siempre') && 'focus' in client) {
-            client.postMessage({ tipo: 'postergar_toma' });
-            return client.focus();
-          }
-        }
-        if (clients.openWindow) return clients.openWindow(APP_URL);
-      })
-    );
   } else {
     event.waitUntil(
       clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
@@ -76,8 +60,7 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 // ==================== CACHÉ DE LA PWA ====================
-// Punto 18: network-first para que la app se actualice sola
-const CACHE_NAME = 'contigo-siempre-v16';
+const CACHE_NAME = 'contigo-siempre-v17';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
@@ -113,7 +96,6 @@ self.addEventListener('fetch', (event) => {
   if (event.request.url.includes('firebase')) return;
   if (event.request.method !== 'GET') return;
 
-  // Network first (intenta red, si falla usa caché)
   event.respondWith(
     fetch(event.request)
       .then((response) => {
