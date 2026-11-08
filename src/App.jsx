@@ -1743,6 +1743,7 @@ export default function App() {
   const [showSelectorRol, setShowSelectorRol] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
+  const bloqueoFirebase = useRef(false);
   const [editandoId, setEditandoId] = useState(null);
   const [archivarTarget, setArchivarTarget] = useState(null);
   const [restockTarget, setRestockTarget] = useState(null);
@@ -2015,8 +2016,9 @@ export default function App() {
 
   useEffect(() => {
     if (!codigo || !db) return;
-    const unsub = db.collection("familias").doc(STORAGE_PREFIX + codigo).onSnapshot((doc) => {
-      if (doc.exists) {
+      const unsub = db.collection("familias").doc(STORAGE_PREFIX + codigo).onSnapshot((doc) => {
+      // Si estamos en la pantalla de agregar/editar, NO actualizamos la vista
+      if (doc.exists && !pendingLocalWriteRef.current && !bloqueoFirebase.current) {
         const data = doc.data();
         setFamilia((prev) => { if (JSON.stringify(prev) === JSON.stringify(data)) return prev; return data; });
       }
