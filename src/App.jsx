@@ -76,9 +76,12 @@ function cuandoDbListo(cb) {
     s.onerror = res;
     document.head.appendChild(s);
   });
+  
+  // AHORA CARGAMOS TAMBIÉN LA LIBRERÍA DE AUTHENTICATION
   Promise.all([
     cargar("https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"),
-    cargar("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js")
+    cargar("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"),
+    cargar("https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js")
   ]).then(() => {
     try {
       if (window.firebase && !window.firebase.apps.length) {
@@ -87,6 +90,12 @@ function cuandoDbListo(cb) {
       if (window.firebase) {
         db = window.firebase.firestore();
         db.enablePersistence({ synchronizeTabs: true }).catch((err) => {});
+        
+        // PEDIMOS EL PASE VIP (LOGIN ANÓNIMO)
+        const auth = window.firebase.auth();
+        auth.signInAnonymously().catch((error) => {
+          console.error("Error en login anónimo:", error);
+        });
       }
     } catch (e) {}
     dbCallbacks.forEach((cb) => cb(db));
