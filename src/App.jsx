@@ -4,7 +4,7 @@ import { Clock, Check, AlertTriangle, Plus, X, User, Users, Heart, PackageOpen, 
 
 const STORAGE_PREFIX = "familia_";
 const EVENTOS_COLLECTION = "eventos";
-const APP_VERSION = "3.0.0-production"; 
+const APP_VERSION = "3.1.0-production"; 
 const MINUTOS_SIN_CONEXION_ALERTA = 5;
 const DIAS_LIMPIEZA_RESUMEN = 7;
 const DIAS_AVISO_SIN_CONFIRMAR = 3;
@@ -171,7 +171,7 @@ function calcularRacha(meds, cbd) {
   for (let i = 0; i <= 60; i++) {
     const key = i === 0 ? todayStr() : dateKeyOffset(i);
     const dia = cbd[key];
-    if (!dia) break; // Corregido: break en vez de continue
+    if (!dia) break;
     const conf = Object.keys(dia).filter((k) => dia[k]).length;
     if (conf >= totalPorDia) racha++;
     else break;
@@ -211,7 +211,6 @@ function detectarCambioPatron(meds, cbd) {
 function diasSinConfirmar(meds, cbd, personaFechaCreacion) {
   if (!meds || meds.length === 0 || !cbd) return 0;
   let dias = 0;
-  // Empezamos desde AYER para no juzgar el día de hoy
   for (let i = 1; i <= DIAS_AVISO_SIN_CONFIRMAR; i++) {
     const key = dateKeyOffset(i);
     const dia = cbd[key] || {};
@@ -219,7 +218,6 @@ function diasSinConfirmar(meds, cbd, personaFechaCreacion) {
     if (confirmadas > 0) break;
     dias++;
   }
-  // Si la familia es más nueva que los días calculados, ajustamos
   if (personaFechaCreacion) {
     const diasDeVida = Math.floor((Date.now() - personaFechaCreacion) / (1000 * 60 * 60 * 24));
     if (dias > diasDeVida) dias = diasDeVida;
@@ -1742,6 +1740,9 @@ export default function App() {
   const [showCalendario, setShowCalendario] = useState(false);
   const [showCarroCompleto, setShowCarroCompleto] = useState(false);
   const [bannerCerrado, setBannerCerrado] = useState(false); 
+  
+  // NUEVO ESTADO PARA ALERTA CRÍTICA EN EL CELULAR DEL CUIDADOR
+  const [alertaCriticaCuidador, setAlertaCriticaCuidador] = useState(null);
 
   const [esAdmin, setEsAdmin] = useState(() => localStorage.getItem("es_admin") === "true");
 
@@ -1778,6 +1779,7 @@ export default function App() {
   const alertaCerraraRef = useRef(false);
   const alertaActivaRef = useRef(null);
   const audioDesbloqueadoRef = useRef(false);
+  const alertaCriticaRef = useRef(null);
 
   useEffect(() => {
     const desbloquearAudio = () => {
@@ -1987,6 +1989,29 @@ export default function App() {
     }
   }, [stage, familia, showSelectorRol, showOnboarding]);
 
+  // ==================== NUEVO EFECTO: ESCUCHAR ALERTAS CRÍTICAS EN EL CELULAR DEL CUIDADOR ====================
+  useEffect(() => {
+    if (stage !== "app" || !codigo || rolUsuario === "mayor" || !db) return;
+
+    const unsub = db.collection("familias").doc(STORAGE_PREFIX + codigo).onSnapshot((doc) => {
+      if (doc.exists) {
+        const data = doc.data();
+        if (data.alerta_critica_activa) {
+          const ac = data.alerta_critica_activa;
+          // Solo mostrar la alerta si fue en los últimos 5 minutos y no la hemos cerrado ya
+          if (Date.now() - ac.fecha < 5 * 60 * 1000 && (!alertaCriticaRef.current || alertaCriticaRef.current.fecha !== ac.fecha)) {
+            setAlertaCriticaCuidador(ac);
+            alertaCriticaRef.current = ac;
+            reproducirAlertaSonido();
+            vibrarPatron();
+            if (navigator.vibrate) navigator.vibrate([1000, 500, 1000, 500, 1000]);
+          }
+        }
+      }
+    });
+    return () => unsub();
+  }, [stage, codigo, rolUsuario]);
+
   useEffect(() => {
     if (stage !== "app" || !familia || !personaActual) return;
     if (rolUsuario !== "mayor" && !(personaActual?.esAutocuidado)) return;
@@ -2064,6 +2089,19 @@ export default function App() {
             });
           }
         } catch (e) {}
+
+        // GUARDAR ALERTA CRÍTICA EN FIREBASE (Para el cuidador)
+        if (db && codigo) {
+          db.collection("familias").doc(STORAGE_PREFIX + codigo).update({
+            alerta_critica_activa: {
+              meds: medsVencidos.map(mv => mv.med.name),
+              hora: horaActualVencida,
+              esVital: esVitalAhora,
+              persona: elderName,
+              fecha: Date.now()
+            }
+          }).catch(() => {});
+        }
 
         const textoAviso = esVitalAhora 
           ? `🚨 URGENTE: ${elderName.split(" ")[0]} NO ha confirmado su medicamento VITAL (${fmtHoraConAmPm(horaActualVencida)}). Por favor llámalo de inmediato.`
@@ -2294,6 +2332,11 @@ export default function App() {
       return { ...p, meds: nm, confirmedByDate: nc, ultimaConexion: Date.now() };
     });
 
+    // Limpiar la alerta crítica si estaba activa
+    if (db && codigo) {
+      db.collection("familias").doc(STORAGE_PREFIX + codigo).update({ alerta_critica_activa: null }).catch(() => {});
+    }
+
     registrarEvento(codigo, "confirmar_toma", `${med.name} a las ${fmtHoraConAmPm(horaConfirmar)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: med.name, hora: horaConfirmar });
 
     if (alertaActiva) {
@@ -2329,6 +2372,11 @@ export default function App() {
       });
       return { ...p, meds: nm, confirmedByDate: nc, ultimaConexion: Date.now() };
     });
+
+    // Limpiar la alerta crítica si estaba activa
+    if (db && codigo) {
+      db.collection("familias").doc(STORAGE_PREFIX + codigo).update({ alerta_critica_activa: null }).catch(() => {});
+    }
 
     const nombresMeds = pendientes.map((m) => m.name).join(", ");
     registrarEvento(codigo, "confirmar_toma", `${nombresMeds} a las ${fmtHoraConAmPm(alertaActiva.time)}`, { cuidador: nombreCuidadorInput, persona: elderName, med: nombresMeds, hora: alertaActiva.time });
@@ -2684,6 +2732,32 @@ export default function App() {
             esAdultoMayor={rolUsuario === "mayor"}
             confirmadosIds={confirmadosIds}
           />
+        )}
+
+        {/* NUEVA PANTALLA DE ALERTA CRÍTICA PARA EL CUIDADOR */}
+        {alertaCriticaCuidador && (
+          <div className="modal-fade" style={{ position: "fixed", inset: 0, background: "rgba(211, 47, 47, 0.95)", zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 24, textAlign: "center" }}>
+            <AlertTriangle size={80} color="#FFFFFF" style={{ marginBottom: 20 }} />
+            <div style={{ fontSize: 32, fontWeight: 900, color: "#FFFFFF", marginBottom: 10, lineHeight: 1.1 }}>¡ALERTA VITAL!</div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: "#FFFFFF", marginBottom: 20 }}>{alertaCriticaCuidador.persona} NO confirmó:</div>
+            <div style={{ fontSize: 26, fontWeight: 900, color: "#FFEB3B", background: "rgba(0,0,0,0.2)", padding: "15px 25px", borderRadius: 15, marginBottom: 20 }}>
+              {alertaCriticaCuidador.meds.join(", ")}
+            </div>
+            <div style={{ fontSize: 18, color: "#FFFFFF", marginBottom: 30 }}>Hora: {fmtHoraConAmPm(alertaCriticaCuidador.hora)}</div>
+            <button 
+              onClick={() => {
+                setAlertaCriticaCuidador(null);
+                alertaCriticaRef.current = null;
+                if (db && codigo) {
+                  db.collection("familias").doc(STORAGE_PREFIX + codigo).update({ alerta_critica_activa: null }).catch(() => {});
+                }
+              }}
+              className="btn-press" 
+              style={{ padding: "20px 40px", borderRadius: 20, border: "none", background: "#FFFFFF", color: "#D32F2F", fontWeight: 900, fontSize: 22, cursor: "pointer", boxShadow: "0 8px 30px rgba(0,0,0,0.3)" }}
+            >
+              ENTENDIDO, LLAMARÉ AL PACIENTE
+            </button>
+          </div>
         )}
 
         {!isOnline && (
