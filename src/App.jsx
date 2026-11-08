@@ -2699,7 +2699,14 @@ export default function App() {
   const scale = FONT_SCALE[settings.fontSize] || 1;
   const confirmedHoy = confirmedByDate?.[todayStr()] || {};
   const occurrences = meds.flatMap((m) => (m.times || []).map((t) => ({ med: m, time: t, key: occKey(m.id, t) })));
-  const upcoming = occurrences.filter((o) => toMinutes(o.time) >= nowMin - 60 && !confirmedHoy[o.key]).sort((a, b) => toMinutes(a.time) - toMinutes(b.time));
+    // Solo consideramos "próximas" las tomas cuya ventana de tiempo NO haya expirado
+  const upcoming = occurrences.filter((o) => {
+    if (confirmedHoy[o.key]) return false;
+    const dif = nowMin - toMinutes(o.time);
+    const ventana = (o.med.criticidad === "vital" || detectarCriticidad(o.med.name) === "vital") ? 2 : 6;
+    // Mostrar solo si falta poco para la toma (máx 60 min antes) o si está dentro de la ventana
+    return dif <= ventana && dif >= -60;
+  }).sort((a, b) => toMinutes(a.time) - toMinutes(b.time));
    const current = upcoming[0];
   
   // Calculamos cuánto tiempo ha pasado desde la hora de la toma
