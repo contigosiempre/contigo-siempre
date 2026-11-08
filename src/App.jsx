@@ -1741,7 +1741,7 @@ export default function App() {
   const [showReporteMedico, setShowReporteMedico] = useState(false);
   const [showCalendario, setShowCalendario] = useState(false);
   const [showCarroCompleto, setShowCarroCompleto] = useState(false);
-  const [bannerCerrado, setBannerCerrado] = useState(false); // FIX CRÍTICO 2
+  const [bannerCerrado, setBannerCerrado] = useState(false); 
 
   const [esAdmin, setEsAdmin] = useState(() => localStorage.getItem("es_admin") === "true");
 
@@ -1777,10 +1777,8 @@ export default function App() {
   const timersAlertaRef = useRef([]);
   const alertaCerraraRef = useRef(false);
   const alertaActivaRef = useRef(null);
-  // FIX CRÍTICO 1: audioDesbloqueadoRef declarado solo 1 vez
   const audioDesbloqueadoRef = useRef(false);
 
-  // Desbloquear el audio al primer toque en la pantalla (FIX AUDIO ANDROID)
   useEffect(() => {
     const desbloquearAudio = () => {
       try {
@@ -1815,7 +1813,6 @@ export default function App() {
 
   const settings = familia?.settings || { fontSize: "normal", daltonico: false, darkMode: false, sonidoActivo: true, vibracionActiva: true, notificarConfirmacion: true };
   
-  // FIX: Lógica Premium (60 días con fecha de expiración)
   const esPremium = (() => {
     if (familia?.plan === "premium" && familia?.fechaFinPremium && Date.now() < familia.fechaFinPremium) return true;
     return false;
@@ -1875,7 +1872,6 @@ export default function App() {
       }
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (premiumParam) {
-      // FIX: No se canjea automáticamente por seguridad, solo se abre el modal
       setShowPremium(true);
       setCodigoPremium(premiumParam);
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -1941,14 +1937,12 @@ export default function App() {
     return () => navigator.serviceWorker.removeEventListener("message", handler);
   }, [alertaActiva]);
 
-  // FIX CRÍTICO 11: El "mensajero en moto" (Heartbeat optimizado para no colapsar Firebase)
   useEffect(() => {
     if (stage !== "app" || !codigo || !personaActualId) return;
     const enviarHeartbeat = async () => {
       if (!db || !isOnline) return;
       try {
         const ref = db.collection("familias").doc(STORAGE_PREFIX + codigo);
-        // Solo actualizamos el campo, sin descargar todo el documento
         await ref.update({
           [`personas`]: familia.personas.map(p => p.id === personaActualId ? { ...p, ultimaConexion: Date.now() } : p)
         });
@@ -1967,7 +1961,6 @@ export default function App() {
     }
   }, [stage, codigo, nombreCuidadorInput]);
 
-  // FIX CRÍTICO 13: Eliminado pendingLocalWriteRef para permitir que Firestore maneje el offline nativo
   useEffect(() => {
     if (!codigo || !db) return;
     const unsub = db.collection("familias").doc(STORAGE_PREFIX + codigo).onSnapshot((doc) => {
@@ -1994,7 +1987,6 @@ export default function App() {
     }
   }, [stage, familia, showSelectorRol, showOnboarding]);
 
-  // Bucle de alertas
   useEffect(() => {
     if (stage !== "app" || !familia || !personaActual) return;
     if (rolUsuario !== "mayor" && !(personaActual?.esAutocuidado)) return;
@@ -2061,7 +2053,6 @@ export default function App() {
       }, esVitalAhora ? 1 * 60 * 1000 : 3 * 60 * 1000);
       timersAlertaRef.current.push(tSonido);
 
-      // FIX CRÍTICO: Alerta Roja / Urgente para el cuidador
       const tCierre = setTimeout(() => {
         alertaCerraraRef.current = true;
         alertaActivaRef.current = null;
@@ -2109,8 +2100,6 @@ export default function App() {
     }
   }, [alertaActiva]);
 
-  // ==================== HANDLERS Y LÓGICA DE ACCIONES ====================
-
   const guardarFamilia = useCallback(async (cod, data) => {
     setSaving(true);
     try { await storage.set(STORAGE_PREFIX + cod, JSON.stringify(data)); }
@@ -2138,7 +2127,6 @@ export default function App() {
 
   const registrarCambio = (accion, detalle) => {
     actualizar((prev) => {
-      // FIX CRÍTICO 10: Limitar el historial a 100 cambios para no colapsar el 1MB de Firestore
       const nuevoHistorial = [...(prev.historialCambios || []), { id: Date.now(), fecha: Date.now(), cuidador: nombreCuidadorInput || "Tú", accion, detalle }];
       return { ...prev, historialCambios: nuevoHistorial.slice(-100) };
     });
@@ -2211,7 +2199,6 @@ export default function App() {
     const personaId = Date.now();
     const edadNum = edadInput ? Number(edadInput) : null;
     
-    // FIX PREMIUM: 60 días de prueba gratis
     const nueva = {
       personas: [{ id: personaId, nombre: nombreInput.trim(), edad: edadNum, meds: [], confirmedByDate: {}, preferenciasFarmacia: {}, ultimoReconteo: {}, ultimaConexion: Date.now(), fechaCreacion: Date.now() }],
       contactos: [], cuidadores: [nombreCuidadorInput.trim()], historialCambios: [],
@@ -2362,7 +2349,6 @@ export default function App() {
     }
   };
 
-  // FIX CRÍTICO 9: Uso de la nueva función diasSinConfirmar
   const descuentoAutomaticoAplicadoRef = useRef({});
   useEffect(() => {
     if (stage !== "app" || !personaActual || meds.length === 0) return;
@@ -2585,22 +2571,18 @@ export default function App() {
   const occurrences = meds.flatMap((m) => (m.times || []).map((t) => ({ med: m, time: t, key: occKey(m.id, t) })));
   const upcoming = occurrences.filter((o) => toMinutes(o.time) >= nowMin - 60 && !confirmedHoy[o.key]).sort((a, b) => toMinutes(a.time) - toMinutes(b.time));
   const current = upcoming[0];
-  
-  // FIX CRÍTICO 7: Lógica de la ventana de tiempo para que desaparezca la tarjeta
   const difMinutos = current ? (nowMin - toMinutes(current.time)) : -1;
   const ventanaAlerta = current ? ((current.med.criticidad === "vital" || detectarCriticidad(current.med.name) === "vital") ? 2 : 6) : 0;
   const isCurrentDue = current && difMinutos >= 0 && difMinutos <= ventanaAlerta;
 
   const racha = calcularRacha(meds, confirmedByDate);
   const recetasPorVencer = meds.filter((m) => { if (!m.recetaVence) return false; const d = diasHastaVencimiento(m.recetaVence); return d !== null && d >= 0 && d <= 30; });
-  
-  // FIX PREMIUM: Lógica de días para el aviso
   const diasPremium = familia?.planInicio ? Math.floor((Date.now() - familia.planInicio) / (1000 * 60 * 60 * 24)) : 0;
   const mostrarAvisoRenovacion = esPremium && diasPremium >= 55 && diasPremium <= 60;
 
   const medsCarro = meds.filter((m) => { const s = semaforoRiesgo(m); return s.nivel === "urgente" || s.nivel === "atención"; });
   const medsArchivados = (personaActual?.meds || []).filter(m => m.archivado);
-  const cambioPatron = detectarCambiarPatron(meds, confirmedByDate); // Corregido el nombre de la función
+  const cambioPatron = detectarCambioPatron(meds, confirmedByDate);
 
   if (stage === "cargando") return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: LIGHT.TEAL }}><Loader2 size={30} color="#fff" /></div>;
 
@@ -2810,8 +2792,6 @@ export default function App() {
           </div>
         ) : (
           <div style={{ padding: "16px 20px 100px", flex: 1 }}>
-         
-
             {mostrarAvisoRenovacion && (
               <div style={{ background: C.GOLD + "15", border: `1px solid ${C.GOLD}`, borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14, marginTop: 8 }}>
                 <Crown size={20} color={C.GOLD} style={{ marginTop: 1 }} />
@@ -3062,7 +3042,6 @@ export default function App() {
           </div>
         )}
 
-        {/* MODALES GLOBALES */}
         <MenuLateral C={C} abierto={showMenuLateral} onCerrar={() => setShowMenuLateral(false)} tabActual={cuidadorTab} setTabActual={setCuidadorTab} avisosNuevos={smsLog.length} oscuro={oscuro} cuidadorNombre={nombreCuidadorInput || familia?.cuidadores?.[0] || "Cuidador"} elderName={elderName} onCompartir={() => setShowCompartir(true)} onModoOscuro={() => { actualizarSettings({ darkMode: !oscuro }); registrarEvento(codigo, "toggle_dark_mode", !oscuro ? "activado" : "desactivado", { cuidador: nombreCuidadorInput }); }} onAyuda={() => setShowComoFunciona(true)} onAcercaDe={() => setShowAcercaDe(true)} onPolitica={() => setShowPolitica(true)} onPremium={() => setShowPremium(true)} onAjustes={() => setShowAjustes(true)} onSoporte={() => setShowSoporte(true)} onSalir={salirSesion} />
 
         {showComoFunciona && <ComoFunciona C={C} onCerrar={() => setShowComoFunciona(false)} />}
