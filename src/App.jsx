@@ -346,12 +346,28 @@ async function obtenerTokenFCM() {
     try {
       const timeout = setTimeout(() => { resolve(null); }, 15000);
       if (!("serviceWorker" in navigator)) { clearTimeout(timeout); resolve(null); return; }
+      
       try {
         await navigator.serviceWorker.register('/firebase-messaging-sw.js');
         await navigator.serviceWorker.ready;
       } catch (e) {}
+
+      // Esperar a que Firebase esté listo
+      if (!window.firebase) {
+        clearTimeout(timeout);
+        resolve(null);
+        return;
+      }
+
       await cargarMessaging();
-      if (!window.firebase || !window.firebase.messaging) { clearTimeout(timeout); resolve(null); return; }
+
+      // IMPORTANTE: Asegurarnos de que la librería de mensajería se cargó
+      if (!window.firebase.messaging) {
+        clearTimeout(timeout);
+        resolve(null);
+        return;
+      }
+
       const messaging = window.firebase.messaging();
 
       if (typeof Notification === "undefined" || Notification.permission !== "granted") {
@@ -1913,18 +1929,36 @@ export default function App() {
   useEffect(() => { cuandoDbListo((d) => { setFirebaseEstado(d ? "conectado" : "local"); }); }, []);
   useEffect(() => { if (familia && !personaActualId && familia.personas && familia.personas.length > 0) setPersonaActualId(familia.personas[0].id); }, [familia, personaActualId]);
 
+  // GUARDAR TOKEN DE NOTIFICACIONES AUTOMÁTICAMENTE
   useEffect(() => {
-    if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-      cuandoDbListo(async (d) => {
-        if (!d) return;
-        const token = await obtenerTokenFCM();
-        if (token) {
-          setTokenFCM(token);
-          if (codigo) await guardarTokenEnFirestore(codigo, token, rolUsuario === "mayor" ? "paciente" : "cuidador");
-        }
-      });
+    if (stage === "app" && codigo) {
+      // Pedimos permiso si no lo tenemos
+      if (typeof Notification !== "undefined" && Notification.permission === "default") {
+        Notification.requestPermission().then((permiso) => {
+          if (permiso === "granted") {
+             obtenerTokenFCM().then(t => {
+               if (t) {
+                 setTokenFCM(t);
+                 guardarTokenEnFirestore(codigo, t, rolUsuario === "mayor" ? "paciente" : "cuidador");
+               }
+             });
+          }
+        });
+      } else if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+        cuandoDbListo(async (d) => {
+          if (!d) return;
+          // Reintentamos por si el Service Worker se demora en arrancar
+          setTimeout(async () => {
+            const token = await obtenerTokenFCM();
+            if (token) {
+              setTokenFCM(token);
+              await guardarTokenEnFirestore(codigo, token, rolUsuario === "mayor" ? "paciente" : "cuidador");
+            }
+          }, 1000);
+        });
+      }
     }
-  }, [codigo, rolUsuario]);
+  }, [stage, codigo, rolUsuario]);
 
   useEffect(() => {
     if (!alertaActiva) return;
