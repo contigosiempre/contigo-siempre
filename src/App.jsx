@@ -2156,7 +2156,7 @@ export default function App() {
             .filter(mv => !confirmadosIds.includes(mv.med.id))
             .map(mv => mv.med.name);
 
-          if (medsPendientesNombre.length > 0) {
+                   if (medsPendientesNombre.length > 0 && esVitalAhora) {
             db.collection("familias").doc(STORAGE_PREFIX + codigo).update({
               alerta_critica_activa: {
                 meds: medsPendientesNombre,
