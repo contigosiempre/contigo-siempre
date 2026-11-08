@@ -2620,7 +2620,12 @@ export default function App() {
   const occurrences = meds.flatMap((m) => (m.times || []).map((t) => ({ med: m, time: t, key: occKey(m.id, t) })));
   const upcoming = occurrences.filter((o) => toMinutes(o.time) >= nowMin - 60 && !confirmedHoy[o.key]).sort((a, b) => toMinutes(a.time) - toMinutes(b.time));
   const current = upcoming[0];
-  const isCurrentDue = current && toMinutes(current.time) <= nowMin;
+  // Calculamos cuánto tiempo ha pasado desde la hora de la toma
+const difMinutos = current ? (nowMin - toMinutes(current.time)) : -1;
+// Si es vital tiene 2 min de ventana, si no, 6 min.
+const ventanaAlerta = current ? ((current.med.criticidad === "vital" || detectarCriticidad(current.med.name) === "vital") ? 2 : 6) : 0;
+// Solo mostramos la tarjeta si estamos dentro de la ventana de tiempo
+const isCurrentDue = current && difMinutos >= 0 && difMinutos <= ventanaAlerta;
   const racha = calcularRacha(meds, confirmedByDate);
   const recetasPorVencer = meds.filter((m) => { if (!m.recetaVence) return false; const d = diasHastaVencimiento(m.recetaVence); return d !== null && d >= 0 && d <= 30; });
   const diasPremium = familia?.planInicio ? Math.floor((Date.now() - familia.planInicio) / (1000 * 60 * 60 * 24)) : 0;
@@ -2825,7 +2830,7 @@ export default function App() {
                 <div style={{ width: 90, height: 90, borderRadius: 999, background: dispColor(current.med.color, settings.daltonico), display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px", fontSize: 40, color: "#fff", boxShadow: `0 8px 20px ${dispColor(current.med.color, settings.daltonico)}50` }}>{current.med.shape}</div>
                 <div style={{ fontSize: 26 * scale, fontWeight: 800 }}>{current.med.name}</div>
                 <div style={{ fontSize: 16 * scale, color: C.MUTED, marginTop: 6 }}>{current.med.dose}</div>
-                <button onClick={() => confirmarUno(current.med)} className="btn-press" style={{ width: "100%", marginTop: 22, padding: "20px", borderRadius: 20, border: "none", background: C.GREEN, color: "#fff", fontWeight: 800, fontSize: 20 * scale, cursor: "pointer", boxShadow: `0 8px 20px ${C.GREEN}50` }}>SÍ, YA LO TOMÉ</button>
+                <button onClick={() => { if (difMinutos > ventanaAlerta) { alert("Esta toma ya expiró. Por favor avisa a tu cuidador."); } else { confirmarUno(current.med); } }} className="btn-press" style={{ width: "100%", marginTop: 22, padding: "20px", borderRadius: 20, border: "none", background: C.GREEN, color: "#fff", fontWeight: 800, fontSize: 20 * scale, cursor: "pointer", boxShadow: `0 8px 20px ${C.GREEN}50` }}>SÍ, YA LO TOMÉ</button>
               </div>
             ) : (
               <div style={{ background: C.PAPER, border: `1px solid ${C.LINE}`, borderRadius: 28, padding: 30, textAlign: "center", boxShadow: C.SHADOW }}>
