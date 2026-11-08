@@ -19,13 +19,10 @@ messaging.onBackgroundMessage((payload) => {
     body: payload.notification?.body || "Es hora de tomar tu medicamento",
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
-    // Al quitar requireInteraction: true, Android permite que se borre sola
-    vibrate: [1000, 500, 1000, 500, 1000],
+    vibrate: [500, 200, 500, 200, 500], // Vibración de emergencia
     sound: 'default',
     priority: 'high',
-    actions: [
-      { action: 'tomar', title: '✓ Ya la tomé' }
-    ]
+    requireInteraction: true // La notificación se queda hasta que la toquen
   };
   
   self.registration.showNotification(notificationTitle, notificationOptions);
@@ -35,32 +32,20 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const APP_URL = 'https://contigo-siempre.vercel.app';
   
-  if (event.action === 'tomar') {
-    event.waitUntil(
-      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-        for (const client of clientList) {
-          if (client.url.includes('contigo-siempre') && 'focus' in client) {
-            client.postMessage({ tipo: 'confirmar_toma' });
-            return client.focus();
-          }
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if (client.url.includes('contigo-siempre') && 'focus' in client) {
+          return client.focus();
         }
-        if (clients.openWindow) return clients.openWindow(APP_URL + '?confirmar=1');
-      })
-    );
-  } else {
-    event.waitUntil(
-      clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-        for (const client of clientList) {
-          if (client.url.includes('contigo-siempre') && 'focus' in client) return client.focus();
-        }
-        if (clients.openWindow) return clients.openWindow(APP_URL);
-      })
-    );
-  }
+      }
+      if (clients.openWindow) return clients.openWindow(APP_URL + '?confirmar=1');
+    })
+  );
 });
 
 // ==================== CACHÉ DE LA PWA ====================
-const CACHE_NAME = 'contigo-siempre-v17';
+const CACHE_NAME = 'contigo-siempre-v18'; // Subimos la versión del caché
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
