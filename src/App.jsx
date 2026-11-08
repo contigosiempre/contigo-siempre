@@ -811,16 +811,23 @@ function PoliticaPrivacidad({ C, onCerrar }) {
           <button onClick={onCerrar} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
         </div>
         <div style={{ fontSize: 12.5, color: C.MUTED, lineHeight: 1.7 }}>
-          <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>1. Quiénes somos.</strong><br />Contigo Siempre es una aplicación chilena de apoyo al cuidado de personas mayores.</p>
-          <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>2. Qué datos recopilamos.</strong><br />Nombre y edad del adulto mayor, nombre del cuidador, medicamentos, confirmaciones, notas, contactos y preferencias.</p>
-          <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>3. Datos sensibles.</strong><br />La información sobre medicamentos y adherencia puede considerarse dato sensible de salud.</p>
-          <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>4. Para qué usamos los datos.</strong><br />Mostrar recordatorios, enviar alertas, controlar stock y mejorar el servicio.</p>
-          <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>5. Dónde se guardan.</strong><br />Servidores seguros de Google Firebase. La app funciona sin conexión y sincroniza cuando vuelve la señal.</p>
-          <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>6. Tus derechos.</strong><br />Acceso, rectificación, eliminación y portabilidad. Escribe a hola.contigosiempre@gmail.com.</p>
-          <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>7. Plazo.</strong><br />Mientras la cuenta esté activa. Si eliminas la cuenta, se borra en 30 días.</p>
-          <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>8. Menores.</strong><br />La app está diseñada para adultos mayores. En el futuro podría usarse con menores, siempre representados por un cuidador.</p>
-          <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>9. Cambios.</strong><br />Comunicados dentro de la app con 15 días de anticipación.</p>
-          <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>10. Contacto.</strong><br />hola.contigosiempre@gmail.com</p>
+                <div style={{ fontSize: 12.5, color: C.MUTED, lineHeight: 1.7 }}>
+          <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>1. Responsable del Tratamiento.</strong><br />Contigo Siempre es una aplicación chilena de apoyo al cuidado de personas mayores. El responsable del tratamiento de los datos es el equipo desarrollador de la aplicación.</p>
+          
+          <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>2. Datos Sensibles y Base de Licitud.</strong><br />Para cumplir con la Ley N° 21.719, te informamos que los datos sobre tus medicamentos y tu adherencia son considerados <strong>datos sensibles de salud</strong>. La base legal para su tratamiento es tu <strong>consentimiento expreso, informado y específico</strong>, el cual otorgas al marcar la casilla de aceptación al ingresar a la app.</p>
+          
+          <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>3. Finalidad del Tratamiento.</strong><br />Los datos se utilizan exclusivamente para: (a) Mostrar recordatorios de medicamentos; (b) Enviar alertas críticas al cuidador; (c) Controlar el stock de medicamentos; (d) Generar reportes de adherencia para el médico tratante.</p>
+          
+          <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>4. Destinatarios y Encargados.</strong><br />Para el funcionamiento técnico, los datos se almacenan en <strong>Google Firebase</strong> (servidores en EE.UU.) y la aplicación está alojada en <strong>Vercel</strong>. No vendemos ni compartimos tus datos con terceros no relacionados con la prestación del servicio.</p>
+          
+          <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>5. Tus Derechos (ARCO).</strong><br />Como titular de los datos, tienes derecho a: <strong>Acceder</strong> a tus datos, <strong>Rectificarlos</strong> si están erróneos, <strong>Cancelarlos</strong> (suprimir tu cuenta) y <strong>Oponerte</strong> a su tratamiento. Puedes ejercer estos derechos escribiendo a hola.contigosiempre@gmail.com. Si solicitas la cancelación, tus datos serán eliminados en un plazo de 30 días.</p>
+          
+          <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>6. Seguridad.</strong><br />Implementamos medidas técnicas (cifrado en tránsito, reglas de seguridad en la base de datos y autenticación) para proteger tus datos contra accesos no autorizados.</p>
+          
+          <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>7. Plazo de Conservación.</strong><br />Conservaremos tus datos mientras tu cuenta esté activa. Si eliminas tu cuenta, los datos se conservarán bloqueados por el plazo legal de 30 días para luego ser borrados definitivamente.</p>
+          
+          <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>8. Contacto.</strong><br />Para consultas sobre protección de datos, escribe a hola.contigosiempre@gmail.com.</p>
+        </div>
         </div>
         <button onClick={onCerrar} className="btn-press" style={{ marginTop: 16, width: "100%", padding: 14, borderRadius: 14, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>Cerrar</button>
       </div>
@@ -2764,7 +2771,7 @@ export default function App() {
           <button onClick={() => setShowPolitica(true)} className="btn-press-soft" style={{ background: LIGHT.TEAL + "10", border: "none", color: LIGHT.TEAL, fontSize: 13, fontWeight: 700, cursor: "pointer", marginBottom: 18, padding: "10px 14px", borderRadius: 10, display: "flex", alignItems: "center", gap: 8 }}><ScrollText size={14} /> Ver política de privacidad completa</button>
           <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 22, cursor: "pointer", padding: 14, borderRadius: 12, border: `1.5px solid ${aceptoCheck ? LIGHT.TEAL : LIGHT.LINE}`, background: aceptoCheck ? LIGHT.TEAL + "08" : LIGHT.PAPER, transition: "all 0.15s ease" }}>
             <input type="checkbox" checked={aceptoCheck} onChange={(e) => setAceptoCheck(e.target.checked)} style={{ width: 20, height: 20, accentColor: LIGHT.TEAL }} />
-            <span style={{ fontSize: 13.5, color: LIGHT.INK, fontWeight: 600 }}>He leído y acepto</span>
+           <span style={{ fontSize: 12, color: LIGHT.INK, fontWeight: 600, lineHeight: 1.3 }}>Autorizo expresamente el tratamiento de mis datos personales y datos sensibles de salud (medicamentos y adherencia) para las finalidades descritas en la Política de Privacidad.</span>
           </label>
           <button onClick={async () => {
             if (!aceptoCheck) return;
