@@ -1767,6 +1767,33 @@ export default function App() {
   const timersAlertaRef = useRef([]);
   const alertaCerraraRef = useRef(false);
   const alertaActivaRef = useRef(null);
+    const audioDesbloqueadoRef = useRef(false);
+
+  // Desbloquear el audio al primer toque en la pantalla
+  useEffect(() => {
+    const desbloquearAudio = () => {
+      try {
+        if (!audioCtxRef) {
+          const AC = window.AudioContext || window.webkitAudioContext;
+          if (AC) audioCtxRef = new AC();
+        }
+        if (audioCtxRef && audioCtxRef.state === "suspended") {
+          audioCtxRef.resume();
+        }
+        audioDesbloqueadoRef.current = true;
+      } catch (e) {}
+    };
+
+    window.addEventListener("pointerdown", desbloquearAudio);
+    window.addEventListener("touchstart", desbloquearAudio);
+    window.addEventListener("click", desbloquearAudio);
+
+    return () => {
+      window.removeEventListener("pointerdown", desbloquearAudio);
+      window.removeEventListener("touchstart", desbloquearAudio);
+      window.removeEventListener("click", desbloquearAudio);
+    };
+  }, []);
   const audioDesbloqueadoRef = useRef(false);
 
   const PASOS_TUTORIAL = [
