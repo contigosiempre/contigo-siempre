@@ -2213,9 +2213,16 @@ export default function App() {
 
   const guardarFamilia = useCallback(async (cod, data) => {
     setSaving(true);
-    try { await storage.set(STORAGE_PREFIX + cod, JSON.stringify(data)); }
+    pendingLocalWriteRef.current = true; // <-- Bloquea la escucha de Firebase temporalmente
+    try { 
+      await storage.set(STORAGE_PREFIX + cod, JSON.stringify(data)); 
+    }
     catch (e) { setError("No se pudo guardar."); }
-    finally { setSaving(false); }
+    finally { 
+      setSaving(false); 
+      // Desbloquea a Firebase después de 1.5 segundos para que no se sobreescriba
+      setTimeout(() => { pendingLocalWriteRef.current = false; }, 1500);
+    }
   }, []);
 
   const actualizar = useCallback((updater) => {
