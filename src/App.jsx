@@ -2810,17 +2810,7 @@ export default function App() {
           </div>
         ) : (
           <div style={{ padding: "16px 20px 100px", flex: 1 }}>
-            {!tokenFCM && isOnline && (
-              <div style={{ background: C.AMBER + "15", border: `1px solid ${C.AMBER}`, borderRadius: 14, padding: "12px 14px", marginBottom: 14, marginTop: 8, display: "flex", alignItems: "center", gap: 10 }}>
-                <BellRing size={20} color={C.AMBER} />
-                <div style={{ flex: 1, fontSize: 12, color: C.INK, lineHeight: 1.4 }}>
-                  Activa las notificaciones para saber cuándo <strong>{elderName.split(" ")[0]}</strong> confirma sus tomas.
-                </div>
-                <button onClick={activarNotificaciones} className="btn-press" style={{ padding: "8px 12px", borderRadius: 10, border: "none", background: C.AMBER, color: "#fff", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
-                  Activar
-                </button>
-              </div>
-            )}
+         
 
             {mostrarAvisoRenovacion && (
               <div style={{ background: C.GOLD + "15", border: `1px solid ${C.GOLD}`, borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 14, marginTop: 8 }}>
