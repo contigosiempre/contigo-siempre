@@ -4,7 +4,7 @@ import { Clock, Check, AlertTriangle, Plus, X, User, Users, Heart, PackageOpen, 
 
 const STORAGE_PREFIX = "familia_";
 const EVENTOS_COLLECTION = "eventos";
-const APP_VERSION = "2.5.1-estable"; // Subimos versión por los cambios de notificaciones
+const APP_VERSION = "3.0.0-production"; 
 const MINUTOS_SIN_CONEXION_ALERTA = 5;
 const DIAS_LIMPIEZA_RESUMEN = 7;
 const DIAS_AVISO_SIN_CONFIRMAR = 3;
@@ -20,9 +20,8 @@ const FIREBASE_CONFIG = {
 
 const VAPID_KEY = "BFPDPH02Oa44BflTPgU8Z7VbkqGL7rG3ZDLOAp9EKlkGYZWmoslFktvQtSl29HJR1gO4ESs2lBElRTEwWMAPwz0";
 
-const CODIGO_ADMIN = (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_ADMIN_CODE) || "ADMIN" + new Date().getFullYear();
+const CODIGO_ADMIN = (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_ADMIN_CODE) || null;
 const CODIGO_DATOS = "DATOS" + new Date().getFullYear();
-const CODIGOS_PILOTO = ["FUNDADOR", "BETA01", "FAMILIA1", "FAMILIA2", "FAMILIA3", "PILOTO01", "PILOTO02", "PILOTO03"];
 
 const PILL_COLORS = ["#E0654A", "#1F6E63", "#3A6EA5", "#D98F2B", "#8A5FA8"];
 const PILL_COLORS_CB = ["#D55E00", "#0072B2", "#009E73", "#E69F00", "#CC79A7"];
@@ -172,7 +171,7 @@ function calcularRacha(meds, cbd) {
   for (let i = 0; i <= 60; i++) {
     const key = i === 0 ? todayStr() : dateKeyOffset(i);
     const dia = cbd[key];
-    if (!dia) continue;
+    if (!dia) break; // Corregido: break en vez de continue
     const conf = Object.keys(dia).filter((k) => dia[k]).length;
     if (conf >= totalPorDia) racha++;
     else break;
@@ -209,15 +208,21 @@ function detectarCambioPatron(meds, cbd) {
   return null;
 }
 
-function diasSinConfirmar(meds, cbd, personaId) {
+function diasSinConfirmar(meds, cbd, personaFechaCreacion) {
   if (!meds || meds.length === 0 || !cbd) return 0;
   let dias = 0;
-  for (let i = 0; i <= DIAS_AVISO_SIN_CONFIRMAR; i++) {
-    const key = i === 0 ? todayStr() : dateKeyOffset(i);
+  // Empezamos desde AYER para no juzgar el día de hoy
+  for (let i = 1; i <= DIAS_AVISO_SIN_CONFIRMAR; i++) {
+    const key = dateKeyOffset(i);
     const dia = cbd[key] || {};
     const confirmadas = Object.keys(dia).filter((k) => dia[k]).length;
     if (confirmadas > 0) break;
     dias++;
+  }
+  // Si la familia es más nueva que los días calculados, ajustamos
+  if (personaFechaCreacion) {
+    const diasDeVida = Math.floor((Date.now() - personaFechaCreacion) / (1000 * 60 * 60 * 24));
+    if (dias > diasDeVida) dias = diasDeVida;
   }
   return dias;
 }
@@ -258,7 +263,7 @@ function generarTextoCompartir(tipo, elderName, meds, confirmedByDate) {
     return txt;
   }
   if (tipo === "meds") {
-    const lineas = meds.map((m) => `- ${m.name} — ${m.times.map(fmtHoraConAmPm).join(", ")} (${fmtN(m.stock)} unid.)`);
+    const lineas = meds.map((m) => `- ${m.name} — ${m.times.map(fmtHoraConAmPm).join(", ")} (${fmtN(m.stock)} ${m.unidad || 'unid.'})`);
     return `Medicamentos de ${elderName}:\n\n${lineas.join("\n")}\n\nEnviado desde Contigo Siempre.`;
   }
   return "";
@@ -273,7 +278,14 @@ function reproducirAlertaSonido(volumen = 1) {
       audioCtxRef = new AC();
     }
     const ctx = audioCtxRef;
-    if (ctx.state === "suspended") ctx.resume();
+    if (ctx.state === "suspended") {
+      ctx.resume().then(() => reproducirAlertaSonido(volumen)).catch(() => {});
+      return;
+    }
+    if (ctx.state === "closed") {
+      audioCtxRef = null;
+      return reproducirAlertaSonido(volumen);
+    }
     const now = ctx.currentTime;
     [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
       const osc = ctx.createOscillator();
@@ -428,7 +440,6 @@ function AvisoSinConexion({ C, offline, ultimaConexion, compacto, nombre }) {
   return null;
 }
 
-// PUNTO 8 ELIMINADO: Ya no hay botón de posponer ni lógica de postergación.
 function PantallaAlertaMedicamento({
   C, meds, hora, onConfirmarUno, onConfirmarTodos,
   escala, daltonico, sonidoActivo, esAdultoMayor,
@@ -1173,7 +1184,7 @@ function PanelAdmin({ C, familias, onCerrar, onAbrirDatos, onAbrirEventos, onAbr
   const medsLista = [];
 
   lista.forEach(f => {
-    const esPrem = f.data?.plan === "premium" || f.data?.esPiloto;
+    const esPrem = f.data?.plan === "premium";
     if (esPrem) {
       totalPremium++;
       familiasPremium.push({ codigo: f.codigo, ...f.data });
@@ -1353,7 +1364,7 @@ function PanelMetricasCORFO({ C, onCerrar }) {
           total++;
           listaFamilias.push(infoFam);
 
-          if (f.plan === "premium" || f.esPiloto) {
+          if (f.plan === "premium") {
             premium++;
             listaPremium.push(infoFam);
           }
@@ -1730,6 +1741,7 @@ export default function App() {
   const [showReporteMedico, setShowReporteMedico] = useState(false);
   const [showCalendario, setShowCalendario] = useState(false);
   const [showCarroCompleto, setShowCarroCompleto] = useState(false);
+  const [bannerCerrado, setBannerCerrado] = useState(false); // FIX CRÍTICO 2
 
   const [esAdmin, setEsAdmin] = useState(() => localStorage.getItem("es_admin") === "true");
 
@@ -1741,7 +1753,6 @@ export default function App() {
   const [smsLog, setSmsLog] = useState(() => {
     try { const raw = localStorage.getItem("sms_log"); return raw ? JSON.parse(raw) : []; } catch (e) { return []; }
   });
-  const [alertasDisparadas, setAlertasDisparadas] = useState({});
   const [familiasAdmin, setFamiliasAdmin] = useState([]);
   const [firebaseEstado, setFirebaseEstado] = useState("cargando");
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -1756,7 +1767,6 @@ export default function App() {
     try { return localStorage.getItem(`resumen_enviado_${todayStr()}`) === "true"; } catch (e) { return false; }
   });
 
-  const alertasPorTomaRef = useRef({});
   const pendingLocalWriteRef = useRef(false);
   const [showTutorial, setShowTutorial] = useState(false);
 
@@ -1767,9 +1777,10 @@ export default function App() {
   const timersAlertaRef = useRef([]);
   const alertaCerraraRef = useRef(false);
   const alertaActivaRef = useRef(null);
-    const audioDesbloqueadoRef = useRef(false);
+  // FIX CRÍTICO 1: audioDesbloqueadoRef declarado solo 1 vez
+  const audioDesbloqueadoRef = useRef(false);
 
-  // Desbloquear el audio al primer toque en la pantalla
+  // Desbloquear el audio al primer toque en la pantalla (FIX AUDIO ANDROID)
   useEffect(() => {
     const desbloquearAudio = () => {
       try {
@@ -1794,7 +1805,6 @@ export default function App() {
       window.removeEventListener("click", desbloquearAudio);
     };
   }, []);
-  const audioDesbloqueadoRef = useRef(false);
 
   const PASOS_TUTORIAL = [
     { titulo: "Comparte este código", texto: "Este es el código mágico de tu familia. Es OBLIGATORIO compartirlo con el adulto mayor (y otros cuidadores) para que todos estén conectados. Toca el botón de WhatsApp para enviarlo.", target: '[data-tutorial="codigo"]', abrirMenu: false },
@@ -1804,10 +1814,10 @@ export default function App() {
   ];
 
   const settings = familia?.settings || { fontSize: "normal", daltonico: false, darkMode: false, sonidoActivo: true, vibracionActiva: true, notificarConfirmacion: true };
+  
+  // FIX: Lógica Premium (60 días con fecha de expiración)
   const esPremium = (() => {
-    if (familia?.plan === "premium") return true;
-    if (familia?.esPiloto && familia?.fechaFinPiloto && Date.now() < familia.fechaFinPiloto) return true;
-    if (familia?.esFundador && familia?.fechaFinFundador && Date.now() < familia.fechaFinFundador) return true;
+    if (familia?.plan === "premium" && familia?.fechaFinPremium && Date.now() < familia.fechaFinPremium) return true;
     return false;
   })();
   const oscuro = settings.darkMode;
@@ -1822,25 +1832,6 @@ export default function App() {
   }, []);
 
   useEffect(() => { const id = setInterval(() => setNowMin(toMinutes(nowHHMM())), 30000); return () => clearInterval(id); }, []);
-
-  useEffect(() => {
-    const unlock = () => {
-      try {
-        const AC = window.AudioContext || window.webkitAudioContext;
-        if (!audioCtxRef && AC) audioCtxRef = new AC();
-        if (audioCtxRef && audioCtxRef.state === "suspended") audioCtxRef.resume();
-        audioDesbloqueadoRef.current = true;
-      } catch (e) {}
-    };
-    window.addEventListener("pointerdown", unlock);
-    window.addEventListener("touchstart", unlock);
-    window.addEventListener("click", unlock);
-    return () => {
-      window.removeEventListener("pointerdown", unlock);
-      window.removeEventListener("touchstart", unlock);
-      window.removeEventListener("click", unlock);
-    };
-  }, []);
 
   useEffect(() => {
     try {
@@ -1884,11 +1875,9 @@ export default function App() {
       }
       window.history.replaceState({}, document.title, window.location.pathname);
     } else if (premiumParam) {
+      // FIX: No se canjea automáticamente por seguridad, solo se abre el modal
       setShowPremium(true);
       setCodigoPremium(premiumParam);
-      setTimeout(() => {
-        document.getElementById("btn-canjear-qr")?.click();
-      }, 1000);
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
@@ -1952,24 +1941,23 @@ export default function App() {
     return () => navigator.serviceWorker.removeEventListener("message", handler);
   }, [alertaActiva]);
 
+  // FIX CRÍTICO 11: El "mensajero en moto" (Heartbeat optimizado para no colapsar Firebase)
   useEffect(() => {
     if (stage !== "app" || !codigo || !personaActualId) return;
     const enviarHeartbeat = async () => {
       if (!db || !isOnline) return;
       try {
         const ref = db.collection("familias").doc(STORAGE_PREFIX + codigo);
-        const doc = await ref.get();
-        if (doc.exists) {
-          const data = doc.data();
-          const personas = (data.personas || []).map(p => p.id === personaActualId ? { ...p, ultimaConexion: Date.now() } : p);
-          await ref.set({ ...data, personas }, { merge: true });
-        }
+        // Solo actualizamos el campo, sin descargar todo el documento
+        await ref.update({
+          [`personas`]: familia.personas.map(p => p.id === personaActualId ? { ...p, ultimaConexion: Date.now() } : p)
+        });
       } catch (e) {}
     };
     enviarHeartbeat();
     heartbeatRef.current = setInterval(enviarHeartbeat, 60000);
     return () => { if (heartbeatRef.current) clearInterval(heartbeatRef.current); };
-  }, [stage, codigo, personaActualId, isOnline]);
+  }, [stage, codigo, personaActualId, isOnline, familia]);
 
   useEffect(() => {
     if (stage === "app" && codigo && !appAbiertaRef.current) {
@@ -1979,10 +1967,11 @@ export default function App() {
     }
   }, [stage, codigo, nombreCuidadorInput]);
 
+  // FIX CRÍTICO 13: Eliminado pendingLocalWriteRef para permitir que Firestore maneje el offline nativo
   useEffect(() => {
     if (!codigo || !db) return;
     const unsub = db.collection("familias").doc(STORAGE_PREFIX + codigo).onSnapshot((doc) => {
-      if (doc.exists && !pendingLocalWriteRef.current) {
+      if (doc.exists) {
         const data = doc.data();
         setFamilia((prev) => { if (JSON.stringify(prev) === JSON.stringify(data)) return prev; return data; });
       }
@@ -1997,7 +1986,6 @@ export default function App() {
   const confirmedByDate = personaActual?.confirmedByDate || {};
   const contactos = familia?.contactos || [];
   const ultimaConexionPersona = personaActual?.ultimaConexion || null;
-  const personaDesconectada = !isOnline || (minutosDesde(ultimaConexionPersona) !== null && minutosDesde(ultimaConexionPersona) > MINUTOS_SIN_CONEXION_ALERTA);
 
   useEffect(() => {
     if (stage === "app" && familia && familia.settings && familia.settings.aceptoTerminos === true && familia.settings.onboardingCORFOVisto === true && familia.settings.tutorialVisto === false && !showSelectorRol && rolUsuario !== "mayor" && !showOnboarding) {
@@ -2006,6 +1994,7 @@ export default function App() {
     }
   }, [stage, familia, showSelectorRol, showOnboarding]);
 
+  // Bucle de alertas
   useEffect(() => {
     if (stage !== "app" || !familia || !personaActual) return;
     if (rolUsuario !== "mayor" && !(personaActual?.esAutocuidado)) return;
@@ -2072,11 +2061,11 @@ export default function App() {
       }, esVitalAhora ? 1 * 60 * 1000 : 3 * 60 * 1000);
       timersAlertaRef.current.push(tSonido);
 
+      // FIX CRÍTICO: Alerta Roja / Urgente para el cuidador
       const tCierre = setTimeout(() => {
         alertaCerraraRef.current = true;
         alertaActivaRef.current = null;
         
-        // Cerrar la notificación del celular si la app está abierta
         try {
           if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
             navigator.serviceWorker.getRegistration().then((reg) => {
@@ -2085,12 +2074,19 @@ export default function App() {
           }
         } catch (e) {}
 
-        const textoAviso = `⚠️ ${elderName.split(" ")[0]} no confirmó todas las tomas de las ${fmtHoraConAmPm(horaActualVencida)} (${esVitalAhora ? 'VITAL' : 'Normal'}).`;
+        const textoAviso = esVitalAhora 
+          ? `🚨 URGENTE: ${elderName.split(" ")[0]} NO ha confirmado su medicamento VITAL (${fmtHoraConAmPm(horaActualVencida)}). Por favor llámalo de inmediato.`
+          : `⚠️ ${elderName.split(" ")[0]} no confirmó las tomas de las ${fmtHoraConAmPm(horaActualVencida)}.`;
 
         setSmsLog(prev => [...prev, { tipo: "alerta", hora: smsTime(), texto: textoAviso }]);
 
         if (typeof Notification !== "undefined" && Notification.permission === "granted") {
-          mostrarNotificacion("Alerta de toma omitida", { body: textoAviso, icon: "/icons/icon-192.png" });
+          mostrarNotificacion(esVitalAhora ? "🚨 ALERTA VITAL OMITIDA" : "Toma omitida", { 
+            body: textoAviso, 
+            icon: "/icons/icon-192.png",
+            vibrate: esVitalAhora ? [500, 200, 500, 200, 500, 200, 500] : [400, 200, 400], 
+            requireInteraction: true 
+          });
         }
 
         registrarEvento(codigo, "toma_omitida", `Grupo ${horaActualVencida}`, { cuidador: nombreCuidadorInput, persona: elderName });
@@ -2117,13 +2113,9 @@ export default function App() {
 
   const guardarFamilia = useCallback(async (cod, data) => {
     setSaving(true);
-    pendingLocalWriteRef.current = true;
     try { await storage.set(STORAGE_PREFIX + cod, JSON.stringify(data)); }
     catch (e) { setError("No se pudo guardar."); }
-    finally {
-      setSaving(false);
-      setTimeout(() => { pendingLocalWriteRef.current = false; }, 500);
-    }
+    finally { setSaving(false); }
   }, []);
 
   const actualizar = useCallback((updater) => {
@@ -2145,7 +2137,11 @@ export default function App() {
   const actualizarSettings = (c) => actualizar((prev) => ({ ...prev, settings: { ...(prev.settings || {}), ...c } }));
 
   const registrarCambio = (accion, detalle) => {
-    actualizar((prev) => ({ ...prev, historialCambios: [...(prev.historialCambios || []), { id: Date.now(), fecha: Date.now(), cuidador: nombreCuidadorInput || "Tú", accion, detalle }] }));
+    actualizar((prev) => {
+      // FIX CRÍTICO 10: Limitar el historial a 100 cambios para no colapsar el 1MB de Firestore
+      const nuevoHistorial = [...(prev.historialCambios || []), { id: Date.now(), fecha: Date.now(), cuidador: nombreCuidadorInput || "Tú", accion, detalle }];
+      return { ...prev, historialCambios: nuevoHistorial.slice(-100) };
+    });
   };
 
   const cargarFamiliaConNombre = async (cod, nombreCuidador) => {
@@ -2165,7 +2161,7 @@ export default function App() {
         const isElder = (data.personas[0]?.nombre || "").toLowerCase() === nombreCuidador.toLowerCase() || nombreCuidador === "Adulto Mayor";
 
         if (!isElder && !data.cuidadores.includes(nombreCuidador)) {
-          const maxCuidadores = data.plan === "premium" || data.esPiloto ? 3 : LIMITES_ESTANDAR.maxCuidadores;
+          const maxCuidadores = data.plan === "premium" ? 3 : LIMITES_ESTANDAR.maxCuidadores;
           if (data.cuidadores.length >= maxCuidadores) {
             setError(`Esta familia tiene el límite de ${maxCuidadores} cuidadores en su plan actual.`);
             return;
@@ -2214,14 +2210,15 @@ export default function App() {
 
     const personaId = Date.now();
     const edadNum = edadInput ? Number(edadInput) : null;
+    
+    // FIX PREMIUM: 60 días de prueba gratis
     const nueva = {
-      personas: [{ id: personaId, nombre: nombreInput.trim(), edad: edadNum, meds: [], confirmedByDate: {}, preferenciasFarmacia: {}, ultimoReconteo: {}, ultimaConexion: Date.now() }],
+      personas: [{ id: personaId, nombre: nombreInput.trim(), edad: edadNum, meds: [], confirmedByDate: {}, preferenciasFarmacia: {}, ultimoReconteo: {}, ultimaConexion: Date.now(), fechaCreacion: Date.now() }],
       contactos: [], cuidadores: [nombreCuidadorInput.trim()], historialCambios: [],
-      plan: "estandar", planInicio: null, creadoEn: Date.now(), origen: "manual",
-      esPiloto: false, fechaFinPiloto: null,
-      esFundador: false, fechaFinFundador: null,
+      plan: "premium", planInicio: Date.now(), fechaFinPremium: Date.now() + 60 * 24 * 60 * 60 * 1000, creadoEn: Date.now(), origen: "manual",
       settings: { fontSize: "normal", daltonico: false, darkMode: false, aceptoTerminos: false, onboardingPremiumVisto: false, sonidoActivo: true, vibracionActiva: true, tutorialVisto: false, notificarConfirmacion: true, onboardingCORFOVisto: false }
     };
+    
     await guardarFamilia(cod, nueva);
     localStorage.setItem("codigo_familia", cod);
     localStorage.setItem("nombre_cuidador", nombreCuidadorInput.trim());
@@ -2238,7 +2235,13 @@ export default function App() {
   };
 
   const activarPremium = () => {
-    actualizar((prev) => ({ ...prev, plan: "premium", planInicio: Date.now(), settings: { ...(prev.settings || {}), onboardingPremiumVisto: false } }));
+    actualizar((prev) => ({ 
+      ...prev, 
+      plan: "premium", 
+      planInicio: Date.now(), 
+      fechaFinPremium: Date.now() + 30 * 24 * 60 * 60 * 1000, 
+      settings: { ...(prev.settings || {}), onboardingPremiumVisto: false } 
+    }));
     setShowPremium(false);
     setShowOnboardingPremium(true);
     registrarEvento(codigo, "activar_premium", "Premium activado", { cuidador: nombreCuidadorInput });
@@ -2247,16 +2250,14 @@ export default function App() {
   const canjearCodigo = async () => {
     const up = codigoPremium.trim().toUpperCase();
 
-    if (up === CODIGO_ADMIN) {
+    if (CODIGO_ADMIN && up === CODIGO_ADMIN) {
       localStorage.setItem("es_admin", "true");
       setEsAdmin(true);
       setCodigoPremium("");
-
       try {
         const todas = await storage.listAll();
         setFamiliasAdmin(todas);
       } catch (e) {}
-
       setShowAdmin(true);
       setShowPremium(false);
     }
@@ -2264,42 +2265,6 @@ export default function App() {
       setShowDatos(true);
       setCodigoPremium("");
       setShowPremium(false);
-    }
-    else if (up === "PILOTO2026") {
-      try {
-        if (!db) throw new Error("Sin DB");
-
-        const snapshot = await db.collection("familias").where("esPiloto", "==", true).get();
-        const numeroPiloto = snapshot.size + 1;
-
-        if (numeroPiloto > 50) {
-          alert("Lo sentimos, los 50 cupos del programa piloto ya se agotaron.");
-          setCodigoPremium("");
-          return;
-        }
-
-        const nuevaFecha = Date.now() + (60 * 24 * 60 * 60 * 1000);
-        actualizar((prev) => ({
-          ...prev,
-          esPiloto: true,
-          fechaFinPiloto: nuevaFecha,
-          origen: "piloto",
-          numeroPiloto: numeroPiloto
-        }));
-
-        setCodigoPremium("");
-        setShowPremium(false);
-
-        alert(`¡Felicidades! Eres el Piloto N° ${numeroPiloto}. Has desbloqueado el Plan Premium gratis por 60 días.`);
-
-        registrarEvento(codigo, "activar_piloto", `Piloto N° ${numeroPiloto} activado`, { cuidador: nombreCuidadorInput, origen: "piloto", numero: numeroPiloto });
-      } catch (e) {
-        alert("Error al activar el piloto. Revisa tu conexión e intenta de nuevo.");
-      }
-    }
-    else if (CODIGOS_PILOTO.includes(up)) {
-      activarPremium();
-      setCodigoPremium("");
     }
     else alert("Código no válido");
   };
@@ -2397,7 +2362,7 @@ export default function App() {
     }
   };
 
-  // ==================== PUNTO 19: DESCUENTO AUTOMÁTICO Y AVISO AL DÍA 3 ====================
+  // FIX CRÍTICO 9: Uso de la nueva función diasSinConfirmar
   const descuentoAutomaticoAplicadoRef = useRef({});
   useEffect(() => {
     if (stage !== "app" || !personaActual || meds.length === 0) return;
@@ -2405,7 +2370,7 @@ export default function App() {
     if (descuentoAutomaticoAplicadoRef.current[refKey]) return;
     descuentoAutomaticoAplicadoRef.current[refKey] = true;
 
-    const diasSin = diasSinConfirmar(meds, confirmedByDate, personaActual.id);
+    const diasSin = diasSinConfirmar(meds, confirmedByDate, personaActual.fechaCreacion || familia?.creadoEn);
     if (diasSin >= DIAS_AVISO_SIN_CONFIRMAR) {
       const textoAviso = `⚠️ ${elderName.split(" ")[0]} no ha confirmado tomas en ${diasSin} días. El stock se está descontando automáticamente. Sería bueno revisar.`;
       setSmsLog((prev) => {
@@ -2447,7 +2412,7 @@ export default function App() {
     const existeYo = familia.personas.find((p) => p.nombre === "Yo");
     if (existeYo) { setPersonaActualId(existeYo.id); setShowSelector(false); }
     else {
-      const nuevaYo = { id: Date.now(), nombre: "Yo", edad: null, meds: [], confirmedByDate: {}, preferenciasFarmacia: {}, ultimoReconteo: {}, ultimaConexion: Date.now(), esAutocuidado: true };
+      const nuevaYo = { id: Date.now(), nombre: "Yo", edad: null, meds: [], confirmedByDate: {}, preferenciasFarmacia: {}, ultimoReconteo: {}, ultimaConexion: Date.now(), esAutocuidado: true, fechaCreacion: Date.now() };
       actualizar((prev) => ({ ...prev, personas: [...prev.personas, nuevaYo] }));
       setPersonaActualId(nuevaYo.id); setShowSelector(false);
       registrarEvento(codigo, "activar_autocuidado", "Modo Autocuidado activado", { cuidador: nombreCuidadorInput });
@@ -2558,7 +2523,7 @@ export default function App() {
     if (!nombrePersonaNueva || !nombrePersonaNueva.trim()) return;
     if (edadPersonaNueva && (isNaN(Number(edadPersonaNueva)) || Number(edadPersonaNueva) < 0 || Number(edadPersonaNueva) > 120)) { alert("La edad debe ser un número entre 0 y 120"); return; }
     const edadNum = edadPersonaNueva ? Number(edadPersonaNueva) : null;
-    const nueva = { id: Date.now(), nombre: nombrePersonaNueva.trim(), edad: edadNum, meds: [], confirmedByDate: {}, preferenciasFarmacia: {}, ultimoReconteo: {}, ultimaConexion: Date.now() };
+    const nueva = { id: Date.now(), nombre: nombrePersonaNueva.trim(), edad: edadNum, meds: [], confirmedByDate: {}, preferenciasFarmacia: {}, ultimoReconteo: {}, ultimaConexion: Date.now(), fechaCreacion: Date.now() };
     actualizar((prev) => ({ ...prev, personas: [...(prev.personas || []), nueva] }));
     registrarCambio("Agregó persona", `${nombrePersonaNueva.trim()}${edadNum ? ` (${edadNum} años)` : ""}`);
     registrarEvento(codigo, "agregar_persona", `${nombrePersonaNueva.trim()}${edadNum ? ` (${edadNum} años)` : ""}`, { cuidador: nombreCuidadorInput, persona: nombrePersonaNueva.trim(), edad: edadNum || "" });
@@ -2620,19 +2585,22 @@ export default function App() {
   const occurrences = meds.flatMap((m) => (m.times || []).map((t) => ({ med: m, time: t, key: occKey(m.id, t) })));
   const upcoming = occurrences.filter((o) => toMinutes(o.time) >= nowMin - 60 && !confirmedHoy[o.key]).sort((a, b) => toMinutes(a.time) - toMinutes(b.time));
   const current = upcoming[0];
-  // Calculamos cuánto tiempo ha pasado desde la hora de la toma
-const difMinutos = current ? (nowMin - toMinutes(current.time)) : -1;
-// Si es vital tiene 2 min de ventana, si no, 6 min.
-const ventanaAlerta = current ? ((current.med.criticidad === "vital" || detectarCriticidad(current.med.name) === "vital") ? 2 : 6) : 0;
-// Solo mostramos la tarjeta si estamos dentro de la ventana de tiempo
-const isCurrentDue = current && difMinutos >= 0 && difMinutos <= ventanaAlerta;
+  
+  // FIX CRÍTICO 7: Lógica de la ventana de tiempo para que desaparezca la tarjeta
+  const difMinutos = current ? (nowMin - toMinutes(current.time)) : -1;
+  const ventanaAlerta = current ? ((current.med.criticidad === "vital" || detectarCriticidad(current.med.name) === "vital") ? 2 : 6) : 0;
+  const isCurrentDue = current && difMinutos >= 0 && difMinutos <= ventanaAlerta;
+
   const racha = calcularRacha(meds, confirmedByDate);
   const recetasPorVencer = meds.filter((m) => { if (!m.recetaVence) return false; const d = diasHastaVencimiento(m.recetaVence); return d !== null && d >= 0 && d <= 30; });
+  
+  // FIX PREMIUM: Lógica de días para el aviso
   const diasPremium = familia?.planInicio ? Math.floor((Date.now() - familia.planInicio) / (1000 * 60 * 60 * 24)) : 0;
-  const mostrarAvisoRenovacion = esPremium && diasPremium >= 27 && diasPremium <= 30;
+  const mostrarAvisoRenovacion = esPremium && diasPremium >= 55 && diasPremium <= 60;
+
   const medsCarro = meds.filter((m) => { const s = semaforoRiesgo(m); return s.nivel === "urgente" || s.nivel === "atención"; });
   const medsArchivados = (personaActual?.meds || []).filter(m => m.archivado);
-  const cambioPatron = detectarCambioPatron(meds, confirmedByDate);
+  const cambioPatron = detectarCambiarPatron(meds, confirmedByDate); // Corregido el nombre de la función
 
   if (stage === "cargando") return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: LIGHT.TEAL }}><Loader2 size={30} color="#fff" /></div>;
 
@@ -2775,7 +2743,7 @@ const isCurrentDue = current && difMinutos >= 0 && difMinutos <= ventanaAlerta;
           <AvisoSinConexion C={C} offline={!isOnline} ultimaConexion={ultimaConexionPersona} compacto={false} nombre={elderName} />
         </div>}
 
-        {view === "cuidador" && familia.personas && familia.personas.length === 1 && !localStorage.getItem(`banner_cerrado_${codigo}`) && (
+        {view === "cuidador" && familia.personas && familia.personas.length === 1 && !localStorage.getItem(`banner_cerrado_${codigo}`) && !bannerCerrado && (
           <div style={{ margin: "12px 20px 0", background: C.TEAL + "10", border: `1px solid ${C.TEAL}40`, borderRadius: 12, padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: C.TEAL, lineHeight: 1.3 }}>
               Conecta el celular de <strong>{elderName.split(" ")[0]}</strong>
@@ -2791,7 +2759,7 @@ const isCurrentDue = current && difMinutos >= 0 && difMinutos <= ventanaAlerta;
               >
                 <MessageSquare size={12} /> Enviar
               </button>
-              <button onClick={() => { localStorage.setItem(`banner_cerrado_${codigo}`, "true"); setTriggerPostergacion(t => t + 1); }} className="btn-press-soft" style={{ padding: "6px", borderRadius: 8, border: "none", background: "transparent", color: C.MUTED, cursor: "pointer", display: "flex", alignItems: "center" }}><X size={14} /></button>
+              <button onClick={() => { localStorage.setItem(`banner_cerrado_${codigo}`, "true"); setBannerCerrado(true); }} className="btn-press-soft" style={{ padding: "6px", borderRadius: 8, border: "none", background: "transparent", color: C.MUTED, cursor: "pointer", display: "flex", alignItems: "center" }}><X size={14} /></button>
             </div>
           </div>
         )}
@@ -3413,32 +3381,6 @@ const isCurrentDue = current && difMinutos >= 0 && difMinutos <= ventanaAlerta;
               <button onClick={() => { actualizarSettings({ sonidoActivo: !settings.sonidoActivo }); }} className="btn-press-soft" style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", borderRadius: 16, border: `1px solid ${C.LINE}`, background: C.PAPER, cursor: "pointer", marginBottom: 10 }}>
                 <span style={{ fontSize: 14, fontWeight: 600, display: "flex", alignItems: "center", gap: 10, color: C.INK }}>{settings.sonidoActivo ? <Volume2 size={18} color={C.TEAL} /> : <VolumeX size={18} color={C.MUTED} />} Alerta con sonido</span>
                 <span style={{ width: 46, height: 26, borderRadius: 999, background: settings.sonidoActivo ? C.TEAL : C.LINE, position: "relative" }}><span style={{ position: "absolute", top: 3, left: settings.sonidoActivo ? 23 : 3, width: 20, height: 20, borderRadius: 999, background: "#fff", transition: "left 0.2s ease" }} /></span>
-              </button>
-              <button onClick={async () => {
-                try {
-                  if (typeof Notification === "undefined") {
-                    alert("Tu navegador no soporta notificaciones.");
-                    return;
-                  }
-                  const permiso = await Notification.requestPermission();
-                  if (permiso !== "granted") {
-                    alert("Permiso denegado. Ve a la configuración de Chrome y permite las notificaciones.");
-                    return;
-                  }
-                  alert("Permiso concedido. Generando token... espera.");
-                  const token = await obtenerTokenFCM();
-                  if (token) {
-                    setTokenFCM(token);
-                    if (codigo) await guardarTokenEnFirestore(codigo, token, "cuidador");
-                    alert("¡ÉXITO! Token guardado: " + token.substring(0, 10) + "...");
-                  } else {
-                    alert("ERROR: No se pudo generar el token. Revisa la consola de Chrome (F12) en la pestaña 'Console' para ver el error exacto.");
-                  }
-                } catch (err) {
-                  alert("Error inesperado: " + err.message);
-                }
-              }} className="btn-press" style={{ width: "100%", padding: 14, borderRadius: 14, border: "none", background: C.AMBER, color: "#fff", fontWeight: 700, cursor: "pointer", marginBottom: 20 }}>
-                🔧 Forzar Token de Notificaciones (Reparación)
               </button>
 
               <div style={{ fontSize: 13, fontWeight: 700, color: C.MUTED, marginBottom: 10 }}>PREFERENCIAS VISUALES</div>
