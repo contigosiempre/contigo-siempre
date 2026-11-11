@@ -2688,7 +2688,23 @@ export default function App() {
   const occurrences = meds.flatMap((m) => (m.times || []).map((t) => ({ med: m, time: t, key: occKey(m.id, t) })));
   
   // --- FIX PARACETAMOL: Calculamos la próxima toma y su ventana ---
+    // Buscamos la próxima toma no confirmada, sin importar cuánto falte
   const upcomingRaw = occurrences.filter((o) => !confirmedHoy[o.key]).sort((a, b) => toMinutes(a.time) - toMinutes(b.time));
+  const nextRaw = upcomingRaw[0];
+  
+  // Calculamos la diferencia de tiempo
+  const difRaw = nextRaw ? (nowMin - toMinutes(nextRaw.time)) : -1;
+  const ventanaRaw = nextRaw ? ((nextRaw.med.criticidad === "vital" || detectarCriticidad(nextRaw.med.name) === "vital") ? 2 : 6) : 0;
+  
+  // Si está dentro de la ventana, mostramos la tarjeta azul.
+  const isCurrentDue = nextRaw && difRaw >= 0 && difRaw <= ventanaRaw;
+  
+  // Si ya pasó el tiempo de la ventana, lo ocultamos (para que no quede pegada).
+  const haExpirado = nextRaw && difRaw > ventanaRaw;
+
+  const current = (isCurrentDue && !haExpirado) ? nextRaw : null;
+  const difMinutos = current ? difRaw : -1;
+  const ventanaAlerta = current ? ventanaRaw : 0;
   const nextRaw = upcomingRaw[0];
   const difRaw = nextRaw ? (nowMin - toMinutes(nextRaw.time)) : -1;
   const ventanaRaw = nextRaw ? ((nextRaw.med.criticidad === "vital" || detectarCriticidad(nextRaw.med.name) === "vital") ? 2 : 6) : 0;
