@@ -77,7 +77,6 @@ function cuandoDbListo(cb) {
     document.head.appendChild(s);
   });
   
-  // AHORA CARGAMOS TAMBIÉN LA LIBRERÍA DE AUTHENTICATION
   Promise.all([
     cargar("https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"),
     cargar("https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"),
@@ -91,7 +90,6 @@ function cuandoDbListo(cb) {
         db = window.firebase.firestore();
         db.enablePersistence({ synchronizeTabs: true }).catch((err) => {});
         
-        // PEDIMOS EL PASE VIP (LOGIN ANÓNIMO)
         const auth = window.firebase.auth();
         auth.signInAnonymously().catch((error) => {
           console.error("Error en login anónimo:", error);
@@ -352,7 +350,6 @@ async function obtenerTokenFCM() {
         await navigator.serviceWorker.ready;
       } catch (e) {}
 
-      // Esperar a que Firebase esté listo
       if (!window.firebase) {
         clearTimeout(timeout);
         resolve(null);
@@ -361,7 +358,6 @@ async function obtenerTokenFCM() {
 
       await cargarMessaging();
 
-      // IMPORTANTE: Asegurarnos de que la librería de mensajería se cargó
       if (!window.firebase.messaging) {
         clearTimeout(timeout);
         resolve(null);
@@ -811,7 +807,6 @@ function PoliticaPrivacidad({ C, onCerrar }) {
           <button onClick={onCerrar} className="btn-press-soft" style={{ border: "none", background: C.LINE, borderRadius: 999, width: 32, height: 32, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} color={C.INK} /></button>
         </div>
         <div style={{ fontSize: 12.5, color: C.MUTED, lineHeight: 1.7 }}>
-                <div style={{ fontSize: 12.5, color: C.MUTED, lineHeight: 1.7 }}>
           <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>1. Responsable del Tratamiento.</strong><br />Contigo Siempre es una aplicación chilena de apoyo al cuidado de personas mayores. El responsable del tratamiento de los datos es el equipo desarrollador de la aplicación.</p>
           
           <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>2. Datos Sensibles y Base de Licitud.</strong><br />Para cumplir con la Ley N° 21.719, te informamos que los datos sobre tus medicamentos y tu adherencia son considerados <strong>datos sensibles de salud</strong>. La base legal para su tratamiento es tu <strong>consentimiento expreso, informado y específico</strong>, el cual otorgas al marcar la casilla de aceptación al ingresar a la app.</p>
@@ -827,7 +822,6 @@ function PoliticaPrivacidad({ C, onCerrar }) {
           <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>7. Plazo de Conservación.</strong><br />Conservaremos tus datos mientras tu cuenta esté activa. Si eliminas tu cuenta, los datos se conservarán bloqueados por el plazo legal de 30 días para luego ser borrados definitivamente.</p>
           
           <p style={{ marginBottom: 12 }}><strong style={{ color: C.INK }}>8. Contacto.</strong><br />Para consultas sobre protección de datos, escribe a hola.contigosiempre@gmail.com.</p>
-        </div>
         </div>
         <button onClick={onCerrar} className="btn-press" style={{ marginTop: 16, width: "100%", padding: 14, borderRadius: 14, border: "none", background: C.TEAL, color: "#fff", fontWeight: 700, fontSize: 15, cursor: "pointer" }}>Cerrar</button>
       </div>
@@ -1940,7 +1934,6 @@ export default function App() {
   // GUARDAR TOKEN DE NOTIFICACIONES AUTOMÁTICAMENTE
   useEffect(() => {
     if (stage === "app" && codigo) {
-      // Pedimos permiso si no lo tenemos
       if (typeof Notification !== "undefined" && Notification.permission === "default") {
         Notification.requestPermission().then((permiso) => {
           if (permiso === "granted") {
@@ -1955,7 +1948,6 @@ export default function App() {
       } else if (typeof Notification !== "undefined" && Notification.permission === "granted") {
         cuandoDbListo(async (d) => {
           if (!d) return;
-          // Reintentamos por si el Service Worker se demora en arrancar
           setTimeout(async () => {
             const token = await obtenerTokenFCM();
             if (token) {
@@ -2017,7 +2009,6 @@ export default function App() {
   useEffect(() => {
     if (!codigo || !db) return;
       const unsub = db.collection("familias").doc(STORAGE_PREFIX + codigo).onSnapshot((doc) => {
-      // Si estamos en la pantalla de agregar/editar, NO actualizamos la vista
       if (doc.exists && !pendingLocalWriteRef.current && !bloqueoFirebase.current) {
         const data = doc.data();
         setFamilia((prev) => { if (JSON.stringify(prev) === JSON.stringify(data)) return prev; return data; });
@@ -2050,7 +2041,6 @@ export default function App() {
         const data = doc.data();
         if (data.alerta_critica_activa) {
           const ac = data.alerta_critica_activa;
-          // Solo mostrar la alerta si fue en los últimos 5 minutos y no la hemos cerrado ya
           if (Date.now() - ac.fecha < 5 * 60 * 1000 && (!alertaCriticaRef.current || alertaCriticaRef.current.fecha !== ac.fecha)) {
             setAlertaCriticaCuidador(ac);
             alertaCriticaRef.current = ac;
@@ -2133,23 +2123,7 @@ export default function App() {
       const tCierre = setTimeout(() => {
         alertaCerraraRef.current = true;
         alertaActivaRef.current = null;
-              // --- NUEVO: DESCONTAR STOCK AUTOMÁTICAMENTE SI NO CONFIRMÓ ---
-        // Así el cuidador ve el stock real el mismo día y no se queda sin remedios por sorpresa.
-        const medsPendientesStock = medsVencidos.filter(mv => !confirmadosIds.includes(mv.med.id));
         
-        if (medsPendientesStock.length > 0) {
-          actualizarPersona((p) => {
-            const nm = (p.meds || []).map((m) => {
-              const pendiente = medsPendientesStock.find(mv => mv.med.id === m.id);
-              if (pendiente) {
-                return { ...m, stock: Math.max(0, +(m.stock - (m.doseAmount || 1)).toFixed(2)) };
-              }
-              return m;
-            });
-            return { ...p, meds: nm };
-          });
-        }
-        // -------------------------------------------------------------  
         try {
           if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
             navigator.serviceWorker.getRegistration().then((reg) => {
@@ -2158,32 +2132,32 @@ export default function App() {
           }
         } catch (e) {}
 
-        // GUARDAR ALERTA CRÍTICA EN FIREBASE (Para el cuidador)
-        if (db && codigo) {
-                  // Filtramos SOLO los medicamentos que el abuelito no confirmó
-          const medsPendientesNombre = medsVencidos
-            .filter(mv => !confirmadosIds.includes(mv.med.id))
-            .map(mv => mv.med.name);
-
-                   if (medsPendientesNombre.length > 0 && esVitalAhora) {
-            db.collection("familias").doc(STORAGE_PREFIX + codigo).update({
-              alerta_critica_activa: {
-                meds: medsPendientesNombre,
-                hora: horaActualVencida,
-                esVital: esVitalAhora,
-                persona: elderName,
-                fecha: Date.now()
-              }
-            }).catch(() => {});
-          }
-        }
-
         const textoAviso = esVitalAhora 
           ? `🚨 URGENTE: ${elderName.split(" ")[0]} NO ha confirmado su medicamento VITAL (${fmtHoraConAmPm(horaActualVencida)}). Por favor llámalo de inmediato.`
           : `⚠️ ${elderName.split(" ")[0]} no confirmó las tomas de las ${fmtHoraConAmPm(horaActualVencida)}.`;
 
-        setSmsLog(prev => [...prev, { tipo: "alerta", hora: smsTime(), texto: textoAviso }]);
+        // 1. Guardar el aviso en la lista del cuidador SIEMPRE
+        setSmsLog(prev => {
+          if (prev.some(s => s.texto === textoAviso)) return prev;
+          return [...prev, { tipo: "alerta", hora: smsTime(), texto: textoAviso }];
+        });
 
+        // 2. Si es vital, disparamos la pantalla roja en Firebase
+        if (db && codigo && esVitalAhora) {
+          const nombreRespaldo = medsVencidos[0].med.name; // Respaldo seguro
+          
+          db.collection("familias").doc(STORAGE_PREFIX + codigo).update({
+            alerta_critica_activa: {
+              meds: [nombreRespaldo],
+              hora: horaActualVencida,
+              esVital: true,
+              persona: elderName,
+              fecha: Date.now()
+            }
+          }).catch(() => {});
+        }
+
+        // 3. Lanzar notificación local
         if (typeof Notification !== "undefined" && Notification.permission === "granted") {
           mostrarNotificacion(esVitalAhora ? "🚨 ALERTA VITAL OMITIDA" : "Toma omitida", { 
             body: textoAviso, 
@@ -2414,7 +2388,6 @@ export default function App() {
       return { ...p, meds: nm, confirmedByDate: nc, ultimaConexion: Date.now() };
     });
 
-    // Limpiar la alerta crítica si estaba activa
     if (db && codigo) {
       db.collection("familias").doc(STORAGE_PREFIX + codigo).update({ alerta_critica_activa: null }).catch(() => {});
     }
@@ -2455,7 +2428,6 @@ export default function App() {
       return { ...p, meds: nm, confirmedByDate: nc, ultimaConexion: Date.now() };
     });
 
-    // Limpiar la alerta crítica si estaba activa
     if (db && codigo) {
       db.collection("familias").doc(STORAGE_PREFIX + codigo).update({ alerta_critica_activa: null }).catch(() => {});
     }
@@ -2699,24 +2671,18 @@ export default function App() {
   const scale = FONT_SCALE[settings.fontSize] || 1;
   const confirmedHoy = confirmedByDate?.[todayStr()] || {};
   const occurrences = meds.flatMap((m) => (m.times || []).map((t) => ({ med: m, time: t, key: occKey(m.id, t) })));
-    // Solo consideramos "próximas" las tomas cuya ventana de tiempo NO haya expirado
-  const upcoming = occurrences.filter((o) => {
-    if (confirmedHoy[o.key]) return false;
-    const dif = nowMin - toMinutes(o.time);
-    const ventana = (o.med.criticidad === "vital" || detectarCriticidad(o.med.name) === "vital") ? 2 : 6;
-    // Mostrar solo si falta poco para la toma (máx 60 min antes) o si está dentro de la ventana
-    return dif <= ventana && dif >= -60;
-  }).sort((a, b) => toMinutes(a.time) - toMinutes(b.time));
-   const current = upcoming[0];
   
-  // Calculamos cuánto tiempo ha pasado desde la hora de la toma
-  const difMinutos = current ? (nowMin - toMinutes(current.time)) : -1;
+  // --- FIX PARACETAMOL: Calculamos la próxima toma y su ventana ---
+  const upcomingRaw = occurrences.filter((o) => !confirmedHoy[o.key]).sort((a, b) => toMinutes(a.time) - toMinutes(b.time));
+  const nextRaw = upcomingRaw[0];
+  const difRaw = nextRaw ? (nowMin - toMinutes(nextRaw.time)) : -1;
+  const ventanaRaw = nextRaw ? ((nextRaw.med.criticidad === "vital" || detectarCriticidad(nextRaw.med.name) === "vital") ? 2 : 6) : 0;
   
-  // La ventana es de 2 min si es vital, 6 min si es normal
-  const ventanaAlerta = current ? ((current.med.criticidad === "vital" || detectarCriticidad(current.med.name) === "vital") ? 2 : 6) : 0;
-  
-  // Solo mostramos la tarjeta si estamos DENTRO de la ventana
-  const isCurrentDue = current && difMinutos >= 0 && difMinutos <= ventanaAlerta;
+  // REGLA DE ORO: Si la toma ya expiró, current se vuelve NULL y la tarjeta desaparece.
+  const isCurrentDue = nextRaw && difRaw >= 0 && difRaw <= ventanaRaw;
+  const current = isCurrentDue ? nextRaw : null;
+  const difMinutos = current ? difRaw : -1;
+  const ventanaAlerta = current ? ventanaRaw : 0;
 
   const racha = calcularRacha(meds, confirmedByDate);
   const recetasPorVencer = meds.filter((m) => { if (!m.recetaVence) return false; const d = diasHastaVencimiento(m.recetaVence); return d !== null && d >= 0 && d <= 30; });
