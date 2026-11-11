@@ -2678,12 +2678,18 @@ export default function App() {
   const difRaw = nextRaw ? (nowMin - toMinutes(nextRaw.time)) : -1;
   const ventanaRaw = nextRaw ? ((nextRaw.med.criticidad === "vital" || detectarCriticidad(nextRaw.med.name) === "vital") ? 2 : 6) : 0;
   
-  // REGLA DE ORO: Si la toma ya expiró, current se vuelve NULL y la tarjeta desaparece.
+  // REGLA DE ORO: Si la toma ya expiró, current se vuelve NULL.
   const isCurrentDue = nextRaw && difRaw >= 0 && difRaw <= ventanaRaw;
-  const current = isCurrentDue ? nextRaw : null;
+  
+  // NUEVO: Validación de tiempo exacto para forzar la desaparición de la tarjeta
+  const horaTomaNum = nextRaw ? toMinutes(nextRaw.time) : 0;
+  const ahoraEnMinutos = nowMin;
+  const minutosPasados = ahoraEnMinutos - horaTomaNum;
+  const haExpirado = nextRaw && minutosPasados > ventanaRaw;
+
+  const current = (isCurrentDue && !haExpirado) ? nextRaw : null;
   const difMinutos = current ? difRaw : -1;
   const ventanaAlerta = current ? ventanaRaw : 0;
-
   const racha = calcularRacha(meds, confirmedByDate);
   const recetasPorVencer = meds.filter((m) => { if (!m.recetaVence) return false; const d = diasHastaVencimiento(m.recetaVence); return d !== null && d >= 0 && d <= 30; });
   const diasPremium = familia?.planInicio ? Math.floor((Date.now() - familia.planInicio) / (1000 * 60 * 60 * 24)) : 0;
