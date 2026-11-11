@@ -2123,7 +2123,22 @@ export default function App() {
       const tCierre = setTimeout(() => {
         alertaCerraraRef.current = true;
         alertaActivaRef.current = null;
+               // --- NUEVO: DESCONTAR STOCK AUTOMÁTICAMENTE SI NO CONFIRMÓ ---
+        const medsPendientesStock = medsVencidos.filter(mv => !confirmadosIds.includes(mv.med.id));
         
+        if (medsPendientesStock.length > 0) {
+          actualizarPersona((p) => {
+            const nm = (p.meds || []).map((m) => {
+              const pendiente = medsPendientesStock.find(mv => mv.med.id === m.id);
+              if (pendiente) {
+                return { ...m, stock: Math.max(0, +(m.stock - (m.doseAmount || 1)).toFixed(2)) };
+              }
+              return m;
+            });
+            return { ...p, meds: nm };
+          });
+        }
+        // ------------------------------------------------------------- 
         try {
           if (navigator.serviceWorker && navigator.serviceWorker.getRegistration) {
             navigator.serviceWorker.getRegistration().then((reg) => {
